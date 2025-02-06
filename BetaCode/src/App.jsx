@@ -3,10 +3,11 @@ import './App.css'
 import FormData from './compoments/FormData'
 import TimeTracker from './compoments/TimeTacker'
 import ReportForm from './compoments/ReportForm'
+import Sorts from './compoments/Sorts'
 function App() {
   const [activeTab, setActiveTab] = useState('participants')
-  const [participants, setParticipants] = useState(6)
-  const [therapists, setTherapists] = useState(1)
+  const [participants, setParticipants] = useState()
+  const [therapists, setTherapists] = useState()
   const [zipCode, setZipCode] = useState('')
   const [duration, setDuration] = useState('3 hours')
   const [eventType, setEventType] = useState('Corporate')
@@ -83,6 +84,7 @@ function App() {
     </div>
     <TimeTracker/>
     <ReportForm />
+    <Sorts />
     {/* <FormData participants={participants} activeTab={activeTab} duration={duration} zipCode={zipCode} therapists={therapists} eventType={eventType}/> */}
     </div>
   )

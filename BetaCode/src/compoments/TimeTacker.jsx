@@ -5,6 +5,8 @@ const TimeTracker = () => {
   const [startTime, setStartTime] = useState(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [totalTime, setTotalTime] = useState(0);
+  const [clockInTime, setClockInTime] = useState(null);
+  const [clockOutTime, setClockOutTime] = useState(null);
 
   useEffect(() => {
     let interval;
@@ -19,14 +21,19 @@ const TimeTracker = () => {
   }, [isTracking, startTime]);
 
   const handleClockIn = () => {
+    const now = new Date();
     setIsTracking(true);
-    setStartTime(Date.now());
+    setStartTime(now.getTime());
+    setClockInTime(now);
+    setClockOutTime(null);
   };
 
   const handleClockOut = () => {
+    const now = new Date();
     setIsTracking(false);
     setTotalTime(prevTotal => prevTotal + elapsedTime);
     setElapsedTime(0);
+    setClockOutTime(now);
   };
 
   const formatTime = (ms) => {
@@ -36,6 +43,10 @@ const TimeTracker = () => {
     return `${hours.toString().padStart(2, '0')}:${(minutes % 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
   };
 
+  const formatDateTime = (date) => {
+    return date ? date.toLocaleString() : '--';
+  };
+
   return (
     <div className="time-tracker">
       <h2>Time Tracker</h2>
@@ -43,6 +54,10 @@ const TimeTracker = () => {
       <div className="tracker-buttons">
         <button onClick={handleClockIn} disabled={isTracking}>Clock In</button>
         <button onClick={handleClockOut} disabled={!isTracking}>Clock Out</button>
+      </div>
+      <div className="clock-times">
+        <p>Clock In: {formatDateTime(clockInTime)}</p>
+        <p>Clock Out: {formatDateTime(clockOutTime)}</p>
       </div>
       <div className="total-time">
         <h3>Total Time</h3>
