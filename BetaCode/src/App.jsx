@@ -11,13 +11,25 @@ function App() {
   const [zipCode, setZipCode] = useState('')
   const [duration, setDuration] = useState('3 hours')
   const [eventType, setEventType] = useState('Corporate')
-
+  const [price , setPrice] = useState(150)
+  
   const handleSubmit = (e) => {
     e.preventDefault()
     console.log(`Submitted: ${activeTab === 'participants' ? participants + ' participants' : therapists + ' therapists'}, ${zipCode} zip code, ${duration} duration, ${eventType} event type`)
     // Here you can add logic to handle the form submission
   }
-
+  const priceCal = () => {
+    if (duration == "3 hours") {
+      setPrice(150 * 3)
+      console.log(`$${price}`)
+    }else if (duration == "4 hours") {
+      setPrice(150 * 4)
+      console.log(`$${price}`)
+    }else if (duration == "5 hours") {
+      setPrice(150 * 5)
+      console.log(`$${price}`)
+    }
+  }
   return (
     <div>
     <div className="booking-form">
@@ -80,8 +92,10 @@ function App() {
           <button type="submit" className="book-button">Book &gt;</button>
         </div>
       </form>
+
       
     </div>
+    <button onClick={priceCal}>Calculate Price</button>
     <TimeTracker/>
     <ReportForm />
     <Sorts />
