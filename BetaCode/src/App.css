@@ -1,13 +1,129 @@
-body{
+body {
   background-color: lightgrey;
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
   margin: 0;
-  color:black;
+  color: black;
 }
-.booking-form {
+
+hr {
+  border: 2px solid black;
+  height: 0;
+  width: 100%;
+  opacity: 1;
+  margin: auto;
+  width: 75%;
+}
+
+.Container {
+  display: flex;
+  width: 100%;
+  gap: 5%;
+}
+
+.Text-Info {
+  background-color: white;
+  border-radius: 25px;
+  text-align: center;
+  align-content: center;
+}
+
+.FormInput {
+  background-color: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  max-width: 800px;
+  margin: auto;
+}
+
+.FormInput form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+
+
+.FormInput .form-group {
+  flex: 1;
+  min-width: 200px;
+}
+
+.FormInput label {
+  font-weight: bold;
+}
+
+.FormInput input,
+.FormInput select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+.FormInput button {
+  background-color: #3b3b98;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.FormInput button:hover {
+  background-color: #2c2c75;
+}
+
+/* Dropdown styles */
+.FormInput select {
+  background-color: white;
+  appearance: none;
+  padding: 10px;
+  cursor: pointer;
+}
+
+/* Style dropdown container */
+.FormInput .dropdown {
+  position: relative;
+}
+
+/* Style dropdown options */
+.FormInput .dropdown select {
+  width: 100%;
+  border: none;
+  background: white;
+  padding: 10px;
+}
+
+/* Align total and book button */
+.FormInput .total-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.FormInput .total-container .total {
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.FormInput .total-container .book-button {
+  background-color: #3b3b98;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+/* .booking-form {
   max-width: 800px;
   margin: 0 auto;
   padding: 20px;
@@ -112,4 +228,4 @@ input, select {
 
 .book-button:hover {
   background-color: #076d43;
-}
+} */
