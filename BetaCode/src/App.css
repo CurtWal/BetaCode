@@ -134,6 +134,41 @@ hr {
   cursor: pointer;
 }
 
+.bookingContainer{
+  background-color: white;
+  width:75rem;
+  height: 75rem;
+}
+.bookings{
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-gap: 50px;
+  text-wrap:nowrap;
+
+}
+
+.booking-card{
+  border-radius: 10px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  width:25vh;
+  height:17vh;
+}
+.booking-card > li{
+  margin-left: 10px;
+}
+.input-container {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.input-container input {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  width: 200px;
+}
+
 /* .booking-form {
   max-width: 800px;
   margin: 0 auto;
