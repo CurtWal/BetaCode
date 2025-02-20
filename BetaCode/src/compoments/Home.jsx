@@ -7,32 +7,9 @@ import InputGroup from "react-bootstrap/InputGroup";
 import Row from "react-bootstrap/Row";
 import axios from 'axios';
 import Modal from "react-bootstrap/Modal";
+import Payment from "./payment";
 function Home() {
-      // const [activeTab, setActiveTab] = useState('participants')
-  // const [participants, setParticipants] = useState()
-  // const [therapists, setTherapists] = useState()
-  // const [zipCode, setZipCode] = useState('')
-  // const [duration, setDuration] = useState('3 hours')
-  // const [eventType, setEventType] = useState('Corporate')
-  // const [price , setPrice] = useState(150)
 
-  // const handleSubmit = (e) => {
-  //   e.preventDefault()
-  //   console.log(`Submitted: ${activeTab === 'participants' ? participants + ' participants' : therapists + ' therapists'}, ${zipCode} zip code, ${duration} duration, ${eventType} event type`)
-  //   // Here you can add logic to handle the form submission
-  // }
-  // const priceCal = () => {
-  //   if (duration == "3 hours") {
-  //     setPrice(150 * 3)
-  //     console.log(`$${price}`)
-  //   }else if (duration == "4 hours") {
-  //     setPrice(150 * 4)
-  //     console.log(`$${price}`)
-  //   }else if (duration == "5 hours") {
-  //     setPrice(150 * 5)
-  //     console.log(`$${price}`)
-  //   }
-  // }
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
@@ -44,10 +21,12 @@ function Home() {
   const [validated, setValidated] = useState(false);
 
   const [show, setShow] = useState(false);
+  const [payModal, setPayModal] = useState(false);
 
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
-
+  const payModalClose = ()=> setPayModal(false);
+  const payModalShow = () => setPayModal(true);
   const data = [
     {
       therapists: "1 Therapist",
@@ -328,75 +307,21 @@ function Home() {
             </Row>
           </Form>
         </div>
-      </div>
-      {/* <div className="booking-form">
-      <div className="tabs">
-        <button 
-          className={activeTab === 'participants' ? 'active' : ''} 
-          onClick={() => setActiveTab('participants')}
-        >
-          Number of Participants
-        </button>
-        <button 
-          className={activeTab === 'therapists' ? 'active' : ''} 
-          onClick={() => setActiveTab('therapists')}
-        >
-          Number of Therapists
-        </button>
-      </div>
-      <form onSubmit={handleSubmit}>
-        <div className="form-row">
-          <div className="form-group">
-            <label htmlFor={activeTab}>{activeTab === 'participants' ? '# Participants' : '# Therapists'}</label>
-            <input
-              type="number"
-              id={activeTab}
-              value={activeTab === 'participants' ? participants : therapists}
-              onChange={(e) => activeTab === 'participants' 
-                ? setParticipants(Math.max(6, parseInt(e.target.value) || 6))
-                : setTherapists(Math.max(1, parseInt(e.target.value) || 1))
-              }
-              min={activeTab === 'participants' ? "6" : "1"}
-              placeholder={activeTab === 'participants' ? "Min. 6" : "Min. 1"}
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="zipCode">Event Zip Code</label>
-            <input
-              type="text"
-              id="zipCode"
-              value={zipCode}
-              onChange={(e) => setZipCode(e.target.value)}
-              placeholder="Enter zip code"
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="duration">Event Duration</label>
-            <select
-              id="duration"
-              value={duration}
-              onChange={(e) => setDuration(e.target.value)}
-            >
-              <option>3 hours</option>
-              <option>4 hours</option>
-              <option>5 hours</option>
-            </select>
-          </div>
-          <div className="form-group event-type">
-            <button type="button" className={eventType === 'Corporate' ? 'active' : ''} onClick={() => setEventType('Corporate')}>Corporate</button>
-            <button type="button" className={eventType === 'Personal' ? 'active' : ''} onClick={() => setEventType('Personal')}>Personal</button>
-          </div>
-          <button type="submit" className="book-button">Book &gt;</button>
+        <div>
+          <Modal
+            show={payModal}
+            onHide={payModalClose}
+            centered
+            
+            dialogClassName="custom-modal"
+          >
+            <Modal.Body style={{background:"rgb(0 0 0 / 40%)"}}>
+              <Payment price={price} payModalClose={payModalClose}/>
+            </Modal.Body>
+          </Modal>
         </div>
-      </form>
-
-      
-    </div>
-    <button onClick={priceCal}>Calculate Price</button>
-    <TimeTracker/>
-    <ReportForm />
-    <Sorts /> */}
-      {/* <FormData participants={participants} activeTab={activeTab} duration={duration} zipCode={zipCode} therapists={therapists} eventType={eventType}/> */}
+      </div>
+      <Button onClick={payModalShow}>Payment</Button>
     </div>
      );
 }

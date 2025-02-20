@@ -10,7 +10,7 @@ const mongoose = require("mongoose");
 const getBookings = require("./routes/getBookings");
 const postBookings = require("./routes/postBookings");
 const putBookings = require("./routes/putBookings");
-
+const postPayment = require("./routes/payment");
 const PORT = process.env.PORT || 3003;
 const app = express();
 
@@ -30,5 +30,6 @@ app.get("/", (req, res) => {
 app.use(getBookings);
 app.use(postBookings);
 app.use(putBookings);
+app.use(postPayment);
 // app.use('/api', paymentRoute);
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
