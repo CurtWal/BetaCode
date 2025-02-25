@@ -1,6 +1,6 @@
 
 body {
-  background-color: lightgrey;
+  
   display: flex;
   justify-content: center;
   align-items: center;
@@ -9,6 +9,18 @@ body {
   color: black;
 }
 
+.Grid-Container{
+  display: grid;
+  grid-template-areas: "img img img"
+  "info forminfo forminfo";
+}
+.Main_Img{
+  grid-area: img;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-left:25%;
+}
 .custom-modal .modal-content {
   background-color: #ccc !important; /* Light gray */
   color: black; /* Optional: Change text color for contrast */
@@ -26,28 +38,91 @@ hr {
   margin: auto;
   width: 75%;
 }
+.Modal_Container{
+  display:flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  gap:2%;
+}
+.Modal_Container > .Options{
+  width: 100%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  box-shadow: 0px 4px 10px #060142;
+}
 
 .Container {
   display: flex;
+  justify-content: center;
+  align-items: center;
   width: 100%;
-  gap: 2%;
+  gap:2%;
 }
 
 .Text-Info {
   background-color: white;
-  border-radius: 25px;
+  border-radius: 15px;
+  padding: 20px;
   text-align: center;
-  align-content: center;
+  box-shadow: 0px 4px 10px #060142;
+  max-width: 250px;
+  font-family: Arial, sans-serif;
+}
+
+.Text-Info h3 {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  color:black;
+  grid-area: info;
+}
+
+.Text-Info h4 {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.Text-Info hr {
+  border: none;
+  height: 1px;
+  background-color: #ccc;
+  margin-bottom: 10px;
+}
+
+.Text-Info ul {
+  list-style: none;
+  padding: 0;
+  text-align: left;
+}
+
+.Text-Info li {
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.Text-Info li::before {
+  content: "☑️";
+  font-size: 16px;
 }
 
 .FormInput {
   background-color: white;
   padding: 20px;
   border-radius: 10px;
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0px 4px 10px #060142;
   max-width: 800px;
   margin: auto;
   width: 100rem;
+  grid-area: forminfo;
 }
 
 .FormInput form {
@@ -134,41 +209,79 @@ hr {
   cursor: pointer;
 }
 
-.bookingContainer{
+.bookingContainer {
   background-color: white;
-  width:75rem;
-  height: 75rem;
-}
-.bookings{
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  grid-gap: 50px;
-  text-wrap:nowrap;
-
-}
-
-.booking-card{
+  width: 100%;
+  max-width: 1200px;
+  min-height: 75rem;
   border-radius: 10px;
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-  width:25vh;
-  height:17vh;
+  box-shadow: 0px 4px 16px #060142;
+  margin: auto;
+  padding: 20px;
+  overflow: hidden; /* Ensures content doesn’t overflow */
 }
-.booking-card > li{
-  margin-left: 10px;
-}
-.input-container {
+.bookings {
   display: grid;
-  gap: 10px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(3, 1fr); /* Exactly 3 cards per row */
+  gap: 20px; /* Adds spacing between cards */
+  justify-content: center;
+  padding: 20px;
+  max-width: 1200px; /* Prevents layout from stretching too wide */
+  margin: auto; /* Centers the grid */
 }
 
-.input-container input {
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  width: 200px;
+.booking-card {
+  border-radius: 10px;
+  box-shadow: 0px 4px 10px #060142;
+  padding: 15px;
+  background-color: white;
+  width: 100%; /* Ensures it fills the grid cell */
+  max-width: 350px; /* Limits the max width */
+  margin: auto; /* Centers each card */
 }
 
+/* Makes list items readable */
+.booking-card li {
+  list-style: none;
+  padding: 3px 0;
+}
+
+/* Buttons always in a row and responsive */
+.button-container {
+  display: flex;
+  gap: 10px; /* Space between buttons */
+  width: 100%; /* Ensures full width for alignment */
+  margin-top: 10px;
+}
+
+/* Ensure buttons adjust dynamically */
+.booking-card button {
+  flex: 1; /* Makes both buttons take equal space */
+  min-width: 120px; /* Prevents tiny buttons */
+  padding: 8px;
+  white-space: nowrap; /* Prevents text from wrapping */
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+  .bookings {
+    grid-template-columns: repeat(2, 1fr); /* Adjusts for medium screens */
+  }
+}
+
+@media (max-width: 600px) {
+  .bookings {
+    grid-template-columns: repeat(1, 1fr); /* Single column on small screens */
+  }
+
+  .button-container {
+    flex-direction: column; /* Stack buttons on small screens */
+  }
+
+  .booking-card button {
+    width: 100%; /* Makes buttons full width */
+  }
+}
 /* .booking-form {
   max-width: 800px;
   margin: 0 auto;

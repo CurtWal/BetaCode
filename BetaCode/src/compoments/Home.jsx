@@ -5,11 +5,11 @@ import Col from "react-bootstrap/Col";
 import Form from "react-bootstrap/Form";
 import InputGroup from "react-bootstrap/InputGroup";
 import Row from "react-bootstrap/Row";
-import axios from 'axios';
+import axios from "axios";
 import Modal from "react-bootstrap/Modal";
 import Payment from "./payment";
+import Logo from "../assets/MOTG_Revised_Logo.png";
 function Home() {
-
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
@@ -25,8 +25,8 @@ function Home() {
 
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
-  const payModalClose = ()=> setPayModal(false);
-  const payModalShow = () => setPayModal(true);
+  const payModalClose = () => setPayModal(false);
+
   const data = [
     {
       therapists: "1 Therapist",
@@ -59,45 +59,28 @@ function Home() {
       cost: "$450",
     },
   ];
+
   const postBookings = async (e) => {
     const form = e.currentTarget;
     if (form.checkValidity() === false) {
-        e.preventDefault();
-        e.stopPropagation();
+      e.preventDefault();
+      e.stopPropagation();
     }
 
     setValidated(true);
     e.preventDefault();
-
-    let newBookings = {
-        name,
-        email,
-        address,
-        zipCode,
-        therapist,
-        eventHours,
-        eventIncrement,
-    };
-
-    try {
-        const response = await axios.post("http://localhost:3001/new-booking", newBookings);
-        console.log("Booking successful:", response.data);
-    } catch (err) {
-        console.error("HTTP error!", err);
-        if (err.response) {
-            alert(`Error making Booking, try refreshing the page.`);
-            throw new Error(`HTTP error! status: ${err.response.status}`);
-        } else {
-            
-            throw new Error(`Network or server error: ${err.message}`);
-        }
+    if(form.checkValidity() === true){
+       setPayModal(true)
     }
-};
+  };
+
   useEffect(() => {
-    setPrice(therapist * 150);
-  }, [therapist]);
-    return ( 
-        <div>
+    setPrice(therapist * 150 * eventHours);
+  }, [therapist, eventHours]);
+
+  return (
+    <div className="Grid-Container">
+      <img src={Logo} alt="MOTG Logo" className="Main_Img" />
       <div className="Container">
         <div className="Text-Info">
           <h3>1 Therapist</h3>
@@ -112,8 +95,8 @@ function Home() {
             Disclaimer: 6 people can only be served based on 10 minute
             increments
           </h6>
-          <p class="flex justify-end" onClick={handleShow}>
-            <u>Price List</u>
+          <p class="flex justify-end cursor-pointer" onClick={handleShow}>
+            <u class="hover:text-sky-700">Price List</u>
           </p>
         </div>
         <div>
@@ -125,10 +108,12 @@ function Home() {
             dialogClassName="custom-modal"
           >
             <Modal.Header closeButton>
-              <Modal.Title>Pricing Structure</Modal.Title>
+              <div className="Modal-Text">
+                <Modal.Title>Pricing Structure</Modal.Title>
+              </div>
             </Modal.Header>
             <Modal.Body>
-              <div className="Container">
+              <div className="Modal_Container">
                 <div className="Text-Info">
                   <h3>1 Therapist</h3>
                   <h4>$150/hour</h4>
@@ -312,18 +297,25 @@ function Home() {
             show={payModal}
             onHide={payModalClose}
             centered
-            
             dialogClassName="custom-modal"
           >
-            <Modal.Body style={{background:"rgb(0 0 0 / 40%)"}}>
-              <Payment price={price} payModalClose={payModalClose}/>
+            <Modal.Body style={{ background: "rgb(0 0 0 / 40%)" }}>
+              <Payment
+                price={price}
+                payModalClose={payModalClose}
+                name={name}
+                email={email}
+                address={address}
+                zipCode={zipCode}
+                therapist={therapist}
+                eventHours={eventHours}
+                eventIncrement={eventIncrement}
+              />
             </Modal.Body>
           </Modal>
         </div>
       </div>
-      <Button onClick={payModalShow}>Payment</Button>
     </div>
-     );
+  );
 }
-
 export default Home;

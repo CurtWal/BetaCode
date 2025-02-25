@@ -3,7 +3,6 @@ import axios from "axios";
 import Button from "react-bootstrap/Button";
 import Modal from "react-bootstrap/Modal";
 import "../App.css";
-
 function Bookings() {
   const [bookings, setBookings] = useState([]);
   const [showCompleted, setShowCompleted] = useState(false);
@@ -81,7 +80,7 @@ function Bookings() {
         </label>
       </div>
 
-      <div className="bookings">
+      <div className="">
         <ul className="bookings">
           {bookings.map((booking) =>
             !booking.isComplete || showCompleted ? (
@@ -94,7 +93,7 @@ function Bookings() {
                   <li># of Therapist: {booking.therapist}</li>
                   <li>EventHours: {booking.eventHours} Hours</li>
                   <li>EventIncrements: {booking.eventIncrement} Minutes</li>
-                  
+                  <div className="button-container">
                   <Button onClick={() => handleShow(booking._id)}>
                     Assign Therapist
                   </Button>
@@ -107,7 +106,7 @@ function Bookings() {
                       Mark Complete
                     </Button>
                   )}
-
+                    </div>
                   {/* Show modal only for the selected booking */}
                   {selectedBooking === booking._id && (
                     <Modal show onHide={handleClose}>

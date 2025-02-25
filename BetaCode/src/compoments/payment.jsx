@@ -3,17 +3,18 @@ import axios from 'axios';
 import Button from "react-bootstrap/Button"
 import Form from "react-bootstrap/Form";
 import "../index.css"; 
-const Payment = ({price, payModalClose}) => {
+
+const Payment = ({price, payModalClose, name, email, address, zipCode, therapist, eventHours, eventIncrement}) => {
     const [paymentForm, setPaymentForm] = useState(null);
     const cardContainerRef = useRef(null);
     const isInitialized = useRef(false);
-
+    
     useEffect(() => {
         const initializePaymentForm = async () => {
             if (isInitialized.current || !cardContainerRef.current) return;
 
             try {
-                const payments = window.Square.payments(process.env.API_KEY, process.env.Location);
+                const payments = window.Square.payments(import.meta.env.VITE_API_KEY, import.meta.env.VITE_Location);
                 const card = await payments.card(
                    );
                 await card.attach('#card-container'); // Ensure only one form attaches
@@ -53,9 +54,32 @@ const Payment = ({price, payModalClose}) => {
                     currency: 'USD'
                 });
                 console.log('Payment successful:', response.data);
-                alert('Payment successful! You will receive an email confirmation shortly.');
+               
                 // Handle successful payment (e.g., show success message, redirect, etc.)
-                payModalClose();
+                let newBookings = {
+                    name,
+                    email,
+                    address,
+                    zipCode,
+                    therapist,
+                    eventHours,
+                    eventIncrement,
+                };
+            
+                try {
+                    const response = await axios.post("http://localhost:3001/new-booking", newBookings);
+                    console.log("Booking successful:", response.data);
+                } catch (err) {
+                    console.error("HTTP error!", err);
+                    if (err.response) {
+                        alert(`Error making Booking, try refreshing the page.`);
+                        throw new Error(`HTTP error! status: ${err.response.status}`);
+                    } else {
+                        
+                        throw new Error(`Network or server error: ${err.message}`);
+                    }
+                }
+                alert('Payment successful! You will receive an email confirmation shortly.');
             }
         } catch (error) {
             console.error('Payment error:', error.response ? error.response.data : error.message);
@@ -64,6 +88,7 @@ const Payment = ({price, payModalClose}) => {
     };
 
     return (
+        
         <div className="payment-container">
             <h3>Payment</h3>
             <Form onSubmit={handlePaymentSubmit}>
