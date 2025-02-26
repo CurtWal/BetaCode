@@ -1,25 +1,34 @@
 import { useState, useEffect } from "react";
 import "./App.css";
-import { BrowserRouter, Routes, Route, Link, useLocation  } from "react-router-dom";
-import Home from './compoments/Home';
-import Bookings from './compoments/Bookings';
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Link,
+  useLocation,
+} from "react-router-dom";
+import Home from "./compoments/Home";
+import Bookings from "./compoments/Bookings";
+import PrivateRoute from "./compoments/PrivateRoute";
+import Login from "./compoments/Login";
 import Button from "react-bootstrap/Button";
-import Col from "react-bootstrap/Col";
-import Form from "react-bootstrap/Form";
-import InputGroup from "react-bootstrap/InputGroup";
-import Row from "react-bootstrap/Row";
-import axios from 'axios';
-import Modal from "react-bootstrap/Modal";
-
+import Register from "./compoments/Register";
 // import FormData from './compoments/FormData'
 // import TimeTracker from './compoments/TimeTacker'
 // import ReportForm from './compoments/ReportForm'
 // import Sorts from './compoments/Sorts'
 
-function Layout(){ 
-   const location = useLocation();
-   useEffect(() => {
-    // Change background color based on route
+function Layout() {
+  const location = useLocation();
+  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
+
+  const logout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    setIsLoggedIn(false); // Update state after logout
+  };
+
+  useEffect(() => {
     if (location.pathname === "/bookings") {
       document.body.style.backgroundColor = "#060141";
     } else {
@@ -27,35 +36,66 @@ function Layout(){
     }
 
     return () => {
-      // Cleanup to prevent issues when component unmounts
       document.body.style.backgroundColor = "";
     };
-  }, [location.pathname]); 
-  return(
+  }, [location.pathname, isLoggedIn]);
+
+  return (
     <div>
-      <nav >
-        <ul >
+      <nav>
+        <ul>
           <li>
-            <Link to="/" className="!text-white hover:!text-red-500">Home</Link>
+            <Link to="/" className="!text-white hover:!text-red-500">
+              Home
+            </Link>
           </li>
-          <li>
-            <Link to="/bookings" className="!text-white hover:!text-red-500">Bookings</Link>
+          {localStorage.getItem("role") === "admin" &&(
+            <li>
+            <Link to="/bookings" className="!text-white hover:!text-red-500">
+              Bookings
+            </Link>
           </li>
+          )}
+          
+          {!isLoggedIn && (
+            <>
+              <li>
+                <Link to="/register" className="!text-white hover:!text-red-500">
+                  Register
+                </Link>
+              </li>
+              <li>
+                <Link to="/login" className="!text-white hover:!text-red-500">
+                  LogIn
+                </Link>
+              </li>
+            </>
+          )}
+          {isLoggedIn && (
+            <li>
+              <p onClick={logout} className="!text-white hover:!text-red-500 cursor-pointer font-semibold w-15">
+                Logout
+              </p>
+            </li>
+          )}
         </ul>
       </nav>
-    <Routes>
-      
-    <Route path="/" element={<Home/>}/>
-    <Route path="bookings" element={<Bookings />} />
-    </Routes>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<Login onLogin={() => setIsLoggedIn(true)} />} />
+        <Route
+          path="/bookings"
+          element={<PrivateRoute element={<Bookings />} allowedRoles={["admin"]} />}
+        />
+      </Routes>
     </div>
   );
 }
 function App() {
-
   return (
     <BrowserRouter>
-    <Layout/>
+      <Layout />
     </BrowserRouter>
   );
 }
