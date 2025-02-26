@@ -8,6 +8,8 @@ const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 // const paymentRoute = require("./routes/payment");
 const getBookings = require("./routes/getBookings");
+const getUsers = require("./routes/getUser");
+const putUsers = require("./routes/putUsers");
 const postBookings = require("./routes/postBookings");
 const putBookings = require("./routes/putBookings");
 const postPayment = require("./routes/payment");
@@ -30,6 +32,8 @@ app.get("/", (req, res) => {
 
 app.use(authRoutes)
 app.use(getBookings);
+app.use(getUsers);
+app.use(putUsers);
 app.use(postBookings);
 app.use(putBookings);
 app.use(postPayment);

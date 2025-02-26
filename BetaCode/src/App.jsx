@@ -11,6 +11,7 @@ import Home from "./compoments/Home";
 import Bookings from "./compoments/Bookings";
 import PrivateRoute from "./compoments/PrivateRoute";
 import Login from "./compoments/Login";
+import Users from "./compoments/Users";
 import Button from "react-bootstrap/Button";
 import Register from "./compoments/Register";
 // import FormData from './compoments/FormData'
@@ -49,12 +50,28 @@ function Layout() {
               Home
             </Link>
           </li>
-          {localStorage.getItem("role") === "admin" &&(
+          
+          {localStorage.getItem("role") === "admin"&&(
+            <div>
+            <li>
+            <Link to="/bookings" className="!text-white hover:!text-red-500">
+              Bookings
+            </Link>
+          </li><
+            li>
+            <Link to="/users" className="!text-white hover:!text-red-500">
+              Users
+            </Link>
+          </li>
+          </div>
+          )}
+          {localStorage.getItem("role") === "therapist"&&(
             <li>
             <Link to="/bookings" className="!text-white hover:!text-red-500">
               Bookings
             </Link>
           </li>
+        
           )}
           
           {!isLoggedIn && (
@@ -82,12 +99,17 @@ function Layout() {
       </nav>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route
+          path="/users"
+          element={<PrivateRoute element={<Users />} allowedRoles={["admin"]} />}
+        />
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login onLogin={() => setIsLoggedIn(true)} />} />
         <Route
           path="/bookings"
-          element={<PrivateRoute element={<Bookings />} allowedRoles={["admin"]} />}
+          element={<PrivateRoute element={<Bookings />} allowedRoles={["admin", "therapist"]} />}
         />
+        
       </Routes>
     </div>
   );

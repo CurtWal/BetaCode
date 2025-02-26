@@ -10,9 +10,28 @@ function Bookings() {
   const [therapistInputs, setTherapistInputs] = useState({}); // Stores input per booking
 
   const getBookings = async () => {
-    const response = await axios.get("http://localhost:3001/bookings");
-    setBookings(response.data.map((booking) => ({ ...booking })));
-  };
+    try {
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+            console.error("No token found, user is not authenticated.");
+            return;
+        }
+
+        console.log("Token being sent:", token); // Debugging
+
+        const response = await axios.get("http://localhost:3001/bookings", {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        console.log("Response Data:", response.data);
+        setBookings(response.data.map((booking) => ({ ...booking })));
+    } catch (error) {
+        console.error("Error fetching bookings:", error.response?.data || error);
+    }
+};
 
   useEffect(() => {
     getBookings();
@@ -20,16 +39,28 @@ function Bookings() {
 
   const markComplete = async (id) => {
     try {
+      const token = localStorage.getItem("token");
+  
+      if (!token) {
+        console.error("No token found, user is not authenticated.");
+        return;
+      }
+  
       await axios.put(`http://localhost:3001/bookings/${id}`, {
         isComplete: true,
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}` // Ensure "Bearer" is present
+        }
       });
+  
       setBookings(
         bookings.map((booking) =>
           booking._id === id ? { ...booking, isComplete: true } : booking
         )
       );
     } catch (error) {
-      console.error("Error updating booking:", error);
+      console.error("Error updating booking:", error.response?.data || error);
     }
   };
 
