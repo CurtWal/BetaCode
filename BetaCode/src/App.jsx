@@ -14,6 +14,8 @@ import Login from "./compoments/Login";
 import Users from "./compoments/Users";
 import Button from "react-bootstrap/Button";
 import Register from "./compoments/Register";
+import Modal from "react-bootstrap/Modal";
+
 // import FormData from './compoments/FormData'
 // import TimeTracker from './compoments/TimeTacker'
 // import ReportForm from './compoments/ReportForm'
@@ -22,11 +24,24 @@ import Register from "./compoments/Register";
 function Layout() {
   const location = useLocation();
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
+  const [showModal, setShowModal] = useState(false);
 
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
     setIsLoggedIn(false); // Update state after logout
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowModal(true);
+    }, 3000); // Show popup after 3 seconds
+
+    return () => clearTimeout(timer); // Clear timeout if component unmounts
+  }, []);
+
+  const closeModal = () => {
+    setShowModal(false);
   };
 
   useEffect(() => {
@@ -50,34 +65,51 @@ function Layout() {
               Home
             </Link>
           </li>
-          
-          {localStorage.getItem("role") === "admin"&&(
+
+          {localStorage.getItem("role") === "admin" && (
             <div>
-            <li>
-            <Link to="/bookings" className="!text-white hover:!text-red-500">
-              Bookings
-            </Link>
-          </li><
-            li>
-            <Link to="/users" className="!text-white hover:!text-red-500">
-              Users
-            </Link>
-          </li>
-          </div>
+              <li>
+                <Link
+                  to="/bookings"
+                  className="!text-white hover:!text-red-500"
+                >
+                  Bookings
+                </Link>
+              </li>
+              <li>
+                <Link to="/users" className="!text-white hover:!text-red-500">
+                  Users
+                </Link>
+              </li>
+            </div>
           )}
-          {localStorage.getItem("role") === "therapist"&&(
+          {localStorage.getItem("role") === "therapist" && (
             <li>
-            <Link to="/bookings" className="!text-white hover:!text-red-500">
-              Bookings
-            </Link>
-          </li>
-        
+              <Link to="/bookings" className="!text-white hover:!text-red-500">
+                Bookings
+              </Link>
+            </li>
           )}
-          
+
           {!isLoggedIn && (
             <>
+              <Modal show={showModal} onHide={closeModal} animation={false}>
+                <Modal.Body>
+                  <h3 class="!text-black">
+                    Register now to get your first hour for free
+                  </h3>
+                </Modal.Body>
+                <Modal.Footer>
+                  <Button variant="primary" onClick={closeModal}>
+                    close
+                  </Button>
+                </Modal.Footer>
+              </Modal>
               <li>
-                <Link to="/register" className="!text-white hover:!text-red-500">
+                <Link
+                  to="/register"
+                  className="!text-white hover:!text-red-500"
+                >
                   Register
                 </Link>
               </li>
@@ -90,7 +122,10 @@ function Layout() {
           )}
           {isLoggedIn && (
             <li>
-              <p onClick={logout} className="!text-white hover:!text-red-500 cursor-pointer font-semibold w-15">
+              <p
+                onClick={logout}
+                className="!text-white hover:!text-red-500 cursor-pointer font-semibold w-15"
+              >
                 Logout
               </p>
             </li>
@@ -101,15 +136,24 @@ function Layout() {
         <Route path="/" element={<Home />} />
         <Route
           path="/users"
-          element={<PrivateRoute element={<Users />} allowedRoles={["admin"]} />}
+          element={
+            <PrivateRoute element={<Users />} allowedRoles={["admin"]} />
+          }
         />
         <Route path="/register" element={<Register />} />
-        <Route path="/login" element={<Login onLogin={() => setIsLoggedIn(true)} />} />
+        <Route
+          path="/login"
+          element={<Login onLogin={() => setIsLoggedIn(true)} />}
+        />
         <Route
           path="/bookings"
-          element={<PrivateRoute element={<Bookings />} allowedRoles={["admin", "therapist"]} />}
+          element={
+            <PrivateRoute
+              element={<Bookings />}
+              allowedRoles={["admin", "therapist"]}
+            />
+          }
         />
-        
       </Routes>
     </div>
   );

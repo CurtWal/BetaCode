@@ -16,8 +16,16 @@ const UserSchema = new mongoose.Schema({
     },
     role:{
         type: String,
-        enum: ['admin', 'user', "therapist"],
+        enum: ['admin', 'user', "therapist", "special"],
         default: 'user'
+    },
+    points:{
+        type: Number,
+        default: 0
+    },
+    freehour:{
+        type: Number,
+        default: 1
     }
 });
 

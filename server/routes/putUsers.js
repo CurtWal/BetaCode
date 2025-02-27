@@ -9,7 +9,7 @@ router.put("/users/:id", verifyToken, checkRole(["admin"]), async (req, res) => 
     const { role } = req.body;
 
     // Ensure a valid role is provided
-    if (!["admin", "user", "therapist"].includes(role)) {
+    if (!["admin", "user", "therapist", "special"].includes(role)) {
         return res.status(400).json({ message: "Invalid role provided." });
     }
 

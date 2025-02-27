@@ -8,7 +8,8 @@ const Payment = ({price, payModalClose, name, email, address, zipCode, therapist
     const [paymentForm, setPaymentForm] = useState(null);
     const cardContainerRef = useRef(null);
     const isInitialized = useRef(false);
-    
+    const [currentUser, setCurrentUser] = useState(null);
+
     useEffect(() => {
         const initializePaymentForm = async () => {
             if (isInitialized.current || !cardContainerRef.current) return;
@@ -37,6 +38,31 @@ const Payment = ({price, payModalClose, name, email, address, zipCode, therapist
         };
     }, []);
 
+    useEffect(() => {
+        getCurrentUser();
+        
+    }, []);
+    
+    const getCurrentUser = async () => {
+        try {
+            const token = localStorage.getItem("token");
+    
+            if (!token) {
+                console.warn("No token found. User might not be logged in.");
+                return;
+            }
+    
+            const response = await axios.get("http://localhost:3001/users/me", {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+    
+            setCurrentUser(response.data);
+            console.log("Current User:", response.data);
+        } catch (error) {
+            console.error("Error fetching current user:", error.response?.data || error);
+        }
+    };
+
     const handlePaymentSubmit = async (event) => {
         event.preventDefault();
 
@@ -50,11 +76,12 @@ const Payment = ({price, payModalClose, name, email, address, zipCode, therapist
             if (result.status === 'OK') {
                 const response = await axios.post('http://localhost:3001/create-payment', {
                     sourceId: result.token,
+                    userId: currentUser ? currentUser._id : null,
                     amount: price, // Amount in cents
                     currency: 'USD'
                 });
                 console.log('Payment successful:', response.data);
-               
+               console.log(currentUser._id)
                 // Handle successful payment (e.g., show success message, redirect, etc.)
                 let newBookings = {
                     name,

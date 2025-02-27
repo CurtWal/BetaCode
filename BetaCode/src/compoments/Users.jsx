@@ -58,9 +58,12 @@ function Users() {
                                 >
                                     <option value="user">User</option>
                                     <option value="therapist">Therapist</option>
+                                    <option value="special">Special</option>
                                     <option value="admin">Admin</option>
                                 </select>
                             </p>
+                            <p>Points: {user.points}</p>
+                            <p>FreeHour: {user.freehour}</p>
                         </div>
                     </li>
                 ))}
