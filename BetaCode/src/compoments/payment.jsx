@@ -80,8 +80,11 @@ const Payment = ({price, payModalClose, name, email, address, zipCode, therapist
                     amount: price, // Amount in cents
                     currency: 'USD'
                 });
+                alert('Payment successful! You will receive an email confirmation shortly.');
                 console.log('Payment successful:', response.data);
-               console.log(currentUser._id)
+                console.log(currentUser._id)
+               
+                
                 // Handle successful payment (e.g., show success message, redirect, etc.)
                 let newBookings = {
                     name,
@@ -106,7 +109,7 @@ const Payment = ({price, payModalClose, name, email, address, zipCode, therapist
                         throw new Error(`Network or server error: ${err.message}`);
                     }
                 }
-                alert('Payment successful! You will receive an email confirmation shortly.');
+                
             }
         } catch (error) {
             console.error('Payment error:', error.response ? error.response.data : error.message);

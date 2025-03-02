@@ -15,7 +15,8 @@ import Users from "./compoments/Users";
 import Button from "react-bootstrap/Button";
 import Register from "./compoments/Register";
 import Modal from "react-bootstrap/Modal";
-
+import SpecialForm
+ from "./compoments/SpecialForm";
 // import FormData from './compoments/FormData'
 // import TimeTracker from './compoments/TimeTacker'
 // import ReportForm from './compoments/ReportForm'
@@ -154,6 +155,7 @@ function Layout() {
             />
           }
         />
+        <Route path="/special-form" element={<SpecialForm/>}/>
       </Routes>
     </div>
   );
