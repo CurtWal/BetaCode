@@ -143,8 +143,9 @@ function Home() {
                 </div>
               </div>
 
-              <div>
+              <div className="table-container">
                 <h2 class="flex justify-center">Package Examples</h2>
+                <div>
                 <table className="w-full border-collapse text-white mt-4">
                   <thead>
                     <tr className="text-lg font-bold">
@@ -176,6 +177,7 @@ function Home() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             </Modal.Body>
           </Modal>
@@ -183,7 +185,7 @@ function Home() {
         <div className="FormInput">
           <Form noValidate validated={validated} onSubmit={postBookings}>
             <Row className="mb-3">
-              <Form.Group as={Col} md="4" controlId="validationCustom01">
+              <Form.Group as={Col} xs={12} md={4} controlId="validationCustom01">
                 <Form.Label>Name</Form.Label>
                 <Form.Control
                   required
@@ -196,7 +198,7 @@ function Home() {
                 </Form.Control.Feedback>
                 <Form.Control.Feedback>Looks good!</Form.Control.Feedback>
               </Form.Group>
-              <Form.Group as={Col} md="4" controlId="validationCustom02">
+              <Form.Group as={Col} xs={12} md={4} controlId="validationCustom02">
                 <Form.Label>Email</Form.Label>
                 <Form.Control
                   required
@@ -209,7 +211,7 @@ function Home() {
                 </Form.Control.Feedback>
                 <Form.Control.Feedback>Looks good!</Form.Control.Feedback>
               </Form.Group>
-              <Form.Group as={Col} md="4" controlId="validationCustom03">
+              <Form.Group as={Col} xs={12} md={4} controlId="validationCustom03">
                 <Form.Label>Address</Form.Label>
                 <Form.Control
                   required
@@ -224,7 +226,7 @@ function Home() {
               </Form.Group>
             </Row>
             <Row className="mb-3">
-              <Form.Group as={Col} md="3" controlId="validationCustom04">
+              <Form.Group as={Col} xs={12} md={4} controlId="validationCustom04">
                 <Form.Label>ZipCode</Form.Label>
                 <Form.Control
                   type="text"
@@ -236,7 +238,7 @@ function Home() {
                   Please provide a valid ZipCode.
                 </Form.Control.Feedback>
               </Form.Group>
-              <Form.Group as={Col} md="5" controlId="validationCustom05">
+              <Form.Group as={Col} xs={12} md={4} controlId="validationCustom05">
                 <Form.Label># of Therapist</Form.Label>
                 <Form.Control
                   type="number"
@@ -249,7 +251,7 @@ function Home() {
                   Please provide a valid Therapist Number.
                 </Form.Control.Feedback>
               </Form.Group>
-              <Form.Group as={Col} controlId="validationCustom06">
+              <Form.Group as={Col} xs={12} md={4} controlId="validationCustom06">
                 <Form.Label>Event Hours</Form.Label>
                 <Form.Select
                   onChange={(e) => setEventHours(e.target.value)}
@@ -263,7 +265,7 @@ function Home() {
               </Form.Group>
             </Row>
             <Row className="mb-3">
-              <Form.Group md="4" as={Col} controlId="validationCustom07">
+              <Form.Group xs={12} md={4} as={Col} controlId="validationCustom07">
                 <Form.Label>Massage Increments</Form.Label>
                 <Form.Select
                   onChange={(e) => setEventIncrement(e.target.value)}

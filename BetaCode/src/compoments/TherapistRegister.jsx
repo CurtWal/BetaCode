@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../Register.css";
+import Logo from "../assets/MOTG_Revised_Logo.png";
 
 function TherapistRegister() {
-  const [name, setName] = useState("");
+  const [username, setUserName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("therapist"); // Default role is "user"
@@ -11,10 +12,14 @@ function TherapistRegister() {
   const navigate = useNavigate();
 
   const handleRegister = async () => {
-    const res = await fetch("http://localhost:3001/register", {
+    if (!username || !email || !password || !licenseId) {
+      alert("Please fill in all fields before registering.");
+      return; // Stop function execution if fields are empty
+    }
+    const res = await fetch("http://localhost:3001/therapistregister", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, email, password, role }),
+      body: JSON.stringify({ username, email, password, role, licenseId }),
     });
 
     const data = await res.json();
@@ -26,36 +31,39 @@ function TherapistRegister() {
     }
   };
   return (
-    <div
-      style={{
-        maxWidth: "400px",
-        margin: "auto",
-        padding: "20px",
-        textAlign: "center",
-        backgroundColor: "white",
-      }}
-    >
-      <h2>Register</h2>
-      <input
-        type="text"
-        placeholder="Username"
-        value={name}
-        onChange={(e) => setUsername(e.target.value)}
-      />
-      <input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
-
-      <button onClick={handleRegister}>Register</button>
+    <div className="container">
+      <div className="form-section">
+        <div>
+          <img src={Logo} />
+          <p>Looking to sign up as a Therapist. Fill out the form below</p>
+        </div>
+        <h2>Therapist Register</h2>
+        <input
+          type="text"
+          placeholder="Name"
+          value={username}
+          onChange={(e) => setUserName(e.target.value)}
+        />
+        <input
+          type="text"
+          placeholder="License ID"
+          value={licenseId}
+          onChange={(e) => setLicenseId(e.target.value)}
+        />
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <button onClick={handleRegister}>Register</button>
+      </div>
     </div>
   );
 }

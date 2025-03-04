@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "../Register.css"
+import "../Register.css";
+import Logo from "../assets/MOTG_Revised_Logo.png";
+
 const Register = () => {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -9,6 +11,10 @@ const Register = () => {
   const navigate = useNavigate();
 
   const handleRegister = async () => {
+    if (!username || !email || !password) {
+      alert("Please fill in all fields before registering.");
+      return; // Stop function execution if fields are empty
+    }
     const res = await fetch("http://localhost:3001/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -25,13 +31,35 @@ const Register = () => {
   };
 
   return (
-    <div style={{ maxWidth: "400px", margin: "auto", padding: "20px", textAlign: "center", backgroundColor:"white" }}>
-      <h2>Register</h2>
-      <input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} />
-      <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-      <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
+    <div className="container">
+      <div className="form-section">
+        <img src={Logo} />
 
-      <button onClick={handleRegister}>Register</button>
+        <h2>Register</h2>
+        <input
+          type="text"
+          placeholder="Name"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          required
+        />
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+
+        <button onClick={handleRegister}>Register</button>
+      </div>
     </div>
   );
 };

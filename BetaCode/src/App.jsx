@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import "./App.css";
+import "./index.css"
 import {
   BrowserRouter,
   Routes,
@@ -15,8 +16,8 @@ import Users from "./compoments/Users";
 import Button from "react-bootstrap/Button";
 import Register from "./compoments/Register";
 import Modal from "react-bootstrap/Modal";
-import SpecialForm
- from "./compoments/SpecialForm";
+import SpecialForm from "./compoments/SpecialForm";
+import TherapistRegister from "./compoments/TherapistRegister";
 // import FormData from './compoments/FormData'
 // import TimeTracker from './compoments/TimeTacker'
 // import ReportForm from './compoments/ReportForm'
@@ -30,6 +31,8 @@ function Layout() {
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("username");
     setIsLoggedIn(false); // Update state after logout
   };
 
@@ -48,6 +51,7 @@ function Layout() {
   useEffect(() => {
     if (location.pathname === "/bookings") {
       document.body.style.backgroundColor = "#060141";
+
     } else {
       document.body.style.backgroundColor = "#1470AF";
     }
@@ -115,10 +119,19 @@ function Layout() {
                 </Link>
               </li>
               <li>
+                <Link
+                  to="/therapistregister"
+                  className="!text-white hover:!text-red-500"
+                >
+                  Therapist Register
+                </Link>
+              </li>
+              <li>
                 <Link to="/login" className="!text-white hover:!text-red-500">
                   LogIn
                 </Link>
               </li>
+              
             </>
           )}
           {isLoggedIn && (
@@ -155,7 +168,8 @@ function Layout() {
             />
           }
         />
-        <Route path="/special-form" element={<SpecialForm/>}/>
+        <Route path="/special-form" element={<SpecialForm />} />
+        <Route path="/therapistregister" element={<TherapistRegister />} />
       </Routes>
     </div>
   );

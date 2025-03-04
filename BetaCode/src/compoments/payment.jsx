@@ -110,6 +110,7 @@ const Payment = ({price, payModalClose, name, email, address, zipCode, therapist
                     }
                 }
                 
+                payModalClose(false);
             }
         } catch (error) {
             console.error('Payment error:', error.response ? error.response.data : error.message);

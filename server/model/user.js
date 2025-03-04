@@ -19,6 +19,10 @@ const UserSchema = new mongoose.Schema({
         enum: ['admin', 'user', "therapist", "special"],
         default: 'user'
     },
+    licenseId:{
+        type: String,
+        default: ''
+    },
     points:{
         type: Number,
         default: 0
@@ -29,4 +33,4 @@ const UserSchema = new mongoose.Schema({
     }
 });
 
-module.exports = mongoose.model('User', UserSchema);
+module.exports = mongoose.model('Users', UserSchema);

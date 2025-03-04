@@ -14,6 +14,7 @@ const postBookings = require("./routes/postBookings");
 const putBookings = require("./routes/putBookings");
 const postPayment = require("./routes/payment");
 const authRoutes = require("./routes/authRoutes");
+const getAssignment = require("./routes/getAssignment");
 const PORT = process.env.PORT || 3003;
 const app = express();
 
@@ -37,5 +38,6 @@ app.use(putUsers);
 app.use(postBookings);
 app.use(putBookings);
 app.use(postPayment);
+app.use(getAssignment)
 // app.use('/api', paymentRoute);
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
