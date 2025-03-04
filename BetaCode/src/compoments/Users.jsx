@@ -10,7 +10,7 @@ function Users() {
 
   const getUsers = async () => {
     try {
-      const response = await axios.get("http://localhost:3001/users");
+      const response = await axios.get(`${import.meta.env.VITE_VERCEL}users`);
       setUsers(response.data);
     } catch (error) {
       console.error("Error fetching users:", error.response?.data || error);
@@ -27,14 +27,13 @@ function Users() {
       }
 
       const response = await axios.put(
-        `http://localhost:3001/users/${userId}`,
+        `${import.meta.env.VITE_VERCEL}users/${userId}`,
         { role: newRole },
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
 
-      console.log("User role updated:", response.data);
       getUsers(); // Refresh users list
     } catch (error) {
       console.error("Error updating user role:", error.response?.data || error);

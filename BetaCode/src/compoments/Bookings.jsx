@@ -17,33 +17,15 @@ function Bookings() {
         console.error("No token found, user is not authenticated.");
         return;
       }
-
-      //console.log("Token being sent:", token); // Debugging
-      const response = await axios.get("http://localhost:3001/bookings", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }); 
-      //console.log("Hello",response.data);
-
-      // const therapistResponse = await axios.get(
-      //   "http://localhost:3001/therapist-assignments",
-      //   {
-      //     headers: { Authorization: `Bearer ${token}` },
-      //   }
-      // );
-
-      // const therapistAssignments = therapistResponse.data;
-      // console.log("Therapist Assignments:", therapistResponse.data); // Merge bookings with their assigned therapists
-      // const bookingsWithTherapists = response.data.map((booking) => ({
-      //   ...booking,
-      //   assignedTherapists: therapistAssignments
-      //     .filter((ta) => String(ta.bookingId) === String(booking._id)) // 👈 Compare as Strings
-      //     .map((ta) => ta.therapistId), // 👈 `therapistId` should now contain full user data
-      // }));
-
+      const response = await axios.get(
+        `${import.meta.env.VITE_VERCEL}bookings`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       setBookings(response.data);
-      //console.log("Bookings with Therapists:", bookingsWithTherapists);
     } catch (error) {
       console.error("Error fetching bookings:", error.response?.data || error);
     }
@@ -60,7 +42,7 @@ function Bookings() {
       const therapistId = localStorage.getItem("userId"); // Assuming therapist's ID is stored
 
       const response = await axios.post(
-        "http://localhost:3001/assign-therapist",
+        `${import.meta.env.VITE_VERCEL}assign-therapist`,
         { bookingId, therapistId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -87,7 +69,7 @@ function Bookings() {
       }
 
       await axios.put(
-        `http://localhost:3001/bookings/${id}`,
+        `${import.meta.env.VITE_VERCEL}bookings/${id}`,
         {
           isComplete: true,
         },

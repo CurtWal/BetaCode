@@ -11,75 +11,75 @@ import Payment from "./payment";
 import Logo from "../assets/MOTG_Revised_Logo.png";
 
 function SpecialForm() {
-    const [name, setName] = useState("");
-      const [email, setEmail] = useState("");
-      const [address, setAddress] = useState("");
-      const [zipCode, setZipCode] = useState("");
-      const [therapist, setTherapist] = useState(1);
-      const [eventHours, setEventHours] = useState(2);
-      const [eventIncrement, setEventIncrement] = useState(10);
-      const [price, setPrice] = useState(90);
-      const [validated, setValidated] = useState(false);
-    
-      const [show, setShow] = useState(false);
-      const [payModal, setPayModal] = useState(false);
-    
-      const handleClose = () => setShow(false);
-      const handleShow = () => setShow(true);
-      const payModalClose = () => setPayModal(false);
-    
-      const data = [
-        {
-          therapists: "1 Therapist",
-          duration: "1 Hour",
-          massages: "6 Clients",
-          cost: "$90",
-        },
-        {
-          therapists: "1 Therapist",
-          duration: "2 Hour",
-          massages: "12 Clients",
-          cost: "$180",
-        },
-        {
-          therapists: "2 Therapist",
-          duration: "1 Hour",
-          massages: "12 Clients",
-          cost: "$180",
-        },
-        {
-          therapists: "2 Therapist",
-          duration: "2 Hour",
-          massages: "24 Clients",
-          cost: "$360",
-        },
-        {
-          therapists: "3 Therapist",
-          duration: "1 Hour",
-          massages: "18 Clients",
-          cost: "$270",
-        },
-      ];
-    
-      const postBookings = async (e) => {
-        const form = e.currentTarget;
-        if (form.checkValidity() === false) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-    
-        setValidated(true);
-        e.preventDefault();
-        if(form.checkValidity() === true){
-           setPayModal(true)
-        }
-      };
-    
-      useEffect(() => {
-        setPrice(therapist * 90 * eventHours);
-      }, [therapist, eventHours]);
-    return ( 
-        <div className="Grid-Container">
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [address, setAddress] = useState("");
+  const [zipCode, setZipCode] = useState("");
+  const [therapist, setTherapist] = useState(1);
+  const [eventHours, setEventHours] = useState(2);
+  const [eventIncrement, setEventIncrement] = useState(10);
+  const [price, setPrice] = useState(90);
+  const [validated, setValidated] = useState(false);
+
+  const [show, setShow] = useState(false);
+  const [payModal, setPayModal] = useState(false);
+
+  const handleClose = () => setShow(false);
+  const handleShow = () => setShow(true);
+  const payModalClose = () => setPayModal(false);
+
+  const data = [
+    {
+      therapists: "1 Therapist",
+      duration: "1 Hour",
+      massages: "6 Clients",
+      cost: "$90",
+    },
+    {
+      therapists: "1 Therapist",
+      duration: "2 Hour",
+      massages: "12 Clients",
+      cost: "$180",
+    },
+    {
+      therapists: "2 Therapist",
+      duration: "1 Hour",
+      massages: "12 Clients",
+      cost: "$180",
+    },
+    {
+      therapists: "2 Therapist",
+      duration: "2 Hour",
+      massages: "24 Clients",
+      cost: "$360",
+    },
+    {
+      therapists: "3 Therapist",
+      duration: "1 Hour",
+      massages: "18 Clients",
+      cost: "$270",
+    },
+  ];
+
+  const postBookings = async (e) => {
+    const form = e.currentTarget;
+    if (form.checkValidity() === false) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    setValidated(true);
+    e.preventDefault();
+    if (form.checkValidity() === true) {
+      setPayModal(true);
+    }
+  };
+
+  useEffect(() => {
+    setPrice(therapist * 90 * eventHours);
+  }, [therapist, eventHours]);
+  return (
+    <div className="Grid-Container">
       <img src={Logo} alt="MOTG Logo" className="Main_Img" />
       <div className="Container">
         <div className="Text-Info">
@@ -146,37 +146,37 @@ function SpecialForm() {
               <div>
                 <h2 class="flex justify-center">Package Examples</h2>
                 <div className="table-container">
-                <table className="w-full border-collapse text-white mt-4">
-                  <thead>
-                    <tr className="text-lg font-bold">
-                      <th className="p-4 bg-indigo-700 rounded-tl-xl">
-                        NUMBER OF THERAPIST
-                      </th>
-                      <th className="p-4 bg-blue-700">DURATION</th>
-                      <th className="p-4 bg-blue-600">TOTAL MASSAGES</th>
-                      <th className="p-4 bg-cyan-400 rounded-tr-xl">
-                        Total Cost
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.map((row, index) => (
-                      <tr
-                        key={index}
-                        className={`text-center text-lg transition hover:bg-gray-700 ${
-                          index % 2 === 0 ? "bg-gray-600" : "bg-gray-700"
-                        }`}
-                      >
-                        <td className="p-4">{row.therapists}</td>
-                        <td className="p-4">{row.duration}</td>
-                        <td className="p-4">{row.massages}</td>
-                        <td className="p-4 font-semibold text-lg bg-cyan-500 ">
-                          {row.cost}
-                        </td>
+                  <table className="w-full border-collapse text-white mt-4">
+                    <thead>
+                      <tr className="text-lg font-bold">
+                        <th className="p-4 bg-indigo-700 rounded-tl-xl">
+                          NUMBER OF THERAPIST
+                        </th>
+                        <th className="p-4 bg-blue-700">DURATION</th>
+                        <th className="p-4 bg-blue-600">TOTAL MASSAGES</th>
+                        <th className="p-4 bg-cyan-400 rounded-tr-xl">
+                          Total Cost
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {data.map((row, index) => (
+                        <tr
+                          key={index}
+                          className={`text-center text-lg transition hover:bg-gray-700 ${
+                            index % 2 === 0 ? "bg-gray-600" : "bg-gray-700"
+                          }`}
+                        >
+                          <td className="p-4">{row.therapists}</td>
+                          <td className="p-4">{row.duration}</td>
+                          <td className="p-4">{row.massages}</td>
+                          <td className="p-4 font-semibold text-lg bg-cyan-500 ">
+                            {row.cost}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </Modal.Body>
@@ -185,7 +185,12 @@ function SpecialForm() {
         <div className="FormInput">
           <Form noValidate validated={validated} onSubmit={postBookings}>
             <Row className="mb-3">
-              <Form.Group as={Col} xs={12} md={4} controlId="validationCustom01">
+              <Form.Group
+                as={Col}
+                xs={12}
+                md={4}
+                controlId="validationCustom01"
+              >
                 <Form.Label>Name</Form.Label>
                 <Form.Control
                   required
@@ -198,7 +203,12 @@ function SpecialForm() {
                 </Form.Control.Feedback>
                 <Form.Control.Feedback>Looks good!</Form.Control.Feedback>
               </Form.Group>
-              <Form.Group as={Col} xs={12} md={4} controlId="validationCustom02">
+              <Form.Group
+                as={Col}
+                xs={12}
+                md={4}
+                controlId="validationCustom02"
+              >
                 <Form.Label>Email</Form.Label>
                 <Form.Control
                   required
@@ -211,7 +221,12 @@ function SpecialForm() {
                 </Form.Control.Feedback>
                 <Form.Control.Feedback>Looks good!</Form.Control.Feedback>
               </Form.Group>
-              <Form.Group as={Col} xs={12} md={4} controlId="validationCustom03">
+              <Form.Group
+                as={Col}
+                xs={12}
+                md={4}
+                controlId="validationCustom03"
+              >
                 <Form.Label>Address</Form.Label>
                 <Form.Control
                   required
@@ -226,7 +241,12 @@ function SpecialForm() {
               </Form.Group>
             </Row>
             <Row className="mb-3">
-              <Form.Group as={Col} xs={12} md={4} controlId="validationCustom04">
+              <Form.Group
+                as={Col}
+                xs={12}
+                md={4}
+                controlId="validationCustom04"
+              >
                 <Form.Label>ZipCode</Form.Label>
                 <Form.Control
                   type="text"
@@ -238,7 +258,12 @@ function SpecialForm() {
                   Please provide a valid ZipCode.
                 </Form.Control.Feedback>
               </Form.Group>
-              <Form.Group as={Col} xs={12} md={4} controlId="validationCustom05">
+              <Form.Group
+                as={Col}
+                xs={12}
+                md={4}
+                controlId="validationCustom05"
+              >
                 <Form.Label># of Therapist</Form.Label>
                 <Form.Control
                   type="number"
@@ -251,7 +276,12 @@ function SpecialForm() {
                   Please provide a valid Therapist Number.
                 </Form.Control.Feedback>
               </Form.Group>
-              <Form.Group as={Col} xs={12} md={4} controlId="validationCustom06">
+              <Form.Group
+                as={Col}
+                xs={12}
+                md={4}
+                controlId="validationCustom06"
+              >
                 <Form.Label>Event Hours</Form.Label>
                 <Form.Select
                   onChange={(e) => setEventHours(e.target.value)}
@@ -265,7 +295,12 @@ function SpecialForm() {
               </Form.Group>
             </Row>
             <Row className="mb-3">
-              <Form.Group xs={12} md={4} as={Col} controlId="validationCustom07">
+              <Form.Group
+                xs={12}
+                md={4}
+                as={Col}
+                controlId="validationCustom07"
+              >
                 <Form.Label>Massage Increments</Form.Label>
                 <Form.Select
                   onChange={(e) => setEventIncrement(e.target.value)}
@@ -318,7 +353,7 @@ function SpecialForm() {
         </div>
       </div>
     </div>
-     );
+  );
 }
 
 export default SpecialForm;

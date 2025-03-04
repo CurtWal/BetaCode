@@ -11,7 +11,7 @@ function Login({ onLogin }) {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    const res = await fetch("http://localhost:3001/login", {
+    const res = await fetch(`${import.meta.env.VITE_VERCEL}login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -21,7 +21,7 @@ function Login({ onLogin }) {
     });
 
     const data = await res.json();
-    //console.log(data);
+
     if (data.token) {
       localStorage.setItem("token", data.token);
       localStorage.setItem("role", data.role);
@@ -32,7 +32,7 @@ function Login({ onLogin }) {
       navigate("/");
     } else {
       alert(data.error || "LogIn failed");
-      console.log(data.message);
+
     }
   };
 

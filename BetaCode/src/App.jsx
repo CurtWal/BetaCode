@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import "./App.css";
-import "./index.css"
+import "./index.css";
 import {
   BrowserRouter,
   Routes,
@@ -18,10 +18,6 @@ import Register from "./compoments/Register";
 import Modal from "react-bootstrap/Modal";
 import SpecialForm from "./compoments/SpecialForm";
 import TherapistRegister from "./compoments/TherapistRegister";
-// import FormData from './compoments/FormData'
-// import TimeTracker from './compoments/TimeTacker'
-// import ReportForm from './compoments/ReportForm'
-// import Sorts from './compoments/Sorts'
 
 function Layout() {
   const location = useLocation();
@@ -51,7 +47,6 @@ function Layout() {
   useEffect(() => {
     if (location.pathname === "/bookings") {
       document.body.style.backgroundColor = "#060141";
-
     } else {
       document.body.style.backgroundColor = "#1470AF";
     }
@@ -131,7 +126,6 @@ function Layout() {
                   LogIn
                 </Link>
               </li>
-              
             </>
           )}
           {isLoggedIn && (
