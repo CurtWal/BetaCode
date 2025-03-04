@@ -80,7 +80,7 @@ const Payment = ({price, payModalClose, name, email, address, zipCode, therapist
                     amount: price, // Amount in cents
                     currency: 'USD'
                 });
-                alert('Payment successful! You will receive an email confirmation shortly.');
+                alert('Payment successful!');
                 console.log('Payment successful:', response.data);
                 console.log(currentUser._id)
                

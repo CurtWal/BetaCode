@@ -15,7 +15,7 @@ if (!accessToken) {
 
 const client = new Client({
     accessToken: accessToken,
-    environment: Environment.Sandbox // Use Environment.Production for live transactions
+    environment: Environment.Production // Use Environment.Production for live transactions
 });
 
 router.post('/create-payment', async (req, res) => {
