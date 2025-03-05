@@ -22,7 +22,7 @@ router.post('/create-payment', async (req, res) => {
     console.log('Received payment request:', req.body);
     const { sourceId, amount, currency, userId } = req.body;
 
-    let finalAmount = amount * 100;
+    let finalAmount = amount;
     let discountApplied = false;
     let user = null;
 
