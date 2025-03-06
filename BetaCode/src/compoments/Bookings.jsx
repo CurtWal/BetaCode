@@ -41,13 +41,31 @@ function Bookings() {
 
       const therapistId = localStorage.getItem("userId"); // Assuming therapist's ID is stored
 
+      // First, join the booking by assigning the therapist
       const response = await axios.post(
-        `${import.meta.env.VITE_VERCEL}assign-therapist`,
+        `${import.meta.env.VITE_VERCEL2}assign-therapist`,
         { bookingId, therapistId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      console.log("Booking joined successfully:", response.data);
+      // After joining, we need to check if all spots are filled
+      const bookingResponse = await axios.get(
+        `${import.meta.env.VITE_VERCEL2}bookings/${bookingId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const booking = bookingResponse.data;
+      const assignedCount = booking.assignedTherapists.length;
+      const remainingSpots = booking.therapist - assignedCount;
+
+      // If spots are filled, send email to the client
+      if (remainingSpots === 0) {
+        await axios.post(
+          `${import.meta.env.VITE_VERCEL2}send-email-on-spot-fill`,
+          { bookingId },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      }
 
       // Refresh bookings to reflect the change
       getBookings();
@@ -57,7 +75,7 @@ function Bookings() {
   };
   useEffect(() => {
     getBookings();
-  }, []);
+  }, [joinBooking]);
 
   const markComplete = async (id) => {
     try {
@@ -69,7 +87,7 @@ function Bookings() {
       }
 
       await axios.put(
-        `${import.meta.env.VITE_VERCEL}bookings/${id}`,
+        `${import.meta.env.VITE_VERCEL2}bookings/${id}`,
         {
           isComplete: true,
         },
@@ -105,26 +123,6 @@ function Bookings() {
 
   const handleClose = () => {
     setSelectedBooking(null);
-  };
-
-  const handleInputChange = (e, bookingId) => {
-    const { name, value } = e.target;
-    setTherapistInputs((prev) => ({
-      ...prev,
-      [bookingId]: {
-        ...prev[bookingId],
-        [name]: value,
-      },
-    }));
-  };
-
-  const handleSend = () => {
-    console.log(
-      "Sent Data for Booking ID:",
-      selectedBooking,
-      therapistInputs[selectedBooking]
-    );
-    handleClose();
   };
 
   return (
@@ -201,9 +199,6 @@ function Bookings() {
                             Join Booking
                           </Button>
                         )}
-                        <Button variant="primary" onClick={handleSend}>
-                          Assign Therapist
-                        </Button>
                       </Modal.Footer>
                     </Modal>
                   )}

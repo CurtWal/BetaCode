@@ -10,7 +10,7 @@ function Users() {
 
   const getUsers = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_VERCEL}users`);
+      const response = await axios.get(`${import.meta.env.VITE_VERCEL2}users`);
       setUsers(response.data);
     } catch (error) {
       console.error("Error fetching users:", error.response?.data || error);
@@ -27,7 +27,7 @@ function Users() {
       }
 
       const response = await axios.put(
-        `${import.meta.env.VITE_VERCEL}users/${userId}`,
+        `${import.meta.env.VITE_VERCEL2}users/${userId}`,
         { role: newRole },
         {
           headers: { Authorization: `Bearer ${token}` },

@@ -15,7 +15,7 @@ const Register = () => {
       alert("Please fill in all fields before registering.");
       return; // Stop function execution if fields are empty
     }
-    const res = await fetch(`${import.meta.env.VITE_VERCEL}register`, {
+    const res = await fetch(`${import.meta.env.VITE_VERCEL2}register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, email, password, role }),

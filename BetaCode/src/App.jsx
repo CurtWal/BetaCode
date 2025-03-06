@@ -18,6 +18,7 @@ import Register from "./compoments/Register";
 import Modal from "react-bootstrap/Modal";
 import SpecialForm from "./compoments/SpecialForm";
 import TherapistRegister from "./compoments/TherapistRegister";
+import ConfirmBooking from "./compoments/ConfirmBooking";
 
 function Layout() {
   const location = useLocation();
@@ -164,6 +165,7 @@ function Layout() {
         />
         <Route path="/special-form" element={<SpecialForm />} />
         <Route path="/therapistregister" element={<TherapistRegister />} />
+        <Route path="/confirm-booking/:id" element={<ConfirmBooking />} />
       </Routes>
     </div>
   );

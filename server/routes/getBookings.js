@@ -32,4 +32,28 @@ router.get('/bookings', verifyToken, checkRole(["admin", "therapist"]), async (r
   }
 });
 
+router.get("/bookings/:id", async (req, res) => {
+  try {
+      const { id } = req.params;
+      // Find the booking
+      const bookings = await booking.findById(id).lean();
+      if (!bookings) {
+          return res.status(404).json({ message: "Booking not found" });
+      }
+
+      // Find assigned therapists
+      const therapistAssignments = await TherapistAssignment.find({ bookingId: id })
+          .populate("therapistId", "username email") // Get therapist details
+          .lean();
+
+      // Extract therapist details
+      const assignedTherapists = therapistAssignments.map(assign => assign.therapistId);
+
+      res.json({ ...bookings, assignedTherapists }); 
+  } catch (error) {
+      console.error("Error fetching booking:", error);
+      res.status(500).json({ message: "Server error" });
+  }
+});
+
 module.exports = router;
