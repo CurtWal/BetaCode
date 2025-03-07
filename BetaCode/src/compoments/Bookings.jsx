@@ -8,11 +8,10 @@ function Bookings() {
   const [showCompleted, setShowCompleted] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [therapistInputs, setTherapistInputs] = useState({}); // Stores input per booking
-
+  const [isFull, setIsFull] = useState(false);
   const getBookings = async () => {
     try {
       const token = localStorage.getItem("token");
-
       if (!token) {
         console.error("No token found, user is not authenticated.");
         return;
@@ -20,12 +19,16 @@ function Bookings() {
       const response = await axios.get(
         `${import.meta.env.VITE_VERCEL}bookings`,
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
-      setBookings(response.data);
+
+      // Only update if data is different
+      setBookings((prevBookings) =>
+        JSON.stringify(prevBookings) === JSON.stringify(response.data)
+          ? prevBookings
+          : response.data
+      );
     } catch (error) {
       console.error("Error fetching bookings:", error.response?.data || error);
     }
@@ -39,18 +42,34 @@ function Bookings() {
         return;
       }
 
-      const therapistId = localStorage.getItem("userId"); // Assuming therapist's ID is stored
+      const therapistId = localStorage.getItem("userId");
+      const therapistName = localStorage.getItem("username");
 
-      // First, join the booking by assigning the therapist
-      const response = await axios.post(
-        `${import.meta.env.VITE_VERCEL2}assign-therapist`,
+      // **Update UI instantly**
+      setBookings((prevBookings) =>
+        prevBookings.map((booking) =>
+          booking._id === bookingId
+            ? {
+                ...booking,
+                assignedTherapists: [
+                  ...(booking.assignedTherapists || []),
+                  { _id: therapistId, username: therapistName },
+                ],
+              }
+            : booking
+        )
+      );
+
+      // **Send API request to assign therapist**
+      await axios.post(
+        `${import.meta.env.VITE_VERCEL}assign-therapist`,
         { bookingId, therapistId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // After joining, we need to check if all spots are filled
+      // **Check if all spots are filled**
       const bookingResponse = await axios.get(
-        `${import.meta.env.VITE_VERCEL2}bookings/${bookingId}`,
+        `${import.meta.env.VITE_VERCEL}bookings/${bookingId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -58,24 +77,25 @@ function Bookings() {
       const assignedCount = booking.assignedTherapists.length;
       const remainingSpots = booking.therapist - assignedCount;
 
-      // If spots are filled, send email to the client
+      // **If no spots are left, send email to the client**
       if (remainingSpots === 0) {
         await axios.post(
-          `${import.meta.env.VITE_VERCEL2}send-email-on-spot-fill`,
+          `${import.meta.env.VITE_VERCEL}send-email-on-spot-fill`,
           { bookingId },
           { headers: { Authorization: `Bearer ${token}` } }
         );
+        setIsFull(true);
       }
 
-      // Refresh bookings to reflect the change
+      // **Refresh bookings in the background**
       getBookings();
     } catch (error) {
       console.error("Error joining booking:", error.response?.data || error);
     }
   };
   useEffect(() => {
-    getBookings();
-  }, [joinBooking]);
+    getBookings(); // Initial fetch
+  }, []);
 
   const markComplete = async (id) => {
     try {
@@ -87,7 +107,7 @@ function Bookings() {
       }
 
       await axios.put(
-        `${import.meta.env.VITE_VERCEL2}bookings/${id}`,
+        `${import.meta.env.VITE_VERCEL}bookings/${id}`,
         {
           isComplete: true,
         },
@@ -154,7 +174,9 @@ function Bookings() {
                   <li>EventIncrements: {booking.eventIncrement} Minutes</li>
                   <div className="button-container">
                     <Button onClick={() => handleShow(booking._id)}>
-                      Assign Therapist
+                      {booking.assignedTherapists.length < booking.therapist
+                        ? "Assign Therapist"
+                        : "Assigned"}
                     </Button>
 
                     {!booking.isComplete && (
@@ -174,22 +196,21 @@ function Bookings() {
                       </Modal.Header>
                       <Modal.Body>
                         <div className="input-container">
-                          <li>
+                          <ul style={{ textAlign: "center" }}>
                             Assigned Therapists:{" "}
                             {booking.assignedTherapists &&
                             booking.assignedTherapists.length > 0 ? (
                               booking.assignedTherapists.map((therapist) => (
-                                <span key={therapist._id}>
+                                <li key={therapist._id}>
                                   {therapist.username
                                     ? therapist.username
                                     : "Unknown"}
-                                  ,
-                                </span>
+                                </li>
                               ))
                             ) : (
                               <span>No therapists assigned yet</span>
                             )}
-                          </li>
+                          </ul>
                         </div>
                       </Modal.Body>
                       <Modal.Footer>

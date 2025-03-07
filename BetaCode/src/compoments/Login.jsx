@@ -11,7 +11,7 @@ function Login({ onLogin }) {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    const res = await fetch(`${import.meta.env.VITE_VERCEL2}login`, {
+    const res = await fetch(`${import.meta.env.VITE_VERCEL}login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

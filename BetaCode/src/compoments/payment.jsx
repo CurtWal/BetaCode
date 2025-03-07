@@ -52,7 +52,7 @@ const Payment = ({price, payModalClose, name, email, address, zipCode, therapist
                 return;
             }
     
-            const response = await axios.get("http://localhost:3001/users/me", {
+            const response = await axios.get(`${import.meta.env.VITE_VERCEL}users/me`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
     
@@ -77,7 +77,7 @@ const Payment = ({price, payModalClose, name, email, address, zipCode, therapist
             }
     
             // Process Payment
-            await axios.post("http://localhost:3001/create-payment", {
+            await axios.post(`${import.meta.env.VITE_VERCEL}create-payment`, {
                 sourceId: result.token,
                 userId: currentUser?._id || null,
                 amount: price, // Amount in cents
@@ -88,7 +88,7 @@ const Payment = ({price, payModalClose, name, email, address, zipCode, therapist
     
             // Create Booking after successful payment
             const newBooking = { name, email, address, zipCode, therapist, eventHours, eventIncrement, price };
-            await axios.post("http://localhost:3001/new-booking", newBooking);
+            await axios.post(`${import.meta.env.VITE_VERCEL}new-booking`, newBooking);
     
             console.log("Booking successful");
             payModalClose();

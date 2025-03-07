@@ -9,17 +9,18 @@ function TherapistRegister() {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("therapist"); // Default role is "user"
   const [licenseId, setLicenseId] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const navigate = useNavigate();
 
   const handleRegister = async () => {
-    if (!username || !email || !password || !licenseId) {
+    if (!username || !email || !password || !licenseId || !phoneNumber) {
       alert("Please fill in all fields before registering.");
       return; // Stop function execution if fields are empty
     }
-    const res = await fetch(`${import.meta.env.VITE_VERCEL2}therapistregister`, {
+    const res = await fetch(`${import.meta.env.VITE_VERCEL}therapistregister`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, email, password, role, licenseId }),
+      body: JSON.stringify({ username, email, password, role, licenseId, phoneNumber}),
     });
 
     const data = await res.json();
@@ -49,6 +50,12 @@ function TherapistRegister() {
           placeholder="License ID"
           value={licenseId}
           onChange={(e) => setLicenseId(e.target.value)}
+        />
+        <input
+          type="text"
+          placeholder="Phone Number"
+          value={phoneNumber}
+          onChange={(e) => setPhoneNumber(e.target.value)}
         />
         <input
           type="email"

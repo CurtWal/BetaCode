@@ -1,6 +1,6 @@
  express = require('express');
  const bookings = require('../model/bookings');
-const router = express.Router();
+ const router = express.Router();
 
 router.put('/bookings/:id', async (req, res) => {
     try {

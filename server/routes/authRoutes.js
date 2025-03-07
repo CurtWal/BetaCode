@@ -25,7 +25,7 @@ router.post('/register', async (req, res) => {
 
     // Register Therapist
 router.post('/therapistregister', async (req, res) => {
-    const {username, email, password, role, licenseId} = req.body;
+    const {username, email, password, role, licenseId, phoneNumber} = req.body;
     try {
         //Check if user already exists
         const user = await User.findOne({email});
@@ -34,7 +34,7 @@ router.post('/therapistregister', async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        const newUser = new User ({username, email, password: hashedPassword, role, licenseId})
+        const newUser = new User ({username, email, password: hashedPassword, role, licenseId, phoneNumber})
         await newUser.save();
         res.status(201).json({message: "User registered successfully"})
     }catch(err){

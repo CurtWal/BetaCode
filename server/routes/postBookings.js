@@ -2,14 +2,17 @@ express = require('express');
 const bookings = require('../model/bookings');
 const nodemailer = require("nodemailer");
 const User = require('../model/user');
-
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+const client = require('twilio')(accountSid, authToken);
 const router = express.Router();
+
 
 router.post('/new-booking', async (req, res) => {
     try {
         // Save booking in the database
         const newBooking = await bookings.create(req.body);
-        const confirmationLink = `http://localhost:5173/confirm-booking/${newBooking._id}`;
+        const confirmationLink = `https://massageonthego.netlify.app/confirm-booking/${newBooking._id}`;
 
         // Set up email transporter
         const transporter = nodemailer.createTransport({
@@ -57,13 +60,15 @@ router.get('/confirm-booking/:id', async (req, res) => {
             return res.status(404).send("Booking not found");
         }
 
-        const therapists = await User.find({ role: "therapist" }, "email");
+        const therapists = await User.find({ role: "therapist" }, "email phoneNumber");
         if (!therapists.length) {
             return res.status(404).send("No therapists found in the database.");
         }
 
         const therapistEmails = therapists.map(therapist => therapist.email);
+        // const therapistNumbers = therapists.map(t => t.phoneNumber).filter(Boolean);
         console.log("Therapist Emails:", therapistEmails);
+        // console.log("Therapist Numbers:", therapistNumbers);
 
         const transporter = nodemailer.createTransport({
             service: "yahoo",
@@ -91,10 +96,7 @@ router.get('/confirm-booking/:id', async (req, res) => {
             <p>Log in to view and accept the booking.</p>
           `,
         };
-
-        // Send email
         await transporter.sendMail(mailOptions);
-
         res.send("Booking marked as ready. Notification sent to all therapists.");
     } catch (err) {
         console.error("Error confirming booking:", err);

@@ -9,8 +9,9 @@ const ConfirmBooking = () => {
     const confirmBooking = async () => {
       try {
         const response = await axios.get(
-          `${import.meta.env.VITE_VERCEL2}confirm-booking/${id}`
+          `${import.meta.env.VITE_VERCEL}confirm-booking/${id}`
         );
+
         alert(response.data); // Show success message
       } catch (err) {
         console.error("Error confirming booking:", err);
