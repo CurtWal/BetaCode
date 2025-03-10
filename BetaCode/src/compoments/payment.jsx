@@ -66,7 +66,7 @@ const Payment = ({
       }
 
       const response = await axios.get(
-        `${import.meta.env.VITE_VERCEL2}users/me`,
+        `${import.meta.env.VITE_VERCEL}users/me`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -97,7 +97,7 @@ const Payment = ({
 
       // Process Payment
       const paymentResponse = await axios.post(
-        `${import.meta.env.VITE_VERCEL2}create-payment`,
+        `${import.meta.env.VITE_VERCEL}create-payment`,
         {
           sourceId: result.token,
           userId: currentUser?._id || null,
@@ -125,7 +125,7 @@ const Payment = ({
         };
 
         await axios.post(
-          `${import.meta.env.VITE_VERCEL2}new-booking`,
+          `${import.meta.env.VITE_VERCEL}new-booking`,
           newBooking
         );
 
