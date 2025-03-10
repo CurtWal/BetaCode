@@ -15,6 +15,7 @@ const putBookings = require("./routes/putBookings");
 const postPayment = require("./routes/payment");
 const authRoutes = require("./routes/authRoutes");
 const getAssignment = require("./routes/getAssignment");
+const adminRoute = require("./routes/admin");
 const PORT = process.env.PORT || 3003;
 const app = express();
 
@@ -24,20 +25,24 @@ app.use(bodyParser.json());
 app.use(cors());
 
 mongoose
-  .connect(process.env.MERNDB, {useNewUrlParser: true, useUnifiedTopology: true})
+  .connect(process.env.MERNDB, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
   .then(() => console.log("Connected to Mongoose"))
   .catch((err) => console.log(err));
 app.get("/", (req, res) => {
-    res.send("Hello World!");
-})
+  res.send("Hello World!");
+});
 
-app.use(authRoutes)
+app.use(authRoutes);
 app.use(getBookings);
 app.use(getUsers);
 app.use(putUsers);
 app.use(postBookings);
 app.use(putBookings);
 app.use(postPayment);
-app.use(getAssignment)
+app.use(getAssignment);
+app.use("/admin", adminRoute);
 // app.use('/api', paymentRoute);
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

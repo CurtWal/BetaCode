@@ -34,7 +34,7 @@ body {
   justify-content: center;
   align-items: center;
   width: 100%;
-  gap:2%;
+  gap: 2%;
 }
 .custom-modal .modal-content {
   background-color: #ccc !important;
@@ -207,7 +207,7 @@ hr {
     justify-content: center;
     align-items: center;
     width: 100%;
-    gap:2%;
+    gap: 2%;
   }
   .Main_Img {
     grid-area: img;
@@ -289,7 +289,7 @@ hr {
     justify-content: center;
     align-items: center;
     width: 100%;
-    gap:2%;
+    gap: 2%;
   }
 }
 
@@ -306,7 +306,7 @@ hr {
     text-align: center;
     gap: 10px;
   }
-  
+
   .Text-Info,
   .Options {
     width: 90%; /* Adjust width for smaller screens */
@@ -322,10 +322,10 @@ hr {
   .table-container {
     width: 100%;
     overflow-x: auto;
-    
   }
 
-  th, td {
+  th,
+  td {
     padding: 8px;
   }
 }

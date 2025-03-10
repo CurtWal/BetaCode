@@ -3,9 +3,11 @@ import axios from "axios";
 
 function Users() {
   const [users, setUsers] = useState([]);
+  const [freeHourEnabled, setFreeHourEnabled] = useState(true);
 
   useEffect(() => {
     getUsers();
+    getFreeHourStatus();
   }, []);
 
   const getUsers = async () => {
@@ -14,6 +16,28 @@ function Users() {
       setUsers(response.data);
     } catch (error) {
       console.error("Error fetching users:", error.response?.data || error);
+    }
+  };
+  const getFreeHourStatus = async () => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_VERCEL}admin/freehour-status`
+      );
+      setFreeHourEnabled(response.data.freeHourEnabled);
+    } catch (error) {
+      console.error("Error fetching free hour status:", error);
+    }
+  };
+
+  const toggleFreeHour = async () => {
+    try {
+      await axios.post(`${import.meta.env.VITE_VERCEL}admin/toggle-freehour`, {
+        status: !freeHourEnabled,
+      });
+      setFreeHourEnabled(!freeHourEnabled); // Update state
+      getFreeHourStatus();
+    } catch (error) {
+      console.error("Error toggling free hour:", error.response?.data || error);
     }
   };
 
@@ -42,6 +66,27 @@ function Users() {
 
   return (
     <div>
+      <div
+        className="toggle-container"
+        style={{ display: "grid", backgroundColor: "white", maxWidth: "20%" }}
+      >
+        <label style={{ fontWeight: "bold" }}>
+          Free Hour Promotion: {freeHourEnabled ? "ON" : "OFF"}
+        </label>
+        <button
+          onClick={toggleFreeHour}
+          style={{
+            backgroundColor: freeHourEnabled ? "red" : "blue",
+            color: "white",
+            border: "none",
+            padding: "10px",
+            cursor: "pointer",
+            fontWeight: "bold",
+          }}
+        >
+          {freeHourEnabled ? "Disable Free Hour" : "Enable Free Hour"}
+        </button>
+      </div>
       <h1>Manage Users</h1>
       <ul className="bookings">
         {users

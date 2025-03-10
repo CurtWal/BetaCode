@@ -1,5 +1,5 @@
 @import "tailwindcss";
-:root{
+:root {
   background-color: transparent !important;
 }
 a {
@@ -17,7 +17,6 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
- 
 }
 
 h1 {

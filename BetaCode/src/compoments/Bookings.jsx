@@ -9,6 +9,43 @@ function Bookings() {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [therapistInputs, setTherapistInputs] = useState({}); // Stores input per booking
   const [isFull, setIsFull] = useState(false);
+
+  const checkZipDistance = async (zip1, zip2, maxDistance) => {
+    const API_KEY = import.meta.env.VITE_GEO_CODIO_API;
+    try {
+      const [loc1, loc2] = await Promise.all([
+        axios.get(
+          `https://api.geocod.io/v1.7/geocode?q=${zip1}&api_key=${API_KEY}`
+        ),
+        axios.get(
+          `https://api.geocod.io/v1.7/geocode?q=${zip2}&api_key=${API_KEY}`
+        ),
+      ]);
+
+      const { lat: lat1, lng: lon1 } = loc1.data.results[0].location;
+      const { lat: lat2, lng: lon2 } = loc2.data.results[0].location;
+
+      return getDistance(lat1, lon1, lat2, lon2) <= maxDistance;
+    } catch (error) {
+      console.error("Error fetching ZIP code data:", error);
+      return false;
+    }
+  };
+
+  const getDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * (Math.PI / 180)) *
+        Math.cos(lat2 * (Math.PI / 180)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c * 0.621371;
+  };
+
   const getBookings = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -16,6 +53,20 @@ function Bookings() {
         console.error("No token found, user is not authenticated.");
         return;
       }
+
+      const therapistId = localStorage.getItem("userId"); // Assuming therapist's userId is stored in localStorage
+
+      // Fetch therapist's zip code from the backend
+      const therapistResponse = await axios.get(
+        `${import.meta.env.VITE_VERCEL}api/therapist/${therapistId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      const therapistZip = therapistResponse.data.zipCode;
+
+      // Now fetch all bookings
       const response = await axios.get(
         `${import.meta.env.VITE_VERCEL}bookings`,
         {
@@ -23,12 +74,20 @@ function Bookings() {
         }
       );
 
-      // Only update if data is different
-      setBookings((prevBookings) =>
-        JSON.stringify(prevBookings) === JSON.stringify(response.data)
-          ? prevBookings
-          : response.data
+      // Filter the bookings based on distance
+      const filteredBookings = await Promise.all(
+        response.data.map(async (booking) => {
+          const isNearTherapist = await checkZipDistance(
+            therapistZip,
+            booking.zipCode,
+            62 // 62 miles for 1 hour distance
+          );
+          return isNearTherapist ? booking : null; // Include only bookings within 1-hour distance
+        })
       );
+
+      setBookings(filteredBookings.filter((booking) => booking !== null)); // Remove null values (non-matching bookings)
+      console.log(filteredBookings);
     } catch (error) {
       console.error("Error fetching bookings:", error.response?.data || error);
     }
@@ -107,7 +166,7 @@ function Bookings() {
       }
 
       await axios.put(
-        `${import.meta.env.VITE_VERCEL}bookings/${id}`,
+        `${import.meta.env.VITE_VERCEL2}bookings/${id}`,
         {
           isComplete: true,
         },
@@ -165,6 +224,7 @@ function Bookings() {
             !booking.isComplete || showCompleted ? (
               <li key={booking._id}>
                 <div className="booking-card">
+                  <li>Company Name: {booking.companyName}</li>
                   <li>Name: {booking.name}</li>
                   <li>Email: {booking.email}</li>
                   <li>Address: {booking.address}</li>

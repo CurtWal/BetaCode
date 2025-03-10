@@ -1,14 +1,31 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../Register.css";
 import Logo from "../assets/MOTG_Revised_Logo.png";
+import axios from "axios";
 
 const Register = () => {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("user"); // Default role is "user"
+  const [freeHourEnabled, setFreeHourEnabled] = useState(true);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    checkFreeHourStatus(); // Check free hour status
+  }, []);
+
+  const checkFreeHourStatus = async () => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_VERCEL}admin/freehour-status`
+      );
+      setFreeHourEnabled(response.data.freeHourEnabled);
+    } catch (error) {
+      console.error("Error checking free hour status:", error);
+    }
+  };
 
   const handleRegister = async () => {
     if (!username || !email || !password) {
@@ -18,7 +35,13 @@ const Register = () => {
     const res = await fetch(`${import.meta.env.VITE_VERCEL}register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, email, password, role }),
+      body: JSON.stringify({
+        username,
+        email,
+        password,
+        role,
+        freehour: freeHourEnabled ? 1 : 0,
+      }),
     });
 
     const data = await res.json();

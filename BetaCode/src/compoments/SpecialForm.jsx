@@ -20,10 +20,10 @@ function SpecialForm() {
   const [eventIncrement, setEventIncrement] = useState(10);
   const [price, setPrice] = useState(90);
   const [validated, setValidated] = useState(false);
-
+  const [formType, setFormType] = useState("special");
   const [show, setShow] = useState(false);
   const [payModal, setPayModal] = useState(false);
-
+  const [companyName, setCompanyName] = useState("");
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
   const payModalClose = () => setPayModal(false);
@@ -72,6 +72,7 @@ function SpecialForm() {
     e.preventDefault();
     if (form.checkValidity() === true) {
       setPayModal(true);
+      setFormType("special");
     }
   };
 
@@ -191,6 +192,24 @@ function SpecialForm() {
                 md={4}
                 controlId="validationCustom01"
               >
+                <Form.Label>Company Name</Form.Label>
+                <Form.Control
+                  required
+                  type="text"
+                  placeholder="Company Name"
+                  onChange={(e) => setCompanyName(e.target.value)}
+                />
+                <Form.Control.Feedback type="invalid">
+                  Please provide a valid Name.
+                </Form.Control.Feedback>
+                <Form.Control.Feedback>Looks good!</Form.Control.Feedback>
+              </Form.Group>
+              <Form.Group
+                as={Col}
+                xs={12}
+                md={4}
+                controlId="validationCustom01"
+              >
                 <Form.Label>Name</Form.Label>
                 <Form.Control
                   required
@@ -221,6 +240,8 @@ function SpecialForm() {
                 </Form.Control.Feedback>
                 <Form.Control.Feedback>Looks good!</Form.Control.Feedback>
               </Form.Group>
+            </Row>
+            <Row className="mb-3">
               <Form.Group
                 as={Col}
                 xs={12}
@@ -239,8 +260,7 @@ function SpecialForm() {
                 </Form.Control.Feedback>
                 <Form.Control.Feedback>Looks good!</Form.Control.Feedback>
               </Form.Group>
-            </Row>
-            <Row className="mb-3">
+
               <Form.Group
                 as={Col}
                 xs={12}
@@ -276,6 +296,8 @@ function SpecialForm() {
                   Please provide a valid Therapist Number.
                 </Form.Control.Feedback>
               </Form.Group>
+            </Row>
+            <Row className="mb-3">
               <Form.Group
                 as={Col}
                 xs={12}
@@ -293,8 +315,7 @@ function SpecialForm() {
                   <option value="5">5 Hours</option>
                 </Form.Select>
               </Form.Group>
-            </Row>
-            <Row className="mb-3">
+
               <Form.Group
                 xs={12}
                 md={4}
@@ -319,14 +340,14 @@ function SpecialForm() {
               >
                 <p>Total: ${price}</p>
               </Form.Group>
-              <Form.Group
-                as={Col}
-                controlId="validationCustom07"
-                style={{ marginTop: "4%" }}
-              >
-                <Button type="submit">Submit form</Button>
-              </Form.Group>
             </Row>
+            <Form.Group
+              as={Col}
+              controlId="validationCustom07"
+              style={{ marginTop: "4%" }}
+            >
+              <Button type="submit">Book & Pay</Button>
+            </Form.Group>
           </Form>
         </div>
         <div>
@@ -347,6 +368,8 @@ function SpecialForm() {
                 therapist={therapist}
                 eventHours={eventHours}
                 eventIncrement={eventIncrement}
+                formType={formType}
+                companyName={companyName}
               />
             </Modal.Body>
           </Modal>

@@ -46,14 +46,17 @@
     text-align: center;
   }
 
-  input, select, button {
+  input,
+  select,
+  button {
     padding: 8px;
     font-size: 1rem;
   }
 }
 
 /* Input and Button Styling */
-input, select {
+input,
+select {
   display: block;
   width: 100%;
   padding: 10px;
@@ -65,7 +68,7 @@ input, select {
 button {
   width: 100%;
   padding: 10px;
-  background-color: #1470AF;
+  background-color: #1470af;
   color: white;
   border: none;
   cursor: pointer;

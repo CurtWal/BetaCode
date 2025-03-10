@@ -19,11 +19,40 @@ import Modal from "react-bootstrap/Modal";
 import SpecialForm from "./compoments/SpecialForm";
 import TherapistRegister from "./compoments/TherapistRegister";
 import ConfirmBooking from "./compoments/ConfirmBooking";
-
+import { jwtDecode } from "jwt-decode";
+import axios from "axios";
 function Layout() {
   const location = useLocation();
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
   const [showModal, setShowModal] = useState(false);
+  const [freeHourEnabled, setFreeHourEnabled] = useState(true);
+
+  const checkFreeHourStatus = async () => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_VERCEL2}admin/freehour-status`
+      );
+      const isFreeHourEnabled = response.data.freeHourEnabled;
+      setFreeHourEnabled(isFreeHourEnabled);
+
+      // Only show modal if free hour is enabled and user is not logged in
+      if (!isFreeHourEnabled && !isLoggedIn) {
+        setShowModal(false); // Hide modal if free hour is disabled
+      } else if (isFreeHourEnabled && !isLoggedIn) {
+        const timer = setTimeout(() => {
+          setShowModal(true);
+        }, 3000);
+        // Clear timeout if component unmounts
+        return () => clearTimeout(timer);
+      }
+    } catch (error) {
+      console.error("Error checking free hour status:", error);
+    }
+  };
+
+  useEffect(() => {
+    checkFreeHourStatus(); // Check free hour status
+  }, []);
 
   const logout = () => {
     localStorage.removeItem("token");
@@ -32,14 +61,6 @@ function Layout() {
     localStorage.removeItem("username");
     setIsLoggedIn(false); // Update state after logout
   };
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowModal(true);
-    }, 3000); // Show popup after 3 seconds
-
-    return () => clearTimeout(timer); // Clear timeout if component unmounts
-  }, []);
 
   const closeModal = () => {
     setShowModal(false);
@@ -56,7 +77,28 @@ function Layout() {
       document.body.style.backgroundColor = "";
     };
   }, [location.pathname, isLoggedIn]);
+  useEffect(() => {
+    const token = localStorage.getItem("token");
 
+    if (token) {
+      const { exp } = jwtDecode(token); // Extract the expiration time
+      const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds
+
+      // Calculate time until token expires
+      const timeUntilExpiry = (exp - currentTime) * 1000;
+
+      if (timeUntilExpiry > 0) {
+        setTimeout(() => {
+          alert("Session expired. Please log in again.");
+          logout(); // Call your logout function
+          window.location.href = "/login"; // Redirect to login page
+        }, timeUntilExpiry);
+      } else {
+        // If token is already expired, logout immediately
+        logout();
+      }
+    }
+  }, []);
   return (
     <div>
       <nav>
