@@ -30,7 +30,7 @@ function Layout() {
   const checkFreeHourStatus = async () => {
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_VERCEL2}admin/freehour-status`
+        `${import.meta.env.VITE_VERCEL}admin/freehour-status`
       );
       const isFreeHourEnabled = response.data.freeHourEnabled;
       setFreeHourEnabled(isFreeHourEnabled);

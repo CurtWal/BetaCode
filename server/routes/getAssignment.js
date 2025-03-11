@@ -97,7 +97,7 @@ router.post("/assign-therapist", async (req, res) => {
     for (const therapist of therapists) {
       if (
         !assignedTherapistIds.includes(therapist._id.toString()) &&
-        (await checkZipDistance(booking.zipCode, therapist.zipCode, 62))
+        (await checkZipDistance(booking.zipCode, therapist.zipCode, 92))
       ) {
         remainingTherapists.push(therapist.email);
       }

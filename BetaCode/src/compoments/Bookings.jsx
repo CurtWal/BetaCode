@@ -80,9 +80,9 @@ function Bookings() {
           const isNearTherapist = await checkZipDistance(
             therapistZip,
             booking.zipCode,
-            62 // 62 miles for 1 hour distance
+            92 // 92 miles for 1 hour 30 min distance
           );
-          return isNearTherapist ? booking : null; // Include only bookings within 1-hour distance
+          return isNearTherapist ? booking : null; // Include only bookings within 1-hour 30min distance
         })
       );
 

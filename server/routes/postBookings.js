@@ -166,7 +166,7 @@ router.get("/confirm-booking/:id", async (req, res) => {
       return res.status(404).send("No therapists found in the database.");
     }
 
-    const maxDistance = 62; // Define max distance in miles
+    const maxDistance = 92; // Define max distance in miles
     const eligibleTherapists = [];
 
     for (const therapist of therapists) {

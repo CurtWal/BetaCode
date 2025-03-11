@@ -1,9 +1,11 @@
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const ConfirmBooking = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const confirmBooking = async () => {
@@ -13,6 +15,7 @@ const ConfirmBooking = () => {
         );
 
         alert(response.data); // Show success message
+        navigate("/");
       } catch (err) {
         console.error("Error confirming booking:", err);
         alert("Error confirming booking.");

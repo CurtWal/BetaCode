@@ -90,7 +90,7 @@ router.get(
           const isWithinDistance = await checkZipDistance(
             therapistZip,
             booking.zipCode,
-            60
+            92
           ); // 60 miles = 1 hour
 
           return { ...booking, assignedTherapists, isWithinDistance };
