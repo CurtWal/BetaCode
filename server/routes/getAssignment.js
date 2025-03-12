@@ -203,7 +203,7 @@ router.post("/send-email-on-spot-fill", async (req, res) => {
     };
 
     await sgMail.sendMultiple(finalEmailOptions);
-    console.log(`Email sent to client for booking ${booking._id}`);
+    // console.log(`Email sent to client for booking ${booking._id}`);
 
     res.json({ message: "Email sent to the client with therapist details" });
   } catch (error) {

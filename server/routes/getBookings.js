@@ -102,10 +102,10 @@ router.get(
         (booking) => booking.isWithinDistance
       );
 
-      console.log(
-        "Filtered Bookings:",
-        JSON.stringify(filteredBookings, null, 2)
-      ); // Debugging log
+      // console.log(
+      //   "Filtered Bookings:",
+      //   JSON.stringify(filteredBookings, null, 2)
+      // ); // Debugging log
 
       res.json(filteredBookings); // Return filtered bookings for therapist
     } catch (error) {

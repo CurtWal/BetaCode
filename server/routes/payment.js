@@ -19,7 +19,7 @@ const client = new Client({
 });
 
 router.post("/create-payment", async (req, res) => {
-  console.log("Received payment request:", req.body);
+//   console.log("Received payment request:", req.body);
   const { sourceId, amount, currency, userId, formType } = req.body;
 
   let finalAmount = amount * 100;
@@ -46,7 +46,7 @@ router.post("/create-payment", async (req, res) => {
         user.freehour = 0;
       }
     }
-    console.log(finalAmount, ": ", formType);
+    // console.log(finalAmount, ": ", formType);
     // Process payment with Square
     const response = await client.paymentsApi.createPayment({
       sourceId: sourceId,
@@ -63,10 +63,10 @@ router.post("/create-payment", async (req, res) => {
         user.points += 1; // Add point only if no discount was used
       }
       await user.save();
-      console.log(`User ${user.username} now has ${user.points} points.`);
+    //   console.log(`User ${user.username} now has ${user.points} points.`);
     }
 
-    console.log("Payment successful:", response.result);
+    // console.log("Payment successful:", response.result);
     res.status(200).json({
       success: true,
       discountApplied,

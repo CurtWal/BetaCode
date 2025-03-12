@@ -22,8 +22,8 @@ const checkZipDistance = async (zip1, zip2, maxDistance) => {
       ),
     ]);
 
-    console.log("Geocodio Response 1:", loc1.data);
-    console.log("Geocodio Response 2:", loc2.data);
+    // console.log("Geocodio Response 1:", loc1.data);
+    // console.log("Geocodio Response 2:", loc2.data);
 
     if (!loc1.data.results.length || !loc2.data.results.length) {
       console.error("Invalid ZIP code response");
