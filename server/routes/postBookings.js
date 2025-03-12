@@ -83,39 +83,12 @@ router.post("/new-booking", async (req, res) => {
       eventIncrement,
       price, // Use the price passed from frontend (final price after discounts)
     });
-    const confirmationLink = `https://massageonthego.netlify.app/confirm-booking/${newBooking._id}`;
+    const confirmationLink = `https://motgpayment.com/confirm-booking/${newBooking._id}`;
 
     // Set up email transporter
-    // const transporter = nodemailer.createTransport({
-    //   service: "yahoo",
-    //   auth: {
-    //     user: process.env.EMAIL_USER,
-    //     pass: process.env.EMAIL_PASS,
-    //   },
-    // });
-
-    // Email content
-    // const mailOptions = {
-    //   from: process.env.EMAIL_USER,
-    //   to: ["curtrickwalton@gmail.com"], // Change to actual email recipients
-    //   subject: "New Massage Booking Confirmation",
-    //   html: `
-    //     <h2>New Booking Details</h2>
-    //     <p><strong>Price:</strong> $${newBooking.price}</p>
-    //     <p><strong>Name:</strong> ${newBooking.name}</p>
-    //     <p><strong>Email:</strong> ${newBooking.email}</p>
-    //     <p><strong>Address:</strong> ${newBooking.address}</p>
-    //     <p><strong>ZipCode:</strong> ${newBooking.zipCode}</p>
-    //     <p><strong>Therapist:</strong> ${newBooking.therapist}</p>
-    //     <p><strong>Hours:</strong> ${newBooking.eventHours}</p>
-    //     <p><strong>Increment:</strong> ${newBooking.eventIncrement}</p>
-    //     <br />
-    //     <a href="${confirmationLink}" style="display: inline-block; padding: 10px 20px; font-size: 16px; color: white; background: #007bff; text-decoration: none; border-radius: 5px;">Mark Booking as Ready</a>
-    //   `,
-    // };
     const mailOptions = {
       from: process.env.EMAIL_USER,
-      to: process.env.EMAIL_USER, // Change to actual email recipients
+      to: ["curtrickwalton@gmail.com"], // Change to actual email recipients
       subject: "New Massage Booking Confirmation",
       html: `
             <h2>New Booking Details</h2>
@@ -134,7 +107,6 @@ router.post("/new-booking", async (req, res) => {
     };
 
     // Send email
-    // await transporter.sendMail(mailOptions);
     sgMail
       .send(mailOptions)
       .then(() => {
@@ -181,32 +153,6 @@ router.get("/confirm-booking/:id", async (req, res) => {
       return res.status(404).send("No therapists available within range.");
     }
 
-    // const transporter = nodemailer.createTransport({
-    //     service: "yahoo",
-    //     auth: {
-    //         user: process.env.EMAIL_USER,
-    //         pass: process.env.EMAIL_PASS,
-    //     },
-    // });
-
-    // const mailOptions = {
-    //     from: process.env.EMAIL_USER,
-    //     to: eligibleTherapists,
-    //     subject: "Booking is Ready for Processing",
-    //     html: `
-    //         <h2>Booking is Ready</h2>
-    //         <p>The following booking is now ready:</p>
-    //         <p><strong>Name:</strong> ${booking.name}</p>
-    //         <p><strong>Email:</strong> ${booking.email}</p>
-    //         <p><strong>Address:</strong> ${booking.address}</p>
-    //         <p><strong>ZipCode:</strong> ${booking.zipCode}</p>
-    //         <p><strong>Therapist:</strong> ${booking.therapist}</p>
-    //         <p><strong>Hours:</strong> ${booking.eventHours}</p>
-    //         <p><strong>Increment:</strong> ${booking.eventIncrement}</p>
-    //         <br />
-    //         <p>Log in to view and accept the booking.</p>
-    //     `,
-    // };
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: eligibleTherapists,

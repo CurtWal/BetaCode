@@ -104,39 +104,7 @@ router.post("/assign-therapist", async (req, res) => {
     }
 
     let emailSent = false;
-    // if (remainingTherapists.length > 0) {
-    //     try {
-    //         const transporter = nodemailer.createTransport({
-    //             service: "yahoo",
-    //             auth: {
-    //                 user: process.env.EMAIL_USER,
-    //                 pass: process.env.EMAIL_PASS,
-    //             },
-    //         });
 
-    //         const mailOptions = {
-    //             from: process.env.EMAIL_USER,
-    //             to: remainingTherapists,
-    //             subject: "Booking Spot Still Available!",
-    //             html: `
-    //                 <h2>Booking Spots Are Filling Up!</h2>
-    //                 <p>A booking still has available therapist spots.</p>
-    //                 <p><strong>Client Name:</strong> ${booking.name}</p>
-    //                 <p><strong>Location:</strong> ${booking.address}</p>
-    //                 <p><strong>ZipCode:</strong> ${booking.zipCode}</p>
-    //                 <p><strong>Hours:</strong> ${booking.eventHours} hour(s)</p>
-    //                 <p><strong>Increment:</strong> ${booking.eventIncrement} minutes</p>
-    //                 <p><strong>Remaining Spots:</strong> ${remainingSpots}</p>
-    //                 <p>Hurry up and claim your spot before it's full!</p>
-    //             `,
-    //         };
-
-    //         await transporter.sendMail(mailOptions);
-    //         emailSent = true;
-    //     } catch (emailError) {
-    //         console.error("Error sending email:", emailError);
-    //     }
-    // }
     if (remainingTherapists.length > 0) {
       try {
         const msg = {
@@ -210,38 +178,9 @@ router.post("/send-email-on-spot-fill", async (req, res) => {
       })
       .join("");
 
-    // const finalEmailOptions = {
-    //   from: process.env.EMAIL_USER,
-    //   to: ["curtrickwalton@gmail.com"], // Client's email
-    //   subject: "All Therapist Spots Have Been Filled!",
-    //   html: `
-    //             <h2>All Therapist Spots Have Been Filled!</h2>
-    //             <p>Good news! All therapist spots for your booking have been successfully filled.</p>
-    //             <p><strong>Booking Details:</strong></p>
-    //             <p><strong>Client Name:</strong> ${booking.name}</p>
-    //             <p><strong>Location:</strong> ${booking.address}</p>
-    //             <p><strong>ZipCode:</strong> ${booking.zipCode}</p>
-    //             <p><strong>Hours:</strong> ${booking.eventHours} hour(s)</p>
-    //             <p><strong>Increment:</strong> ${booking.eventIncrement} minutes</p>
-    //             <p><strong>Price:</strong> $${booking.price}</p>
-    //             <p><strong>Assigned Therapists:</strong></p>
-    //             ${therapistInfo}
-    //             <p>Thank you for using our service!</p>
-    //         `,
-    // };
-
-    // const transporter = nodemailer.createTransport({
-    //   service: "yahoo",
-    //   auth: {
-    //     user: process.env.EMAIL_USER,
-    //     pass: process.env.EMAIL_PASS,
-    //   },
-    // });
-
-    // await transporter.sendMail(finalEmailOptions);
     const finalEmailOptions = {
       from: process.env.EMAIL_USER, // Your email (verified sender)
-      to: process.env.EMAIL_USER, // Same email for sending & receiving     // Adding your email as replyTo
+      to: ["curtrickwalton@gmail.com"], // Same email for sending & receiving     // Adding your email as replyTo
       subject: "All Therapist Spots Have Been Filled!",
       html: `
             <h2>All Therapist Spots Have Been Filled!</h2>
