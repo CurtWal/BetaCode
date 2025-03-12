@@ -6,7 +6,7 @@ const User = require("../model/user");
 const router = express.Router();
 
 // Make sure you have the SQUARE_ACCESS_TOKEN in your .env file
-const accessToken = process.env.Token2;
+const accessToken = process.env.Token;
 
 if (!accessToken) {
   console.error("SQUARE_ACCESS_TOKEN is not set in the environment variables");
@@ -15,7 +15,7 @@ if (!accessToken) {
 
 const client = new Client({
   accessToken: accessToken,
-  environment: Environment.Sandbox, // Use Environment.Production for live transactions
+  environment: Environment.Production, // Use Environment.Production for live transactions
 });
 
 router.post("/create-payment", async (req, res) => {

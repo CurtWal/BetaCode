@@ -166,7 +166,7 @@ function Bookings() {
       }
 
       await axios.put(
-        `${import.meta.env.VITE_VERCEL2}bookings/${id}`,
+        `${import.meta.env.VITE_VERCEL}bookings/${id}`,
         {
           isComplete: true,
         },

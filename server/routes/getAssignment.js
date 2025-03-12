@@ -180,7 +180,7 @@ router.post("/send-email-on-spot-fill", async (req, res) => {
 
     const finalEmailOptions = {
       from: process.env.EMAIL_USER, // Your email (verified sender)
-      to: ["curtrickwalton@gmail.com"], // Same email for sending & receiving     // Adding your email as replyTo
+      to: ["sam@massageonthegomemphis.com"], // Same email for sending & receiving     // Adding your email as replyTo
       subject: "All Therapist Spots Have Been Filled!",
       html: `
             <h2>All Therapist Spots Have Been Filled!</h2>

@@ -19,6 +19,7 @@ import Modal from "react-bootstrap/Modal";
 import SpecialForm from "./compoments/SpecialForm";
 import TherapistRegister from "./compoments/TherapistRegister";
 import ConfirmBooking from "./compoments/ConfirmBooking";
+
 import { jwtDecode } from "jwt-decode";
 import axios from "axios";
 function Layout() {
