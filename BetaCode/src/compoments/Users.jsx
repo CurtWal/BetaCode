@@ -182,6 +182,8 @@ const toggleFreeHour = async () => {
                 <p>Name: {user.username}</p>
                 <p>Email: {user.email}</p>
                 <p>Phone: {user.phoneNumber}</p>
+                <p>Address: {user.address}</p>
+                <p>Zip Code: {user.zipCode}</p>
                 <p>
                   Role:
                   <select

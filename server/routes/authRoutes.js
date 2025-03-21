@@ -26,7 +26,7 @@ router.post("/register", async (req, res) => {
     await newUser.save();
     const mailOptions = {
       from: process.env.EMAIL_USER,
-      to: ["curtrickwalton@gmail.com"], // Change to actual email recipients
+      to: ["hello@massageonthegomemphis.com"], // Change to actual email recipients
       subject: "New User Registered",
       html: `
                 <h2>New User Details</h2>
@@ -76,7 +76,7 @@ router.post("/therapistregister", async (req, res) => {
     await newUser.save();
     const mailOptions = {
       from: process.env.EMAIL_USER,
-      to: ["curtrickwalton@gmail.com"], // Change to actual email recipients
+      to: ["hello@massageonthegomemphis.com"], // Change to actual email recipients
       subject: "New Therapist Registered",
       html: `
             <h2>New Therapist Details</h2>

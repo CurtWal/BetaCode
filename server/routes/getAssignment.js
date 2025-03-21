@@ -120,6 +120,7 @@ router.post("/assign-therapist", async (req, res) => {
                 <p><strong>ZipCode:</strong> ${booking.zipCode}</p>
                 <p><strong>Hours:</strong> ${booking.eventHours} hour(s)</p>
                 <p><strong>Increment:</strong> ${booking.eventIncrement} minutes</p>
+                <p><strong>Start and End Time:</strong> ${booking.startToEnd}</p>
                 <p><strong>Remaining Spots:</strong> ${remainingSpots}</p>
                 <p>Hurry up and claim your spot before it's full!</p>
             `,
@@ -180,7 +181,7 @@ router.post("/send-email-on-spot-fill", async (req, res) => {
 
     const finalEmailOptions = {
       from: process.env.EMAIL_USER, // Your email (verified sender)
-      to: ["curtrickwalton@gmail.com"], // Same email for sending & receiving     // Adding your email as replyTo
+      to: ["hello@massageonthegomemphis.com"], // Same email for sending & receiving     // Adding your email as replyTo
       subject: "All Therapist Spots Have Been Filled!",
       html: `
             <h2>All Therapist Spots Have Been Filled!</h2>
@@ -192,6 +193,7 @@ router.post("/send-email-on-spot-fill", async (req, res) => {
             <p><strong>ZipCode:</strong> ${booking.zipCode}</p>
             <p><strong>Hours:</strong> ${booking.eventHours} hour(s)</p>
             <p><strong>Increment:</strong> ${booking.eventIncrement} minutes</p>
+            <p><strong>Start and End Time:</strong> ${booking.startToEnd}</p>
             <p><strong>Price:</strong> $${booking.price}</p>
             <ul>${therapistInfo}</ul>
             <p>Thank you for using our service!</p>
@@ -280,6 +282,7 @@ router.post("/leave-booking", async (req, res) => {
                 <p><strong>ZipCode:</strong> ${booking.zipCode}</p>
                 <p><strong>Hours:</strong> ${booking.eventHours} hour(s)</p>
                 <p><strong>Increment:</strong> ${booking.eventIncrement} minutes</p>
+                <p><strong>Start and End Time:</strong> ${booking.startToEnd} </p>
             <p><strong>Remaining Spots:</strong> ${remainingSpots}</p>
             
           `,
@@ -295,7 +298,7 @@ router.post("/leave-booking", async (req, res) => {
     const therapist = await User.findById(therapistId);
     if (therapist) {
       const leaveMsg = {
-        to: "curtrickwalton@gmail.com",
+        to: "hello@massageonthegomemphis.com",
         from: process.env.EMAIL_USER,
         subject: "Therapist Has Left a Booking",
         html: `

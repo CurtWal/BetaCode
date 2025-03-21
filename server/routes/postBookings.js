@@ -87,12 +87,12 @@ router.post("/new-booking", async (req, res) => {
       payType,
       startToEnd,
     });
-    const confirmationLink = `https://motgpayment/confirm-booking/${newBooking._id}`;
+    const confirmationLink = `https://motgpayment.com/confirm-booking/${newBooking._id}`;
 
     // Set up email transporter
     const mailOptions = {
       from: process.env.EMAIL_USER,
-      to: ["curtrickwalton@gmail.com"], // Change to actual email recipients
+      to: ["hello@massageonthegomemphis.com"], // Change to actual email recipients
       subject: "New Massage Booking Confirmation",
       html: `
             <h2>New Booking Details</h2>
@@ -173,6 +173,7 @@ router.get("/confirm-booking/:id", async (req, res) => {
                 <p><strong>Therapist:</strong> ${booking.therapist}</p>
                 <p><strong>Hours:</strong> ${booking.eventHours} hour(s)</p>
                 <p><strong>Increment:</strong> ${booking.eventIncrement} minutes</p>
+                <p><strong>Start and End Time:</strong> ${booking.startToEnd}</p>
                 <br />
                 <p>Log in to view and accept the booking.</p>
             `,

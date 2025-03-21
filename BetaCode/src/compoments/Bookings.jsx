@@ -275,6 +275,7 @@ function Bookings() {
                   <li># of Therapist: {booking.therapist}</li>
                   <li>EventHours: {booking.eventHours} Hours</li>
                   <li>EventIncrements: {booking.eventIncrement} Minutes</li>
+                  <li>Start and End Time: {booking.startToEnd}</li>
                   <div className="button-container">
                     <Button onClick={() => handleShow(booking._id)}>
                       {booking.assignedTherapists.length < booking.therapist
