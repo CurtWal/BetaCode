@@ -2,7 +2,7 @@ const express = require("express");
 const { Client, Environment } = require("square/legacy");
 const { randomUUID } = require("crypto");
 const User = require("../model/user");
-
+const PromoPrice = require("../model/PromoPrice");
 const router = express.Router();
 
 // Make sure you have the SQUARE_ACCESS_TOKEN in your .env file
@@ -30,22 +30,30 @@ router.post("/create-payment", async (req, res) => {
     // Fetch user before modifying points
     if (userId) {
       user = await User.findById(userId);
-      if (user && user.points >= 3) {
-        finalAmount = Math.round(finalAmount * 0.9); // Apply 10% discount
-        user.points -= 3; // Deduct 3 points
-        discountApplied = true;
-        
-      }
-      if (user && user.freehour === 1) {
-        if (formType === "special") {
-          // Apply only special price for free hour (e.g., $90 instead of $150)
-          finalAmount = finalAmount - 9000; // 90 * 100 = 9000 cents
-        } else {
-          // Apply regular price for free hour (e.g., $150)
-          finalAmount = finalAmount - 15000; // 150 * 100 = 15000 cents
-        }
-        user.freehour = 0;
-      }
+    }
+
+    // Fetch pricing details from the database
+    let promo = await PromoPrice.findOne();
+    if (!promo) {
+      promo = new PromoPrice({ regularBooking: 150, specialBooking: 90 }); // Set defaults if not found
+      await promo.save();
+    }
+
+    const regularPrice = promo.regularBooking * 100; // Convert to cents
+    const specialPrice = promo.specialBooking * 100; // Convert to cents
+
+    // Apply 10% discount if user has enough points
+    if (user && user.points >= 3) {
+      finalAmount = Math.round(finalAmount * 0.9); // Apply 10% discount
+      user.points -= 3; // Deduct 3 points
+      discountApplied = true;
+    }
+
+    // Apply free hour discount dynamically
+    if (user && user.freehour === 1) {
+      const discount = formType === "special" ? specialPrice : regularPrice;
+      finalAmount = Math.max(0, finalAmount - discount); // Ensure it doesn't go negative
+      user.freehour = 0; // Reset free hour after use
     }
     // console.log(finalAmount, ": ", formType);
     // Process payment with Square

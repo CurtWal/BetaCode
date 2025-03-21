@@ -4,10 +4,13 @@ import axios from "axios";
 function Users() {
   const [users, setUsers] = useState([]);
   const [freeHourEnabled, setFreeHourEnabled] = useState(true);
+  const [regularPrice, setRegularPrice] = useState(150);
+  const [specialPrice, setSpecialPrice] = useState(90);
 
   useEffect(() => {
     getUsers();
     getFreeHourStatus();
+    getBookingPrices();
   }, []);
 
   const getUsers = async () => {
@@ -18,28 +21,26 @@ function Users() {
       console.error("Error fetching users:", error.response?.data || error);
     }
   };
-  const getFreeHourStatus = async () => {
-    try {
-      const response = await axios.get(
-        `${import.meta.env.VITE_VERCEL}admin/freehour-status`
-      );
-      setFreeHourEnabled(response.data.freeHourEnabled);
-    } catch (error) {
-      console.error("Error fetching free hour status:", error);
-    }
-  };
+ const getFreeHourStatus = async () => {
+  try {
+    const response = await axios.get(`${import.meta.env.VITE_VERCEL}admin/freehour-status`);
+    setFreeHourEnabled(response.data.freeHourEnabled);
+    console.log("FreeHour enabled:", response.data.freeHourEnabled)
+  } catch (error) {
+    console.error("Error fetching free hour status:", error);
+  }
+};
 
-  const toggleFreeHour = async () => {
-    try {
-      await axios.post(`${import.meta.env.VITE_VERCEL}admin/toggle-freehour`, {
-        status: !freeHourEnabled,
-      });
-      setFreeHourEnabled(!freeHourEnabled); // Update state
-      getFreeHourStatus();
-    } catch (error) {
-      console.error("Error toggling free hour:", error.response?.data || error);
-    }
-  };
+const toggleFreeHour = async () => {
+  try {
+    const response = await axios.post(`${import.meta.env.VITE_VERCEL}admin/toggle-freehour`, {
+      status: !freeHourEnabled,
+    });
+    setFreeHourEnabled(response.data.freeHourEnabled); // Update state based on response
+  } catch (error) {
+    console.error("Error toggling free hour:", error.response?.data || error);
+  }
+};
 
   const updateRole = async (userId, newRole) => {
     try {
@@ -61,6 +62,29 @@ function Users() {
       getUsers(); // Refresh users list
     } catch (error) {
       console.error("Error updating user role:", error.response?.data || error);
+    }
+  };
+  const getBookingPrices = async () => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_VERCEL}admin/booking-prices`
+      );
+      setRegularPrice(response.data.regularBooking);
+      setSpecialPrice(response.data.specialBooking);
+    } catch (error) {
+      console.error("Error fetching booking prices:", error);
+    }
+  };
+
+  const updateBookingPrices = async () => {
+    try {
+      await axios.post(`${import.meta.env.VITE_VERCEL}admin/update-prices`, {
+        regularBooking: regularPrice,
+        specialBooking: specialPrice,
+      });
+      alert("Prices updated successfully");
+    } catch (error) {
+      console.error("Error updating booking prices:", error);
     }
   };
 
@@ -85,6 +109,41 @@ function Users() {
           }}
         >
           {freeHourEnabled ? "Disable Free Hour" : "Enable Free Hour"}
+        </button>
+      </div>
+      <div
+        className="toggle-container"
+        style={{ backgroundColor: "white", maxWidth: "20%" }}
+      >
+        <h2>Set Booking Prices</h2>
+
+        <label>Regular Booking Price:</label>
+        <input
+          type="number"
+          value={regularPrice}
+          onChange={(e) => setRegularPrice(Number(e.target.value))}
+          style={{ padding: "5px", width: "100%" }}
+        />
+
+        <label>Special Booking Price:</label>
+        <input
+          type="number"
+          value={specialPrice}
+          onChange={(e) => setSpecialPrice(Number(e.target.value))}
+          style={{ padding: "5px", width: "100%", marginTop: "10px" }}
+        />
+
+        <button
+          onClick={updateBookingPrices}
+          style={{
+            backgroundColor: "green",
+            color: "white",
+            padding: "10px",
+            marginTop: "10px",
+            cursor: "pointer",
+          }}
+        >
+          Update Prices
         </button>
       </div>
       <h1>Manage Users</h1>

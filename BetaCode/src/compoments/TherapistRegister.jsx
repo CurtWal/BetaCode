@@ -11,6 +11,7 @@ function TherapistRegister() {
   const [licenseId, setLicenseId] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [zipCode, setZipCode] = useState("");
+  const [address, setAddress] = useState("");
   const navigate = useNavigate();
 
   const handleRegister = async () => {
@@ -20,7 +21,8 @@ function TherapistRegister() {
       !password ||
       !licenseId ||
       !phoneNumber ||
-      !zipCode
+      !zipCode ||
+      !address
     ) {
       alert("Please fill in all fields before registering.");
       return; // Stop function execution if fields are empty
@@ -38,6 +40,7 @@ function TherapistRegister() {
           licenseId,
           phoneNumber,
           zipCode,
+          address,
         }),
       }
     );
@@ -75,6 +78,12 @@ function TherapistRegister() {
           placeholder="Phone Number"
           value={phoneNumber}
           onChange={(e) => setPhoneNumber(e.target.value)}
+        />
+        <input
+          type="text"
+          placeholder="Address"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
         />
         <input
           type="text"

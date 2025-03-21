@@ -33,6 +33,10 @@ const bookingSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  startToEnd: {
+    type: String,
+    required: true,
+  },
   price: {
     type: Number,
     required: true,

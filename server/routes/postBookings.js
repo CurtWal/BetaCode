@@ -69,6 +69,8 @@ router.post("/new-booking", async (req, res) => {
       eventHours,
       eventIncrement,
       price,
+      payType,
+      startToEnd,
     } = req.body;
 
     // Save booking in the database
@@ -82,25 +84,28 @@ router.post("/new-booking", async (req, res) => {
       eventHours,
       eventIncrement,
       price, // Use the price passed from frontend (final price after discounts)
+      payType,
+      startToEnd,
     });
-    const confirmationLink = `https://motgpayment.com/confirm-booking/${newBooking._id}`;
+    const confirmationLink = `https://motgpayment/confirm-booking/${newBooking._id}`;
 
     // Set up email transporter
     const mailOptions = {
       from: process.env.EMAIL_USER,
-      to: ["curtrickw@yahoo.com"], // Change to actual email recipients
+      to: ["curtrickwalton@gmail.com"], // Change to actual email recipients
       subject: "New Massage Booking Confirmation",
       html: `
             <h2>New Booking Details</h2>
-            <p><strong>Price:</strong> $${newBooking.price}</p>
+            <p><strong>Price:</strong> $${newBooking.price} ${payType}</p>
             <p><strong>Company Name:</strong> ${newBooking.companyName}</p>
             <p><strong>Name:</strong> ${newBooking.name}</p>
             <p><strong>Email:</strong> ${newBooking.email}</p>
             <p><strong>Address:</strong> ${newBooking.address}</p>
             <p><strong>ZipCode:</strong> ${newBooking.zipCode}</p>
             <p><strong>Therapist:</strong> ${newBooking.therapist}</p>
-            <p><strong>Hours:</strong> ${newBooking.eventHours}</p>
-            <p><strong>Increment:</strong> ${newBooking.eventIncrement}</p>
+            <p><strong>Hours:</strong> ${newBooking.eventHours} hour(s)</p>
+            <p><strong>Increment:</strong> ${newBooking.eventIncrement} minutes</p>
+            <p><strong>Start and End Time:</strong> ${newBooking.startToEnd}</p>
             <br />
             <a href="${confirmationLink}" style="display: inline-block; padding: 10px 20px; font-size: 16px; color: white; background: #007bff; text-decoration: none; border-radius: 5px;">Mark Booking as Ready</a>
           `,

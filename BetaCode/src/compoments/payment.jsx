@@ -16,11 +16,13 @@ const Payment = ({
   eventIncrement,
   formType,
   companyName,
+  startToEnd,
 }) => {
   const [paymentForm, setPaymentForm] = useState(null);
   const cardContainerRef = useRef(null);
   const isInitialized = useRef(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [payType, setPayType] = useState("Card");
 
   useEffect(() => {
     const initializePaymentForm = async () => {
@@ -122,6 +124,8 @@ const Payment = ({
           eventHours,
           eventIncrement,
           price: finalAmount / 100, // Convert back to dollars
+          payType,
+          startToEnd,
         };
 
         await axios.post(

@@ -19,6 +19,9 @@ function SpecialForm() {
   const [eventHours, setEventHours] = useState(2);
   const [eventIncrement, setEventIncrement] = useState(10);
   const [price, setPrice] = useState(90);
+  const [specialPrice, setSpecialPrice] = useState(90);
+  const [payType, setPayType] = useState("Check");
+  const [startToEnd, setStartToEnd] = useState("");
   const [validated, setValidated] = useState(false);
   const [formType, setFormType] = useState("special");
   const [show, setShow] = useState(false);
@@ -33,31 +36,31 @@ function SpecialForm() {
       therapists: "1 Therapist",
       duration: "1 Hour",
       massages: "6 Clients",
-      cost: "$90",
+      cost: `$${specialPrice}`,
     },
     {
       therapists: "1 Therapist",
       duration: "2 Hour",
       massages: "12 Clients",
-      cost: "$180",
+      cost: `$${specialPrice * 2}`,
     },
     {
       therapists: "2 Therapist",
       duration: "1 Hour",
       massages: "12 Clients",
-      cost: "$180",
+      cost: `$${specialPrice * 2}`,
     },
     {
       therapists: "2 Therapist",
       duration: "2 Hour",
       massages: "24 Clients",
-      cost: "$360",
+      cost: `$${specialPrice * 4}`,
     },
     {
       therapists: "3 Therapist",
       duration: "1 Hour",
       massages: "18 Clients",
-      cost: "$270",
+      cost: `$${specialPrice * 3}`,
     },
   ];
 
@@ -75,9 +78,55 @@ function SpecialForm() {
       setFormType("special");
     }
   };
+  const postBookingsbyCheck = async (e) => {
+    const form = e.currentTarget;
+    if (form.checkValidity() === false) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
 
+    setValidated(true);
+    e.preventDefault();
+    if (form.checkValidity() === true) {
+      const newBooking = {
+        companyName,
+        name,
+        email,
+        address,
+        zipCode,
+        therapist,
+        eventHours,
+        eventIncrement,
+        price,
+        payType,
+        startToEnd,
+      };
+
+      await axios.post(
+        `${import.meta.env.VITE_VERCEL}new-booking`,
+        newBooking
+      );
+
+      alert("Payment successful! Booking email Sent.");
+
+      console.log("Booking successful");
+    }
+  };
+  const getBookingPrices = async () => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_VERCEL}admin/booking-prices`
+      );
+      setSpecialPrice(response.data.specialBooking);
+    } catch (error) {
+      console.error("Error fetching booking prices:", error);
+    }
+  };
   useEffect(() => {
-    setPrice(therapist * 90 * eventHours);
+    getBookingPrices();
+  }, []);
+  useEffect(() => {
+    setPrice(therapist * specialPrice * eventHours);
   }, [therapist, eventHours]);
   return (
     <div className="Grid-Container">
@@ -85,7 +134,7 @@ function SpecialForm() {
       <div className="Container">
         <div className="Text-Info">
           <h3>1 Therapist</h3>
-          <h4>$90/hour</h4>
+          <h4>${specialPrice}/hour</h4>
           <hr></hr>
           <ul class="list-none md:list-disc ...">
             <li>Minimum 2 hour Booking</li>
@@ -332,7 +381,24 @@ function SpecialForm() {
                   <option value="20">20 Minutes</option>
                 </Form.Select>
               </Form.Group>
-
+              <Form.Group
+                as={Col}
+                xs={12}
+                md={4}
+                controlId="validationCustom05"
+              >
+                <Form.Label>Start & End Time</Form.Label>
+                <Form.Control
+                  type="text"
+                  placeholder="Time"
+                  onChange={(e) => setStartToEnd(e.target.value)}
+                  min="1"
+                  required
+                />
+                <Form.Control.Feedback type="invalid">
+                  Please provide a valid Start and End Time.
+                </Form.Control.Feedback>
+              </Form.Group>
               <Form.Group
                 as={Col}
                 controlId="validationCustom07"
@@ -341,13 +407,24 @@ function SpecialForm() {
                 <p>Total: ${price}</p>
               </Form.Group>
             </Row>
-            <Form.Group
-              as={Col}
-              controlId="validationCustom07"
-              style={{ marginTop: "4%" }}
-            >
-              <Button type="submit">Book & Pay</Button>
-            </Form.Group>
+            <Row>
+              <Form.Group
+                as={Col}
+                controlId="validationCustom07"
+                style={{ marginTop: "4%" }}
+              >
+                <Button type="submit">Book & Pay by Card</Button>
+              </Form.Group>
+              <Form.Group
+                as={Col}
+                controlId="validationCustom07"
+                style={{ marginTop: "4%" }}
+              >
+                <Button onClick={postBookingsbyCheck} style={{ backgroundColor: 'red' }}>
+                  Book & Pay by Check
+                </Button>
+              </Form.Group>
+            </Row>
           </Form>
         </div>
         <div>
@@ -370,6 +447,7 @@ function SpecialForm() {
                 eventIncrement={eventIncrement}
                 formType={formType}
                 companyName={companyName}
+                startToEnd={startToEnd}
               />
             </Modal.Body>
           </Modal>
