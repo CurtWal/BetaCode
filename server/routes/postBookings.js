@@ -107,7 +107,7 @@ router.post("/new-booking", async (req, res) => {
     };
 
     // Send email
-    sgMail
+    await sgMail
       .send(mailOptions)
       .then(() => {
         console.log("Email sent");
@@ -172,7 +172,7 @@ router.get("/confirm-booking/:id", async (req, res) => {
                 <p>Log in to view and accept the booking.</p>
             `,
     };
-    sgMail
+    await sgMail
       .sendMultiple(mailOptions)
       .then(() => {
         console.log("Email sent");

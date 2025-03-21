@@ -15,7 +15,6 @@ const ConfirmBooking = () => {
         );
 
         alert(response.data); // Show success message
-        navigate("/");
       } catch (err) {
         console.error("Error confirming booking:", err);
         alert("Error confirming booking. No Therapist In Range.");

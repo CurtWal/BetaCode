@@ -36,7 +36,7 @@ router.post("/register", async (req, res) => {
     };
 
     // Send email
-    sgMail
+    await sgMail
       .send(mailOptions)
       .then(() => {
         console.log("Email sent");
@@ -87,7 +87,7 @@ router.post("/therapistregister", async (req, res) => {
     };
 
     // Send email
-    sgMail
+    await sgMail
       .send(mailOptions)
       .then(() => {
         console.log("Email sent");
