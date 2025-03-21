@@ -104,7 +104,6 @@ function Users() {
                   >
                     <option value="user">User</option>
                     <option value="therapist">Therapist</option>
-                    <option value="special">Special</option>
                     <option value="admin">Admin</option>
                   </select>
                 </p>
@@ -123,6 +122,7 @@ function Users() {
               <div className="booking-card">
                 <p>Name: {user.username}</p>
                 <p>Email: {user.email}</p>
+                <p>Phone: {user.phoneNumber}</p>
                 <p>
                   Role:
                   <select
@@ -131,7 +131,6 @@ function Users() {
                   >
                     <option value="user">User</option>
                     <option value="therapist">Therapist</option>
-                    <option value="special">Special</option>
                     <option value="admin">Admin</option>
                   </select>
                 </p>
@@ -158,7 +157,6 @@ function Users() {
                   >
                     <option value="user">User</option>
                     <option value="therapist">Therapist</option>
-                    <option value="special">Special</option>
                     <option value="admin">Admin</option>
                   </select>
                 </p>

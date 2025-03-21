@@ -3,7 +3,8 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const User = require("../model/user");
 const router = express.Router();
-
+const sgMail = require("@sendgrid/mail");
+sgMail.setApiKey(process.env.SENDGRID_KEY);
 //Register User
 router.post("/register", async (req, res) => {
   const { username, email, password, role, freehour } = req.body;
@@ -23,6 +24,27 @@ router.post("/register", async (req, res) => {
       freehour,
     });
     await newUser.save();
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: ["curtrickw@yahoo.com"], // Change to actual email recipients
+      subject: "New User Registered",
+      html: `
+                <h2>New User Details</h2>
+                <p><strong>Name:</strong> ${newUser.username}</p>
+                <p><strong>Email:</strong> ${newUser.email}</p>
+              `,
+    };
+
+    // Send email
+    sgMail
+      .send(mailOptions)
+      .then(() => {
+        console.log("Email sent");
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+
     res.status(201).json({ message: "User registered successfully" });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -51,6 +73,28 @@ router.post("/therapistregister", async (req, res) => {
       zipCode,
     });
     await newUser.save();
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: ["curtrickw@yahoo.com"], // Change to actual email recipients
+      subject: "New Therapist Registered",
+      html: `
+            <h2>New Therapist Details</h2>
+            <p><strong>Name:</strong> ${newUser.username}</p>
+            <p><strong>Email:</strong> ${newUser.email}</p>
+            <p><strong>License ID:</strong> ${newUser.licenseId}</p>
+            <p><strong>Phone Number:</strong> ${newUser.phoneNumber}</p>
+          `,
+    };
+
+    // Send email
+    sgMail
+      .send(mailOptions)
+      .then(() => {
+        console.log("Email sent");
+      })
+      .catch((error) => {
+        console.error(error);
+      });
     res.status(201).json({ message: "User registered successfully" });
   } catch (err) {
     res.status(500).json({ message: err.message });

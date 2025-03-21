@@ -9,7 +9,7 @@ function Bookings() {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [therapistInputs, setTherapistInputs] = useState({}); // Stores input per booking
   const [isFull, setIsFull] = useState(false);
-
+  const currentUserId = localStorage.getItem("userId");
   const checkZipDistance = async (zip1, zip2, maxDistance) => {
     const API_KEY = import.meta.env.VITE_GEO_CODIO_API;
     try {
@@ -53,41 +53,49 @@ function Bookings() {
         console.error("No token found, user is not authenticated.");
         return;
       }
-
-      const therapistId = localStorage.getItem("userId"); // Assuming therapist's userId is stored in localStorage
-
-      // Fetch therapist's zip code from the backend
-      const therapistResponse = await axios.get(
-        `${import.meta.env.VITE_VERCEL}api/therapist/${therapistId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      const therapistZip = therapistResponse.data.zipCode;
-
-      // Now fetch all bookings
+  
+      const userId = localStorage.getItem("userId");
+      const userRole = localStorage.getItem("role"); // Assuming role is stored in localStorage
+  
+      // Fetch all bookings
       const response = await axios.get(
         `${import.meta.env.VITE_VERCEL}bookings`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-
-      // Filter the bookings based on distance
-      const filteredBookings = await Promise.all(
-        response.data.map(async (booking) => {
-          const isNearTherapist = await checkZipDistance(
-            therapistZip,
-            booking.zipCode,
-            92 // 92 miles for 1 hour 30 min distance
-          );
-          return isNearTherapist ? booking : null; // Include only bookings within 1-hour 30min distance
-        })
-      );
-
-      setBookings(filteredBookings.filter((booking) => booking !== null)); // Remove null values (non-matching bookings)
-      console.log(filteredBookings);
+  
+      if (userRole === "admin") {
+        // Admin sees all bookings
+        setBookings(response.data);
+        return;
+      }
+  
+      if (userRole === "therapist") {
+        // Fetch therapist's zip code
+        const therapistResponse = await axios.get(
+          `${import.meta.env.VITE_VERCEL}api/therapist/${userId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+  
+        const therapistZip = therapistResponse.data.zipCode;
+  
+        // Filter bookings based on distance
+        const filteredBookings = await Promise.all(
+          response.data.map(async (booking) => {
+            const isNearTherapist = await checkZipDistance(
+              therapistZip,
+              booking.zipCode,
+              92 // 92 miles for 1 hour 30 min distance
+            );
+            return isNearTherapist ? booking : null;
+          })
+        );
+  
+        setBookings(filteredBookings.filter((booking) => booking !== null));
+      }
     } catch (error) {
       console.error("Error fetching bookings:", error.response?.data || error);
     }
@@ -203,7 +211,42 @@ function Bookings() {
   const handleClose = () => {
     setSelectedBooking(null);
   };
+  const leaveBooking = async (bookingId) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("No token found, user is not authenticated.");
+        return;
+      }
 
+      const therapistId = localStorage.getItem("userId");
+
+      // Update UI immediately
+      setBookings((prevBookings) =>
+        prevBookings.map((booking) =>
+          booking._id === bookingId
+            ? {
+                ...booking,
+                assignedTherapists: booking.assignedTherapists.filter(
+                  (therapist) => therapist._id !== therapistId
+                ),
+              }
+            : booking
+        )
+      );
+
+      // Send API request to remove therapist
+      await axios.post(
+        `${import.meta.env.VITE_VERCEL}leave-booking`,
+        { bookingId, therapistId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      getBookings();
+    } catch (error) {
+      console.error("Error leaving booking:", error.response?.data || error);
+    }
+  };
   return (
     <div className="bookingContainer">
       <h1 style={{ textAlign: "center" }}>Bookings</h1>
@@ -280,6 +323,17 @@ function Bookings() {
                             Join Booking
                           </Button>
                         )}
+                        {currentUserId &&
+                          booking.assignedTherapists.some(
+                            (t) => t._id === currentUserId
+                          ) && (
+                            <Button
+                              variant="danger"
+                              onClick={() => leaveBooking(booking._id)}
+                            >
+                              Leave Booking
+                            </Button>
+                          )}
                       </Modal.Footer>
                     </Modal>
                   )}

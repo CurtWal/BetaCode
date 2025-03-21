@@ -28,8 +28,8 @@ const Payment = ({
 
       try {
         const payments = window.Square.payments(
-          import.meta.env.VITE_API_KEY,
-          import.meta.env.VITE_Location
+          import.meta.env.VITE_API_KEY2,
+          import.meta.env.VITE_Location2
         );
         const card = await payments.card();
         await card.attach("#card-container"); // Ensure only one form attaches

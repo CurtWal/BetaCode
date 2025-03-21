@@ -169,18 +169,18 @@ router.post("/send-email-on-spot-fill", async (req, res) => {
     // Fetch assigned therapist details
     const assignedTherapists = await TherapistAssignment.find({
       bookingId,
-    }).populate("therapistId", "username email");
+    }).populate("therapistId", "username email phoneNumber");
 
     // Collect therapist info
     const therapistInfo = assignedTherapists
       .map((t) => {
-        return `<li>${t.therapistId.username} - ${t.therapistId.email}</li>`;
+        return `<li>${t.therapistId.username} - ${t.therapistId.email} - ${t.therapistId.phoneNumber}</li>`;
       })
       .join("");
 
     const finalEmailOptions = {
       from: process.env.EMAIL_USER, // Your email (verified sender)
-      to: ["sam@massageonthegomemphis.com"], // Same email for sending & receiving     // Adding your email as replyTo
+      to: ["curtrickw@yahoo.com"], // Same email for sending & receiving     // Adding your email as replyTo
       subject: "All Therapist Spots Have Been Filled!",
       html: `
             <h2>All Therapist Spots Have Been Filled!</h2>
@@ -209,6 +209,118 @@ router.post("/send-email-on-spot-fill", async (req, res) => {
   } catch (error) {
     console.error("Error sending email:", error);
     res.status(500).json({ message: "Error sending email", error });
+  }
+});
+
+router.post("/leave-booking", async (req, res) => {
+  try {
+    const { bookingId, therapistId } = req.body;
+
+    // Find the therapist assignment
+    const assignment = await TherapistAssignment.findOneAndDelete({
+      bookingId,
+      therapistId,
+    });
+
+    if (!assignment) {
+      return res
+        .status(404)
+        .json({ message: "Therapist not assigned to this booking" });
+    }
+
+    // Fetch the booking details
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    // Find all therapists within distance who are not assigned yet
+    const therapists = await User.find(
+      { role: "therapist" },
+      "email _id zipCode"
+    );
+    const assignedTherapists = await TherapistAssignment.find({ bookingId });
+    const assignedTherapistIds = assignedTherapists.map((t) =>
+      t.therapistId.toString()
+    );
+
+    const assignedCount = await TherapistAssignment.countDocuments({
+      bookingId,
+    });
+
+    if (assignedCount >= booking.therapist) {
+      return res
+        .status(400)
+        .json({ message: "Booking already has enough therapists assigned" });
+    }
+    const remainingSpots = booking.therapist - assignedCount;
+    const remainingTherapists = [];
+    for (const therapist of therapists) {
+      if (
+        !assignedTherapistIds.includes(therapist._id.toString()) &&
+        (await checkZipDistance(booking.zipCode, therapist.zipCode, 92))
+      ) {
+        remainingTherapists.push(therapist.email);
+      }
+    }
+
+    // Notify therapists about the open spot
+    if (remainingTherapists.length > 0) {
+      try {
+        const msg = {
+          to: remainingTherapists,
+          from: process.env.EMAIL_USER,
+          subject: "A Therapist Spot Just Opened Up!",
+          html: `
+            <h2>A therapist has left a booking.</h2>
+            <p>A booking now has an available therapist spot.</p>
+             <p><strong>Company Name:</strong> ${booking.companyName}</p>
+                <p><strong>Client Name:</strong> ${booking.name}</p>
+                <p><strong>Location:</strong> ${booking.address}</p>
+                <p><strong>ZipCode:</strong> ${booking.zipCode}</p>
+                <p><strong>Hours:</strong> ${booking.eventHours} hour(s)</p>
+                <p><strong>Increment:</strong> ${booking.eventIncrement} minutes</p>
+            <p><strong>Remaining Spots:</strong> ${remainingSpots}</p>
+            
+          `,
+        };
+
+        await sgMail.send(msg);
+      } catch (error) {
+        console.error(`Error sending email: ${error}`);
+      }
+    }
+
+    // Send confirmation email to therapist who left
+    const therapist = await User.findById(therapistId);
+    if (therapist) {
+      const leaveMsg = {
+        to: "curtrickw@yahoo.com",
+        from: process.env.EMAIL_USER,
+        subject: "Therapist Has Left a Booking",
+        html: `
+          <h4>Name: ${therapist.username}</h4>
+          <h4>Email: ${therapist.email}</h4>
+          <h4>Phone Number: ${therapist.phoneNumber}</h4>
+          <p><strong>Booking Details:</strong></p>
+          <p><strong>Company Name:</strong> ${booking.companyName}</p>
+          <p><strong>Client Name:</strong> ${booking.name}</p>
+          <p><strong>Location:</strong> ${booking.address}</p>
+          <p><strong>ZipCode:</strong> ${booking.zipCode}</p>
+          <p><strong>Hours:</strong> ${booking.eventHours} hour(s)</p>
+          <p><strong>Increment:</strong> ${booking.eventIncrement} minutes</p>
+          <p><strong>Price:</strong> $${booking.price}</p>
+        `,
+      };
+      await sgMail.send(leaveMsg);
+    }
+
+    res.json({
+      message: "Therapist successfully removed and notifications sent.",
+    });
+  } catch (error) {
+    console.error("Error removing therapist:", error);
+    res.status(500).json({ message: "Error removing therapist", error });
   }
 });
 module.exports = router;
