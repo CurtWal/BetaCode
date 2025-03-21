@@ -34,7 +34,7 @@ router.post("/create-payment", async (req, res) => {
         finalAmount = Math.round(finalAmount * 0.9); // Apply 10% discount
         user.points -= 3; // Deduct 3 points
         discountApplied = true;
-        console.log("discount applied");
+        
       }
       if (user && user.freehour === 1) {
         if (formType === "special") {
