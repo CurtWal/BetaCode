@@ -76,7 +76,7 @@ router.post("/therapistregister", async (req, res) => {
     await newUser.save();
     const mailOptions = {
       from: process.env.EMAIL_USER,
-      to: ["hello@massageonthegomemphis.com"], // Change to actual email recipients
+      to: ["hello@massageonthegomemphis.com", "sam@massageonthegomemphis.com"], // Change to actual email recipients
       subject: "New Therapist Registered",
       html: `
             <h2>New Therapist Details</h2>

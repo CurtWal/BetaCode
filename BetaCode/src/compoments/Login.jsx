@@ -45,7 +45,7 @@ function Login({ onLogin }) {
             <input
               type="text"
               placeholder="Email"
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => setEmail(e.target.value.toLowerCase())}
             />
             <input
               type="password"

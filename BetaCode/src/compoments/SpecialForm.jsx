@@ -402,7 +402,7 @@ function SpecialForm() {
                   required
                 />
                 <Form.Control.Feedback type="invalid">
-                  Please provide a valid Start Time.
+                  Please provide a valid Date.
                 </Form.Control.Feedback>
               </Form.Group>
               <Form.Group
@@ -411,7 +411,7 @@ function SpecialForm() {
                 md={4}
                 controlId="validationCustom05"
               >
-                <Form.Label>End Time</Form.Label>
+                <Form.Label>Start Time</Form.Label>
                 <Form.Control
                   type="time"
                   placeholder="Time"
@@ -420,7 +420,7 @@ function SpecialForm() {
                   required
                 />
                 <Form.Control.Feedback type="invalid">
-                  Please provide a valid End Time.
+                  Please provide a valid Start Time.
                 </Form.Control.Feedback>
               </Form.Group>
               <Form.Group
@@ -442,7 +442,7 @@ function SpecialForm() {
                 </Form.Control.Feedback>
               </Form.Group>
               <InputGroup>
-                <InputGroup.Text>With textarea</InputGroup.Text>
+                <InputGroup.Text>Anything else?</InputGroup.Text>
                 <Form.Control as="textarea" aria-label="With textarea" onChange={(e) => {setExtra(e.target.value); console.log(extra)}} />
               </InputGroup>
               <Form.Group
