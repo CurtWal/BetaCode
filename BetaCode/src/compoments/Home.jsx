@@ -21,7 +21,10 @@ function Home() {
   const [price, setPrice] = useState(150);
   const [regularPrice, setRegularPrice] = useState(150);
   const [payType, setPayType] = useState("Check");
-  const [startToEnd, setStartToEnd] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [extra, setExtra] = useState("");
+  const [date, setDate] = useState("");
   const [validated, setValidated] = useState(false);
   const [formType, setFormType] = useState("regular");
   const [show, setShow] = useState(false);
@@ -87,7 +90,6 @@ function Home() {
     setValidated(true);
     e.preventDefault();
     if (form.checkValidity() === true) {
-      
       const newBooking = {
         companyName,
         name,
@@ -99,13 +101,13 @@ function Home() {
         eventIncrement,
         price,
         payType,
-        startToEnd
+        startTime,
+        endTime,
+        extra,
+        date
       };
 
-      await axios.post(
-        `${import.meta.env.VITE_VERCEL}new-booking`,
-        newBooking
-      );
+      await axios.post(`${import.meta.env.VITE_VERCEL}new-booking`, newBooking);
 
       alert("Payment successful! Booking email Sent.");
 
@@ -388,18 +390,58 @@ function Home() {
                 md={4}
                 controlId="validationCustom05"
               >
-                <Form.Label>Start & End Time</Form.Label>
+                <Form.Label>Availiable Date</Form.Label>
                 <Form.Control
-                  type="text"
-                  placeholder="Time"
-                  onChange={(e) => setStartToEnd(e.target.value)}
+                  type="Date"
+                  placeholder="Date"
+                  onChange={(e) => setDate(e.target.value)}
                   min="1"
                   required
                 />
                 <Form.Control.Feedback type="invalid">
-                  Please provide a valid Start and End Time.
+                  Please provide a valid Start Time.
                 </Form.Control.Feedback>
               </Form.Group>
+              <Form.Group
+                as={Col}
+                xs={12}
+                md={4}
+                controlId="validationCustom05"
+              >
+                <Form.Label>End Time</Form.Label>
+                <Form.Control
+                  type="time"
+                  placeholder="Time"
+                  onChange={(e) => setStartTime(e.target.value)}
+                  min="1"
+                  required
+                />
+                <Form.Control.Feedback type="invalid">
+                  Please provide a valid End Time.
+                </Form.Control.Feedback>
+              </Form.Group>
+              <Form.Group
+                as={Col}
+                xs={12}
+                md={4}
+                controlId="validationCustom05"
+              >
+                <Form.Label>End Time</Form.Label>
+                <Form.Control
+                  type="time"
+                  placeholder="Time"
+                  onChange={(e) => setEndTime(e.target.value)}
+                  min="1"
+                  required
+                />
+                <Form.Control.Feedback type="invalid">
+                  Please provide a valid End Time.
+                </Form.Control.Feedback>
+              </Form.Group>
+              <InputGroup>
+                <InputGroup.Text>With textarea</InputGroup.Text>
+                <Form.Control as="textarea" aria-label="With textarea" onChange={(e) => {setExtra(e.target.value); console.log(extra)}} />
+              </InputGroup>
               <Form.Group
                 as={Col}
                 controlId="validationCustom07"
@@ -414,16 +456,19 @@ function Home() {
                 controlId="validationCustom07"
                 style={{ marginTop: "4%" }}
               >
-                <Button type="submit">
-                  Book & Pay by Card
-                </Button>
+                <Button type="submit">Book & Pay by Card</Button>
               </Form.Group>
               <Form.Group
                 as={Col}
                 controlId="validationCustom07"
                 style={{ marginTop: "4%" }}
               >
-                <Button onClick={postBookingsbyCheck} style={{ backgroundColor: 'red' }}>Book & Pay by Check</Button>
+                <Button
+                  onClick={postBookingsbyCheck}
+                  style={{ backgroundColor: "red" }}
+                >
+                  Book & Pay by Check
+                </Button>
               </Form.Group>
             </Row>
           </Form>
@@ -448,7 +493,10 @@ function Home() {
                 eventIncrement={eventIncrement}
                 formType={formType}
                 companyName={companyName}
-                startToEnd={startToEnd}
+                startTime={startTime}
+                endTime={endTime}
+                date={date}
+                extra={extra}
               />
             </Modal.Body>
           </Modal>

@@ -42,7 +42,13 @@ const getDistance = (lat1, lon1, lat2, lon2) => {
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c * 0.621371;
 };
-
+const convertTo12Hour = (time) => {
+  if (!time) return ""; // Handle empty or undefined values
+  const [hour, minute] = time.split(":").map(Number);
+  const period = hour >= 12 ? "PM" : "AM";
+  const formattedHour = hour % 12 || 12; // Convert 0 to 12 for 12AM
+  return `${formattedHour}:${minute.toString().padStart(2, "0")} ${period}`;
+};
 // Assign therapist to a booking
 router.post("/assign-therapist", async (req, res) => {
   try {
@@ -120,7 +126,10 @@ router.post("/assign-therapist", async (req, res) => {
                 <p><strong>ZipCode:</strong> ${booking.zipCode}</p>
                 <p><strong>Hours:</strong> ${booking.eventHours} hour(s)</p>
                 <p><strong>Increment:</strong> ${booking.eventIncrement} minutes</p>
-                <p><strong>Start and End Time:</strong> ${booking.startToEnd}</p>
+                <p><strong>Available Date:</strong> ${booking.date}</p>
+                <p><strong>Start Time:</strong> ${convertTo12Hour(booking.startTime)}</p>
+                <p><strong>End Time:</strong> ${convertTo12Hour(booking.endTime)}</p>
+                <p><strong>Extra Info:</strong> ${booking.extra}</p>
                 <p><strong>Remaining Spots:</strong> ${remainingSpots}</p>
                 <p>Hurry up and claim your spot before it's full!</p>
             `,
@@ -193,7 +202,10 @@ router.post("/send-email-on-spot-fill", async (req, res) => {
             <p><strong>ZipCode:</strong> ${booking.zipCode}</p>
             <p><strong>Hours:</strong> ${booking.eventHours} hour(s)</p>
             <p><strong>Increment:</strong> ${booking.eventIncrement} minutes</p>
-            <p><strong>Start and End Time:</strong> ${booking.startToEnd}</p>
+            <p><strong>Available Date:</strong> ${booking.date}</p>
+            <p><strong>Start Time:</strong> ${convertTo12Hour(booking.startTime)}</p>
+            <p><strong>End Time:</strong> ${convertTo12Hour(booking.endTime)}</p>
+            <p><strong>Extra Info:</strong> ${booking.extra}</p>
             <p><strong>Price:</strong> $${booking.price}</p>
             <ul>${therapistInfo}</ul>
             <p>Thank you for using our service!</p>
@@ -282,7 +294,10 @@ router.post("/leave-booking", async (req, res) => {
                 <p><strong>ZipCode:</strong> ${booking.zipCode}</p>
                 <p><strong>Hours:</strong> ${booking.eventHours} hour(s)</p>
                 <p><strong>Increment:</strong> ${booking.eventIncrement} minutes</p>
-                <p><strong>Start and End Time:</strong> ${booking.startToEnd} </p>
+                <p><strong>Available Date:</strong> ${booking.date}</p>
+                <p><strong>Start Time:</strong> ${convertTo12Hour(booking.startTime)}</p>
+                <p><strong>End Time:</strong> ${convertTo12Hour(booking.endTime)}</p>
+                <p><strong>Extra Info:</strong> ${booking.extra}</p>
             <p><strong>Remaining Spots:</strong> ${remainingSpots}</p>
             
           `,
@@ -312,6 +327,10 @@ router.post("/leave-booking", async (req, res) => {
           <p><strong>ZipCode:</strong> ${booking.zipCode}</p>
           <p><strong>Hours:</strong> ${booking.eventHours} hour(s)</p>
           <p><strong>Increment:</strong> ${booking.eventIncrement} minutes</p>
+          <p><strong>Available Date:</strong> ${booking.date}</p>
+          <p><strong>Start Time:</strong> ${convertTo12Hour(booking.startTime)}</p>
+          <p><strong>End Time:</strong> ${convertTo12Hour(booking.endTime)}</p>
+          <p><strong>Extra Info:</strong> ${booking.extra}</p>
           <p><strong>Price:</strong> $${booking.price}</p>
         `,
       };

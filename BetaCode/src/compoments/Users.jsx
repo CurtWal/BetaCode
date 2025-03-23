@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-
+import "../updatepromo.css";
 function Users() {
   const [users, setUsers] = useState([]);
   const [freeHourEnabled, setFreeHourEnabled] = useState(true);
@@ -90,62 +90,38 @@ const toggleFreeHour = async () => {
 
   return (
     <div>
-      <div
-        className="toggle-container"
-        style={{ display: "grid", backgroundColor: "white", maxWidth: "20%" }}
-      >
-        <label style={{ fontWeight: "bold" }}>
-          Free Hour Promotion: {freeHourEnabled ? "ON" : "OFF"}
-        </label>
-        <button
-          onClick={toggleFreeHour}
-          style={{
-            backgroundColor: freeHourEnabled ? "red" : "blue",
-            color: "white",
-            border: "none",
-            padding: "10px",
-            cursor: "pointer",
-            fontWeight: "bold",
-          }}
-        >
-          {freeHourEnabled ? "Disable Free Hour" : "Enable Free Hour"}
-        </button>
-      </div>
-      <div
-        className="toggle-container"
-        style={{ backgroundColor: "white", maxWidth: "20%" }}
-      >
-        <h2>Set Booking Prices</h2>
+      <div className="toggle-container">
+  <label className="toggle-label">
+    Free Hour Promotion: {freeHourEnabled ? "ON" : "OFF"}
+  </label>
+  <button className={`toggle-button ${freeHourEnabled ? "enabled" : "disabled"}`} onClick={toggleFreeHour}>
+    {freeHourEnabled ? "Disable Free Hour" : "Enable Free Hour"}
+  </button>
+</div>
 
-        <label>Regular Booking Price:</label>
-        <input
-          type="number"
-          value={regularPrice}
-          onChange={(e) => setRegularPrice(Number(e.target.value))}
-          style={{ padding: "5px", width: "100%" }}
-        />
+<div className="toggle-container">
+  <h2>Set Booking Prices</h2>
 
-        <label>Special Booking Price:</label>
-        <input
-          type="number"
-          value={specialPrice}
-          onChange={(e) => setSpecialPrice(Number(e.target.value))}
-          style={{ padding: "5px", width: "100%", marginTop: "10px" }}
-        />
+  <label>Regular Booking Price:</label>
+  <input
+    type="number"
+    value={regularPrice}
+    onChange={(e) => setRegularPrice(Number(e.target.value))}
+    className="input-field"
+  />
 
-        <button
-          onClick={updateBookingPrices}
-          style={{
-            backgroundColor: "green",
-            color: "white",
-            padding: "10px",
-            marginTop: "10px",
-            cursor: "pointer",
-          }}
-        >
-          Update Prices
-        </button>
-      </div>
+  <label>Special Booking Price:</label>
+  <input
+    type="number"
+    value={specialPrice}
+    onChange={(e) => setSpecialPrice(Number(e.target.value))}
+    className="input-field"
+  />
+
+  <button className="update-button" onClick={updateBookingPrices}>
+    Update Prices
+  </button>
+</div>
       <h1>Manage Users</h1>
       <ul className="bookings">
         {users

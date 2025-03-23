@@ -21,7 +21,10 @@ function SpecialForm() {
   const [price, setPrice] = useState(90);
   const [specialPrice, setSpecialPrice] = useState(90);
   const [payType, setPayType] = useState("Check");
-  const [startToEnd, setStartToEnd] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [extra, setExtra] = useState("");
+  const [date, setDate] = useState("");
   const [validated, setValidated] = useState(false);
   const [formType, setFormType] = useState("special");
   const [show, setShow] = useState(false);
@@ -99,7 +102,10 @@ function SpecialForm() {
         eventIncrement,
         price,
         payType,
-        startToEnd,
+        startTime,
+        endTime,
+        extra,
+        date
       };
 
       await axios.post(
@@ -387,18 +393,58 @@ function SpecialForm() {
                 md={4}
                 controlId="validationCustom05"
               >
-                <Form.Label>Start & End Time</Form.Label>
+                <Form.Label>Availiable Date</Form.Label>
                 <Form.Control
-                  type="text"
-                  placeholder="Time"
-                  onChange={(e) => setStartToEnd(e.target.value)}
+                  type="Date"
+                  placeholder="Date"
+                  onChange={(e) => setDate(e.target.value)}
                   min="1"
                   required
                 />
                 <Form.Control.Feedback type="invalid">
-                  Please provide a valid Start and End Time.
+                  Please provide a valid Start Time.
                 </Form.Control.Feedback>
               </Form.Group>
+              <Form.Group
+                as={Col}
+                xs={12}
+                md={4}
+                controlId="validationCustom05"
+              >
+                <Form.Label>End Time</Form.Label>
+                <Form.Control
+                  type="time"
+                  placeholder="Time"
+                  onChange={(e) => setStartTime(e.target.value)}
+                  min="1"
+                  required
+                />
+                <Form.Control.Feedback type="invalid">
+                  Please provide a valid End Time.
+                </Form.Control.Feedback>
+              </Form.Group>
+              <Form.Group
+                as={Col}
+                xs={12}
+                md={4}
+                controlId="validationCustom05"
+              >
+                <Form.Label>End Time</Form.Label>
+                <Form.Control
+                  type="time"
+                  placeholder="Time"
+                  onChange={(e) => setEndTime(e.target.value)}
+                  min="1"
+                  required
+                />
+                <Form.Control.Feedback type="invalid">
+                  Please provide a valid End Time.
+                </Form.Control.Feedback>
+              </Form.Group>
+              <InputGroup>
+                <InputGroup.Text>With textarea</InputGroup.Text>
+                <Form.Control as="textarea" aria-label="With textarea" onChange={(e) => {setExtra(e.target.value); console.log(extra)}} />
+              </InputGroup>
               <Form.Group
                 as={Col}
                 controlId="validationCustom07"
@@ -447,7 +493,10 @@ function SpecialForm() {
                 eventIncrement={eventIncrement}
                 formType={formType}
                 companyName={companyName}
-                startToEnd={startToEnd}
+                startTime={startTime}
+                endTime={endTime}
+                date={date}
+                extra={extra}
               />
             </Modal.Body>
           </Modal>

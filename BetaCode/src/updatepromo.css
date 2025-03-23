@@ -1,0 +1,96 @@
+.toggle-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px; /* Prevents it from being too wide */
+    margin: 10px auto; /* Centers the container */
+    text-align: center;
+  }
+  
+  .toggle-label {
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+  
+  .toggle-button {
+    
+    color: white;
+    border: none;
+    padding: 12px;
+    width: 100%;
+    max-width: 250px;
+    cursor: pointer;
+    font-weight: bold;
+    border-radius: 5px;
+  }
+  .toggle-button.enabled {
+    background-color: red;
+  }
+  
+  /* Blue when disabled */
+  .toggle-button.disabled {
+    background-color: blue;
+  }
+  .toggle-button:hover {
+    opacity: 0.9;
+  }
+  
+  .input-field {
+    width: 100%;
+    max-width: 300px;
+    padding: 10px;
+    margin: 5px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  }
+  
+  .update-button {
+    background-color: green;
+    color: white;
+    padding: 12px;
+    width: 100%;
+    max-width: 250px;
+    cursor: pointer;
+    border-radius: 5px;
+    font-weight: bold;
+    margin-top: 10px;
+  }
+  
+  .update-button:hover {
+    opacity: 0.9;
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .toggle-container {
+      width: 90%;
+      max-width: 100%;
+      padding: 15px;
+    }
+  
+    .toggle-button,
+    .update-button {
+      width: 100%;
+    }
+  
+    .input-field {
+      width: 100%;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .toggle-container {
+      padding: 10px;
+    }
+  
+    .toggle-button,
+    .update-button {
+      font-size: 14px;
+      padding: 10px;
+    }
+  }

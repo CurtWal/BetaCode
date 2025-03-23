@@ -45,7 +45,13 @@ function Bookings() {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c * 0.621371;
   };
-
+  const convertTo12Hour = (time) => {
+    if (!time) return ""; // Handle empty or undefined values
+    const [hour, minute] = time.split(":").map(Number);
+    const period = hour >= 12 ? "PM" : "AM";
+    const formattedHour = hour % 12 || 12; // Convert 0 to 12 for 12AM
+    return `${formattedHour}:${minute.toString().padStart(2, "0")} ${period}`;
+  };
   const getBookings = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -64,10 +70,15 @@ function Bookings() {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-  
+      const formattedBookings = response.data.map((booking) => ({
+        ...booking,
+        startTime: convertTo12Hour(booking.startTime),
+        endTime: convertTo12Hour(booking.endTime),
+      })); 
+
       if (userRole === "admin") {
         // Admin sees all bookings
-        setBookings(response.data);
+        setBookings(formattedBookings);
         return;
       }
   
@@ -84,7 +95,7 @@ function Bookings() {
   
         // Filter bookings based on distance
         const filteredBookings = await Promise.all(
-          response.data.map(async (booking) => {
+          formattedBookings.map(async (booking) => {
             const isNearTherapist = await checkZipDistance(
               therapistZip,
               booking.zipCode,
@@ -275,7 +286,10 @@ function Bookings() {
                   <li># of Therapist: {booking.therapist}</li>
                   <li>EventHours: {booking.eventHours} Hours</li>
                   <li>EventIncrements: {booking.eventIncrement} Minutes</li>
-                  <li>Start and End Time: {booking.startToEnd}</li>
+                  <li>Available Date: {booking.date}</li>
+                  <li>Start Time: {booking.startTime}</li>
+                  <li>End Time: {booking.endTime}</li>
+                  <li>Extra Info: {booking.extra}</li>
                   <div className="button-container">
                     <Button onClick={() => handleShow(booking._id)}>
                       {booking.assignedTherapists.length < booking.therapist

@@ -56,7 +56,13 @@ const getDistance = (lat1, lon1, lat2, lon2) => {
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c * 0.621371;
 };
-
+const convertTo12Hour = (time) => {
+  if (!time) return ""; // Handle empty or undefined values
+  const [hour, minute] = time.split(":").map(Number);
+  const period = hour >= 12 ? "PM" : "AM";
+  const formattedHour = hour % 12 || 12; // Convert 0 to 12 for 12AM
+  return `${formattedHour}:${minute.toString().padStart(2, "0")} ${period}`;
+};
 router.post("/new-booking", async (req, res) => {
   try {
     const {
@@ -70,7 +76,10 @@ router.post("/new-booking", async (req, res) => {
       eventIncrement,
       price,
       payType,
-      startToEnd,
+      startTime,
+      endTime,
+      date,
+      extra
     } = req.body;
 
     // Save booking in the database
@@ -85,9 +94,12 @@ router.post("/new-booking", async (req, res) => {
       eventIncrement,
       price, // Use the price passed from frontend (final price after discounts)
       payType,
-      startToEnd,
+      startTime,
+      endTime,
+      extra,
+      date
     });
-    const confirmationLink = `https://motgpayment.com/confirm-booking/${newBooking._id}`;
+    const confirmationLink = `http://localhost:5173/confirm-booking/${newBooking._id}`;
 
     // Set up email transporter
     const mailOptions = {
@@ -105,7 +117,10 @@ router.post("/new-booking", async (req, res) => {
             <p><strong>Therapist:</strong> ${newBooking.therapist}</p>
             <p><strong>Hours:</strong> ${newBooking.eventHours} hour(s)</p>
             <p><strong>Increment:</strong> ${newBooking.eventIncrement} minutes</p>
-            <p><strong>Start and End Time:</strong> ${newBooking.startToEnd}</p>
+            <p><strong>Available Date:</strong> ${newBooking.date}</p>
+            <p><strong>Start Time:</strong> ${convertTo12Hour(newBooking.startTime)}</p>
+            <p><strong>End Time:</strong> ${convertTo12Hour(newBooking.endTime)}</p>
+            <p><strong>Extra Info:</strong> ${newBooking.extra}</p>
             <br />
             <a href="${confirmationLink}" style="display: inline-block; padding: 10px 20px; font-size: 16px; color: white; background: #007bff; text-decoration: none; border-radius: 5px;">Mark Booking as Ready</a>
           `,
@@ -173,7 +188,10 @@ router.get("/confirm-booking/:id", async (req, res) => {
                 <p><strong>Therapist:</strong> ${booking.therapist}</p>
                 <p><strong>Hours:</strong> ${booking.eventHours} hour(s)</p>
                 <p><strong>Increment:</strong> ${booking.eventIncrement} minutes</p>
-                <p><strong>Start and End Time:</strong> ${booking.startToEnd}</p>
+                <p><strong>Available Date:</strong> ${booking.date}</p>
+                <p><strong>Start Time:</strong> ${convertTo12Hour(booking.startTime)}</p>
+                <p><strong>End Time:</strong> ${convertTo12Hour(booking.endTime)}</p>
+                <p><strong>Extra Info:</strong> ${booking.extra}</p>
                 <br />
                 <p>Log in to view and accept the booking.</p>
             `,
