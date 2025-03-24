@@ -57,6 +57,10 @@ const bookingSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  confirmed:{
+    type: Boolean,
+    default: false,
+  }
 });
 
 const bookingModel = mongoose.model("Booking", bookingSchema);

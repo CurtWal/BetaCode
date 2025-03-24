@@ -97,7 +97,8 @@ router.post("/new-booking", async (req, res) => {
       startTime,
       endTime,
       extra,
-      date
+      date,
+      confirmed: false,
     });
     const confirmationLink = `https://motgpayment.com/confirm-booking/${newBooking._id}`;
 
@@ -149,6 +150,9 @@ router.get("/confirm-booking/:id", async (req, res) => {
     if (!booking) {
       return res.status(404).send("Booking not found");
     }
+
+    booking.confirmed = true;
+    await booking.save();
 
     const therapists = await User.find(
       { role: "therapist" },

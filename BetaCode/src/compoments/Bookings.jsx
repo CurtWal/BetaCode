@@ -294,15 +294,16 @@ function Bookings() {
                     <Button onClick={() => handleShow(booking._id)}>
                       {booking.assignedTherapists.length < booking.therapist
                         ? "Assign Therapist"
-                        : "Assigned"}
+                        : "Job Filled"}
                     </Button>
 
                     {!booking.isComplete && (
                       <Button
                         onClick={() => markComplete(booking._id)}
                         style={{ marginLeft: "10px" }}
+                        variant="danger"
                       >
-                        Mark Complete
+                        Mark Job Complete
                       </Button>
                     )}
                   </div>

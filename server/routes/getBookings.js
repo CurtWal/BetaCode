@@ -55,7 +55,7 @@ router.get(
 
       // If the user is an admin, fetch all bookings
       if (userRole === "admin") {
-        const allBookings = await booking.find().lean(); // Get all bookings
+        const allBookings = await booking.find({ confirmed: true }).lean(); // Get all bookings
         const updatedBookings = await populateAssignedTherapists(allBookings);
         return res.json(updatedBookings); // Return all bookings for admin
       }
@@ -69,7 +69,7 @@ router.get(
       const therapistZip = therapist.zipCode; // Get therapist's zip code
 
       // Fetch all bookings
-      const myBookings = await booking.find().lean(); // Convert to plain objects
+      const myBookings = await booking.find({confirmed: true}).lean(); // Convert to plain objects
 
       // Fetch therapist assignments and populate therapist details
       const therapistAssignments = await TherapistAssignment.find()
