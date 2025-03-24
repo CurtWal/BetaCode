@@ -99,7 +99,7 @@ router.post("/new-booking", async (req, res) => {
       extra,
       date
     });
-    const confirmationLink = `http://localhost:5173/confirm-booking/${newBooking._id}`;
+    const confirmationLink = `https://motgpayment.com/confirm-booking/${newBooking._id}`;
 
     // Set up email transporter
     const mailOptions = {
