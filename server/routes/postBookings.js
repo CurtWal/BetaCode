@@ -104,7 +104,7 @@ router.post("/new-booking", async (req, res) => {
     // Set up email transporter
     const mailOptions = {
       from: process.env.EMAIL_USER,
-      to: ["hello@massageonthegomemphis.com"], // Change to actual email recipients
+      to: ["hello@massageonthegomemphis.com", "sam@massageonthegomemphis.com"], // Change to actual email recipients
       subject: "New Massage Booking Confirmation",
       html: `
             <h2>New Booking Details</h2>

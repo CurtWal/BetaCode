@@ -190,7 +190,7 @@ router.post("/send-email-on-spot-fill", async (req, res) => {
 
     const finalEmailOptions = {
       from: process.env.EMAIL_USER, // Your email (verified sender)
-      to: ["hello@massageonthegomemphis.com"], // Same email for sending & receiving     // Adding your email as replyTo
+      to: ["hello@massageonthegomemphis.com", "sam@massageonthegomemphis.com"], // Same email for sending & receiving     // Adding your email as replyTo
       subject: "All Therapist Spots Have Been Filled!",
       html: `
             <h2>All Therapist Spots Have Been Filled!</h2>
@@ -313,7 +313,7 @@ router.post("/leave-booking", async (req, res) => {
     const therapist = await User.findById(therapistId);
     if (therapist) {
       const leaveMsg = {
-        to: "hello@massageonthegomemphis.com",
+        to: ["hello@massageonthegomemphis.com", "sam@massageonthegomemphis.com"],
         from: process.env.EMAIL_USER,
         subject: "Therapist Has Left a Booking",
         html: `
