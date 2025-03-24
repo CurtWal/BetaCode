@@ -501,6 +501,13 @@ function Home() {
             </Modal.Body>
           </Modal>
         </div>
+        <div className="Text-Info" style={{backgroundColor:"red", color:"white"}}>
+          <h3>Disclaimer:</h3>
+          <p>All massages should be booked one week ahead</p>
+          <p >If you would like for a booking to be made within less than a week email </p>
+          <p style={{textAlign:"left"}}>sam@massageonthegomemphis.com</p>
+        </div>
+        
       </div>
     </div>
   );

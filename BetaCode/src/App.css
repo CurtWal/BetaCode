@@ -75,6 +75,8 @@ hr {
   text-align: center;
   box-shadow: 0px 4px 10px #060142;
   max-width: 250px;
+  width: fit-content; /* Adjust width dynamically to fit content */
+  word-wrap: break-word;
 }
 
 .Text-Info h3 {
