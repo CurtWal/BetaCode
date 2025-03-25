@@ -507,7 +507,6 @@ function Home() {
           <p >If you would like for a booking to be made within less than a week email </p>
           <p style={{textAlign:"left"}}>sam@massageonthegomemphis.com</p>
         </div>
-        
       </div>
     </div>
   );

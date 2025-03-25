@@ -16,7 +16,6 @@ const postPayment = require("./routes/payment");
 const authRoutes = require("./routes/authRoutes");
 const getAssignment = require("./routes/getAssignment");
 const adminRoute = require("./routes/admin");
-
 const PORT = process.env.PORT || 3003;
 const app = express();
 
