@@ -168,7 +168,7 @@ router.post("/assign-therapist", async (req, res) => {
               await mailgun.messages.create("motgpayment.com", {
                 from: process.env.EMAIL_USER,
                 to: email,
-                subject: "Booking Spot Still Available! YAhoo",
+                subject: "Booking Spot Still Available!",
                 html: `<h2>Booking Spots Are Filling Up!</h2>
                 <p>A booking still has available therapist spots.</p>
                 <p><strong>Company Name:</strong> ${booking.companyName}</p>
@@ -483,7 +483,7 @@ router.post("/leave-booking", async (req, res) => {
               await mailgun.messages.create("motgpayment.com", {
                 from: process.env.EMAIL_USER,
                 to: email,
-                subject: "A Therapist Spot Just Opened Up! YAhoo",
+                subject: "A Therapist Spot Just Opened Up!",
                 html: `<h2>A therapist has left a booking.</h2>
             <p>A booking now has an available therapist spot.</p>
              <p><strong>Company Name:</strong> ${booking.companyName}</p>

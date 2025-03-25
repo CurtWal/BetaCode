@@ -293,7 +293,7 @@ router.get("/confirm-booking/:id", async (req, res) => {
                   await mailgun.messages.create("motgpayment.com", {
                     from: process.env.EMAIL_USER,
                     to: email,
-                    subject: "Booking is Ready for Processing YAhoo",
+                    subject: "Booking is Ready for Processing ",
                     html: `<h2>Booking is Ready</h2>
                 <p>The following booking is now ready:</p>
                 <p><strong>Company Name:</strong> ${booking.companyName}</p>
