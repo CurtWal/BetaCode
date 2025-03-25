@@ -63,6 +63,32 @@ const convertTo12Hour = (time) => {
   const formattedHour = hour % 12 || 12; // Convert 0 to 12 for 12AM
   return `${formattedHour}:${minute.toString().padStart(2, "0")} ${period}`;
 };
+
+const sendEmailsInBatches = async (recipients, subject, htmlContent, batchSize = 10, delayMs = 5000) => {
+  for (let i = 0; i < recipients.length; i += batchSize) {
+    const batch = recipients.slice(i, i + batchSize);
+
+    try {
+      const msg = {
+        to: batch, // Sending to batch of emails
+        from: process.env.EMAIL_USER,
+        subject: subject,
+        html: htmlContent,
+      };
+
+      await sgMail.sendMultiple(msg);
+      console.log(`Batch sent to ${batch.length} therapists`);
+
+    } catch (error) {
+      console.error(`Error sending batch: ${error}`);
+    }
+
+    // Wait before sending the next batch
+    if (i + batchSize < recipients.length) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+};
 router.post("/new-booking", async (req, res) => {
   try {
     const {
@@ -176,13 +202,9 @@ router.get("/confirm-booking/:id", async (req, res) => {
     if (!eligibleTherapists.length) {
       return res.status(404).send("No therapists available within range.");
     }
-
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: eligibleTherapists,
-      subject: "Booking is Ready for Processing",
-      html: `
-                <h2>Booking is Ready</h2>
+try{
+    const subject = "Booking is Ready for Processing";
+    const htmlContent = `<h2>Booking is Ready</h2>
                 <p>The following booking is now ready:</p>
                 <p><strong>Company Name:</strong> ${booking.companyName}</p>
                 <p><strong>Name:</strong> ${booking.name}</p>
@@ -197,17 +219,43 @@ router.get("/confirm-booking/:id", async (req, res) => {
                 <p><strong>End Time:</strong> ${convertTo12Hour(booking.endTime)}</p>
                 <p><strong>Extra Info:</strong> ${booking.extra}</p>
                 <br />
-                <p>Log in to view and accept the booking.</p>
-            `,
-    };
-    await sgMail
-      .sendMultiple(mailOptions)
-      .then(() => {
-        console.log("Email sent");
-      })
-      .catch((error) => {
-        console.error(error);
-      });
+                <p>Log in to view and accept the booking.</p>`;
+    await sendEmailsInBatches(eligibleTherapists, subject, htmlContent);
+  } catch (err) {
+    console.error("Error sending emails:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+    // const mailOptions = {
+    //   from: process.env.EMAIL_USER,
+    //   to: eligibleTherapists,
+    //   subject: "Booking is Ready for Processing",
+    //   html: `
+    //             <h2>Booking is Ready</h2>
+    //             <p>The following booking is now ready:</p>
+    //             <p><strong>Company Name:</strong> ${booking.companyName}</p>
+    //             <p><strong>Name:</strong> ${booking.name}</p>
+    //             <p><strong>Email:</strong> ${booking.email}</p>
+    //             <p><strong>Address:</strong> ${booking.address}</p>
+    //             <p><strong>ZipCode:</strong> ${booking.zipCode}</p>
+    //             <p><strong>Therapist:</strong> ${booking.therapist}</p>
+    //             <p><strong>Hours:</strong> ${booking.eventHours} hour(s)</p>
+    //             <p><strong>Increment:</strong> ${booking.eventIncrement} minutes</p>
+    //             <p><strong>Available Date:</strong> ${booking.date}</p>
+    //             <p><strong>Start Time:</strong> ${convertTo12Hour(booking.startTime)}</p>
+    //             <p><strong>End Time:</strong> ${convertTo12Hour(booking.endTime)}</p>
+    //             <p><strong>Extra Info:</strong> ${booking.extra}</p>
+    //             <br />
+    //             <p>Log in to view and accept the booking.</p>
+    //         `,
+    // };
+    // await sgMail
+    //   .sendMultiple(mailOptions)
+    //   .then(() => {
+    //     console.log("Email sent");
+    //   })
+    //   .catch((error) => {
+    //     console.error(error);
+    //   });
     // await transporter.sendMail(mailOptions);
     res.send(
       "Booking marked as ready. Notification sent to eligible therapists."

@@ -49,6 +49,33 @@ const convertTo12Hour = (time) => {
   const formattedHour = hour % 12 || 12; // Convert 0 to 12 for 12AM
   return `${formattedHour}:${minute.toString().padStart(2, "0")} ${period}`;
 };
+
+const sendEmailsInBatches = async (recipients, subject, htmlContent, batchSize = 10, delayMs = 5000) => {
+  for (let i = 0; i < recipients.length; i += batchSize) {
+    const batch = recipients.slice(i, i + batchSize);
+
+    try {
+      const msg = {
+        to: batch, // Sending to batch of emails
+        from: process.env.EMAIL_USER,
+        subject: subject,
+        html: htmlContent,
+      };
+
+      await sgMail.sendMultiple(msg);
+      console.log(`Batch sent to ${batch.length} therapists`);
+
+    } catch (error) {
+      console.error(`Error sending batch: ${error}`);
+    }
+
+    // Wait before sending the next batch
+    if (i + batchSize < recipients.length) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+};
+
 // Assign therapist to a booking
 router.post("/assign-therapist", async (req, res) => {
   try {
@@ -113,12 +140,8 @@ router.post("/assign-therapist", async (req, res) => {
 
     if (remainingTherapists.length > 0) {
       try {
-        const msg = {
-          to: remainingTherapists, // Array of emails
-          from: process.env.EMAIL_USER, // Must be a verified sender in SendGrid
-          subject: "Booking Spot Still Available!",
-          html: `
-                <h2>Booking Spots Are Filling Up!</h2>
+        const subject = "Booking Spot Still Available!";
+        const htmlContent = `<h2>Booking Spots Are Filling Up!</h2>
                 <p>A booking still has available therapist spots.</p>
                 <p><strong>Company Name:</strong> ${booking.companyName}</p>
                 <p><strong>Client Name:</strong> ${booking.name}</p>
@@ -131,11 +154,32 @@ router.post("/assign-therapist", async (req, res) => {
                 <p><strong>End Time:</strong> ${convertTo12Hour(booking.endTime)}</p>
                 <p><strong>Extra Info:</strong> ${booking.extra}</p>
                 <p><strong>Remaining Spots:</strong> ${remainingSpots}</p>
-                <p>Hurry up and claim your spot before it's full!</p>
-            `,
-        };
+                <p>Hurry up and claim your spot before it's full!</p>`;
 
-        await sgMail.send(msg); // Sends to multiple recipients
+        await sendEmailsInBatches(remainingTherapists, subject, htmlContent);
+        // const msg = {
+        //   to: remainingTherapists, // Array of emails
+        //   from: process.env.EMAIL_USER, // Must be a verified sender in SendGrid
+        //   subject: "Booking Spot Still Available!",
+        //   html: `
+        //         <h2>Booking Spots Are Filling Up!</h2>
+        //         <p>A booking still has available therapist spots.</p>
+        //         <p><strong>Company Name:</strong> ${booking.companyName}</p>
+        //         <p><strong>Client Name:</strong> ${booking.name}</p>
+        //         <p><strong>Location:</strong> ${booking.address}</p>
+        //         <p><strong>ZipCode:</strong> ${booking.zipCode}</p>
+        //         <p><strong>Hours:</strong> ${booking.eventHours} hour(s)</p>
+        //         <p><strong>Increment:</strong> ${booking.eventIncrement} minutes</p>
+        //         <p><strong>Available Date:</strong> ${booking.date}</p>
+        //         <p><strong>Start Time:</strong> ${convertTo12Hour(booking.startTime)}</p>
+        //         <p><strong>End Time:</strong> ${convertTo12Hour(booking.endTime)}</p>
+        //         <p><strong>Extra Info:</strong> ${booking.extra}</p>
+        //         <p><strong>Remaining Spots:</strong> ${remainingSpots}</p>
+        //         <p>Hurry up and claim your spot before it's full!</p>
+        //     `,
+        // };
+
+        // await sgMail.sendMultiple(msg); // Sends to multiple recipients
         emailSent = true;
       } catch (error) {
         console.error(`Error sending email: ${error}`);
@@ -281,12 +325,8 @@ router.post("/leave-booking", async (req, res) => {
     // Notify therapists about the open spot
     if (remainingTherapists.length > 0) {
       try {
-        const msg = {
-          to: remainingTherapists,
-          from: process.env.EMAIL_USER,
-          subject: "A Therapist Spot Just Opened Up!",
-          html: `
-            <h2>A therapist has left a booking.</h2>
+        const subject = "A Therapist Spot Just Opened Up!";
+        const htmlContent = `<h2>A therapist has left a booking.</h2>
             <p>A booking now has an available therapist spot.</p>
              <p><strong>Company Name:</strong> ${booking.companyName}</p>
                 <p><strong>Client Name:</strong> ${booking.name}</p>
@@ -298,12 +338,31 @@ router.post("/leave-booking", async (req, res) => {
                 <p><strong>Start Time:</strong> ${convertTo12Hour(booking.startTime)}</p>
                 <p><strong>End Time:</strong> ${convertTo12Hour(booking.endTime)}</p>
                 <p><strong>Extra Info:</strong> ${booking.extra}</p>
-            <p><strong>Remaining Spots:</strong> ${remainingSpots}</p>
+            <p><strong>Remaining Spots:</strong> ${remainingSpots}</p>`;
+        await sendEmailsInBatches(remainingTherapists, subject, htmlContent);    
+        // const msg = {
+        //   to: remainingTherapists,
+        //   from: process.env.EMAIL_USER,
+        //   subject: "A Therapist Spot Just Opened Up!",
+        //   html: `
+        //     <h2>A therapist has left a booking.</h2>
+        //     <p>A booking now has an available therapist spot.</p>
+        //      <p><strong>Company Name:</strong> ${booking.companyName}</p>
+        //         <p><strong>Client Name:</strong> ${booking.name}</p>
+        //         <p><strong>Location:</strong> ${booking.address}</p>
+        //         <p><strong>ZipCode:</strong> ${booking.zipCode}</p>
+        //         <p><strong>Hours:</strong> ${booking.eventHours} hour(s)</p>
+        //         <p><strong>Increment:</strong> ${booking.eventIncrement} minutes</p>
+        //         <p><strong>Available Date:</strong> ${booking.date}</p>
+        //         <p><strong>Start Time:</strong> ${convertTo12Hour(booking.startTime)}</p>
+        //         <p><strong>End Time:</strong> ${convertTo12Hour(booking.endTime)}</p>
+        //         <p><strong>Extra Info:</strong> ${booking.extra}</p>
+        //     <p><strong>Remaining Spots:</strong> ${remainingSpots}</p>
             
-          `,
-        };
+        //   `,
+        // };
 
-        await sgMail.send(msg);
+        // await sgMail.sendMultiple(msg);
       } catch (error) {
         console.error(`Error sending email: ${error}`);
       }
