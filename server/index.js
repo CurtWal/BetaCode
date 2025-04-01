@@ -45,7 +45,7 @@ app.use(postPayment);
 app.use(getAssignment);
 app.use("/admin", adminRoute);
 app.use(sms);
-app.use(deleteBookings)
+app.use("/delete", deleteBookings)
 
 // app.use('/api', paymentRoute);
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

@@ -272,7 +272,7 @@ function Bookings() {
   const deleteBooking = async (bookingId) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`${import.meta.env.VITE_VERCEL}bookings/${bookingId}`, {
+      await axios.delete(`${import.meta.env.VITE_VERCEL}/delete/bookings/${bookingId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setBookings(bookings.filter((booking) => booking._id !== bookingId));
