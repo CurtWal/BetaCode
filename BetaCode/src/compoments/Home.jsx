@@ -104,7 +104,7 @@ function Home() {
         startTime,
         endTime,
         extra,
-        date
+        date,
       };
 
       await axios.post(`${import.meta.env.VITE_VERCEL}new-booking`, newBooking);
@@ -128,20 +128,29 @@ function Home() {
     getBookingPrices();
   }, []);
   useEffect(() => {
-    setPrice(therapist * regularPrice * eventHours);
-  }, [therapist, eventHours]);
+  if (eventHours) {
+    const hours = parseFloat(eventHours); // Convert to a number
+    const wholeHours = Math.floor(hours); // Full hours
+    const isHalfHour = hours % 1 !== 0; // Check if there's a half-hour
+    
+    const basePrice = therapist * regularPrice * wholeHours; // Price for full hours
+    const halfHourPrice = isHalfHour ? therapist * (regularPrice * 0.5) : 0; // Half-hour price
 
-  const sendSms = async () => {
-    try{
-      const response = await axios.post(`http://localhost:3001/send-sms`, {
-        message: "New booking made",
-        phoneNumber: "9012777280"
-      });
-      console.log("SMS sent successfully");
-    }catch (error) {
-      console.error("Error sending SMS:", error);
-    }
-  };
+    setPrice(basePrice + halfHourPrice);
+  }
+}, [therapist, eventHours, regularPrice]);
+
+  // const sendSms = async () => {
+  //   try {
+  //     const response = await axios.post(`http://localhost:3001/send-sms`, {
+  //       message: "New booking made",
+  //       phoneNumber: "",
+  //     });
+  //     console.log("SMS sent successfully");
+  //   } catch (error) {
+  //     console.error("Error sending SMS:", error);
+  //   }
+  // };
   return (
     <div className="Grid-Container">
       <img src={Logo} alt="MOTG Logo" className="Main_Img" />
@@ -372,10 +381,14 @@ function Home() {
                   onChange={(e) => setEventHours(e.target.value)}
                   required
                 >
-                  <option value="2">2 hours</option>
+                  <option value="2">2 Hours</option>
+                  <option value="2.5">2 Hours 30 Minutes</option>
                   <option value="3">3 Hours</option>
+                  <option value="3.5">3 Hours 30 Minutes</option>
                   <option value="4">4 Hours</option>
+                  <option value="4.5">4 Hours 30 Minutes</option>
                   <option value="5">5 Hours</option>
+                  <option value="5.5">5 Hours 30 Minutes</option>
                 </Form.Select>
               </Form.Group>
 
@@ -451,7 +464,14 @@ function Home() {
               </Form.Group>
               <InputGroup>
                 <InputGroup.Text>Anything else?</InputGroup.Text>
-                <Form.Control as="textarea" aria-label="With textarea" onChange={(e) => {setExtra(e.target.value); console.log(extra)}} />
+                <Form.Control
+                  as="textarea"
+                  aria-label="With textarea"
+                  onChange={(e) => {
+                    setExtra(e.target.value);
+                    console.log(extra);
+                  }}
+                />
               </InputGroup>
               <Form.Group
                 as={Col}
@@ -512,11 +532,17 @@ function Home() {
             </Modal.Body>
           </Modal>
         </div>
-        <div className="Text-Info" style={{backgroundColor:"red", color:"white"}}>
+        <div
+          className="Text-Info"
+          style={{ backgroundColor: "red", color: "white" }}
+        >
           <h3>Disclaimer:</h3>
           <p>All massages should be booked one week ahead</p>
-          <p >If you would like for a booking to be made within less than a week email </p>
-          <p style={{textAlign:"left"}}>sam@massageonthegomemphis.com</p>
+          <p>
+            If you would like for a booking to be made within less than a week
+            email{" "}
+          </p>
+          <p style={{ textAlign: "left" }}>sam@massageonthegomemphis.com</p>
         </div>
       </div>
       {/* <Button onClick={sendSms}>TEXT</Button> Used for testing phone text messages using email to sms */}

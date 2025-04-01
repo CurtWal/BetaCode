@@ -131,9 +131,19 @@ function SpecialForm() {
   useEffect(() => {
     getBookingPrices();
   }, []);
-  useEffect(() => {
-    setPrice(therapist * specialPrice * eventHours);
-  }, [therapist, eventHours]);
+   useEffect(() => {
+    if (eventHours) {
+      const hours = parseFloat(eventHours); // Convert to a number
+      const wholeHours = Math.floor(hours); // Full hours
+      const isHalfHour = hours % 1 !== 0; // Check if there's a half-hour
+      
+      const basePrice = therapist * specialPrice * wholeHours; // Price for full hours
+      const halfHourPrice = isHalfHour ? therapist * (specialPrice * 0.5) : 0; // Half-hour price
+  
+      setPrice(basePrice + halfHourPrice);
+    }
+  }, [therapist, eventHours, specialPrice]);
+
   return (
     <div className="Grid-Container">
       <img src={Logo} alt="MOTG Logo" className="Main_Img" />
@@ -364,10 +374,14 @@ function SpecialForm() {
                   onChange={(e) => setEventHours(e.target.value)}
                   required
                 >
-                  <option value="2">2 hours</option>
+                  <option value="2">2 Hours</option>
+                  <option value="2.5">2 Hours 30 Minutes</option>
                   <option value="3">3 Hours</option>
+                  <option value="3.5">3 Hours 30 Minutes</option>
                   <option value="4">4 Hours</option>
+                  <option value="4.5">4 Hours 30 Minutes</option>
                   <option value="5">5 Hours</option>
+                  <option value="5.5">5 Hours 30 Minutes</option>
                 </Form.Select>
               </Form.Group>
 
