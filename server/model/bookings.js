@@ -60,7 +60,8 @@ const bookingSchema = new mongoose.Schema({
   confirmed:{
     type: Boolean,
     default: false,
-  }
+  },
+  emailsSent: { type: Boolean, default: false }
 });
 
 const bookingModel = mongoose.model("Booking", bookingSchema);

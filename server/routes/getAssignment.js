@@ -63,7 +63,14 @@ router.post("/assign-therapist", async (req, res) => {
     if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
     }
-
+    //  commented out it checks to see if the booking already sent out email if so it skips sending them
+    if (booking.emailsSent) {
+      return res.json({
+        message: "Emails already sent for this booking, skipping email notification.",
+        emailSent: false
+      });
+    }
+    
     // Check how many therapists are already assigned
     const assignedCount = await TherapistAssignment.countDocuments({
       bookingId,
@@ -203,54 +210,13 @@ router.post("/assign-therapist", async (req, res) => {
         await sendEmailsWithDelay(yahooEmails);
         emailSent = true;
         console.log("Mailgun Response:", response);
+        if (emailSent) {
+          await Booking.findByIdAndUpdate(bookingId, { emailsSent: true });
+        }
       } catch (error) {
         console.error("Error sending email via Mailgun:", error);
       }
-      //   try {
-      //     const subject = "Booking Spot Still Available!";
-      //     const htmlContent = `<h2>Booking Spots Are Filling Up!</h2>
-      //             <p>A booking still has available therapist spots.</p>
-      //             <p><strong>Company Name:</strong> ${booking.companyName}</p>
-      //             <p><strong>Client Name:</strong> ${booking.name}</p>
-      //             <p><strong>Location:</strong> ${booking.address}</p>
-      //             <p><strong>ZipCode:</strong> ${booking.zipCode}</p>
-      //             <p><strong>Hours:</strong> ${booking.eventHours} hour(s)</p>
-      //             <p><strong>Increment:</strong> ${booking.eventIncrement} minutes</p>
-      //             <p><strong>Available Date:</strong> ${booking.date}</p>
-      //             <p><strong>Start Time:</strong> ${convertTo12Hour(booking.startTime)}</p>
-      //             <p><strong>End Time:</strong> ${convertTo12Hour(booking.endTime)}</p>
-      //             <p><strong>Extra Info:</strong> ${booking.extra}</p>
-      //             <p><strong>Remaining Spots:</strong> ${remainingSpots}</p>
-      //             <p>Hurry up and claim your spot before it's full!</p>`;
-
-      //     await sendEmailsInBatches(remainingTherapists, subject, htmlContent);
-      //     // const msg = {
-      //     //   to: remainingTherapists, // Array of emails
-      //     //   from: process.env.EMAIL_USER, // Must be a verified sender in SendGrid
-      //     //   subject: "Booking Spot Still Available!",
-      //     //   html: `
-      //     //         <h2>Booking Spots Are Filling Up!</h2>
-      //     //         <p>A booking still has available therapist spots.</p>
-      //     //         <p><strong>Company Name:</strong> ${booking.companyName}</p>
-      //     //         <p><strong>Client Name:</strong> ${booking.name}</p>
-      //     //         <p><strong>Location:</strong> ${booking.address}</p>
-      //     //         <p><strong>ZipCode:</strong> ${booking.zipCode}</p>
-      //     //         <p><strong>Hours:</strong> ${booking.eventHours} hour(s)</p>
-      //     //         <p><strong>Increment:</strong> ${booking.eventIncrement} minutes</p>
-      //     //         <p><strong>Available Date:</strong> ${booking.date}</p>
-      //     //         <p><strong>Start Time:</strong> ${convertTo12Hour(booking.startTime)}</p>
-      //     //         <p><strong>End Time:</strong> ${convertTo12Hour(booking.endTime)}</p>
-      //     //         <p><strong>Extra Info:</strong> ${booking.extra}</p>
-      //     //         <p><strong>Remaining Spots:</strong> ${remainingSpots}</p>
-      //     //         <p>Hurry up and claim your spot before it's full!</p>
-      //     //     `,
-      //     // };
-
-      //     // await sgMail.sendMultiple(msg); // Sends to multiple recipients
-      //     emailSent = true;
-      //   } catch (error) {
-      //     console.error(`Error sending email: ${error}`);
-      //   }
+  
     }
 
     res.json({

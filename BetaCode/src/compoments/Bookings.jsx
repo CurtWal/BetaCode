@@ -10,6 +10,7 @@ function Bookings() {
   const [therapistInputs, setTherapistInputs] = useState({}); // Stores input per booking
   const [isFull, setIsFull] = useState(false);
   const currentUserId = localStorage.getItem("userId");
+  const userRole = localStorage.getItem("role");
   const checkZipDistance = async (zip1, zip2, maxDistance) => {
     const API_KEY = import.meta.env.VITE_GEO_CODIO_API;
     try {
@@ -101,7 +102,17 @@ function Bookings() {
               booking.zipCode,
               92 // 92 miles for 1 hour 30 min distance
             );
-            return isNearTherapist ? booking : null;
+            const isTherapistAssigned = booking.assignedTherapists.some(
+              (t) => t._id === userId);
+              const hasOpenSpots =
+              booking.assignedTherapists.length < booking.therapist;
+  
+            // Show if therapist is assigned OR there are open spots and therapist is nearby
+            if (isTherapistAssigned || (hasOpenSpots && isNearTherapist)) {
+              return booking;
+            }
+  
+            return null;
           })
         );
   
@@ -155,7 +166,7 @@ function Bookings() {
       const assignedCount = booking.assignedTherapists.length;
       const remainingSpots = booking.therapist - assignedCount;
 
-      // **If no spots are left, send email to the client**
+      // **If no spots are left, send email to Samuel**
       if (remainingSpots === 0) {
         await axios.post(
           `${import.meta.env.VITE_VERCEL}send-email-on-spot-fill`,
@@ -258,11 +269,23 @@ function Bookings() {
       console.error("Error leaving booking:", error.response?.data || error);
     }
   };
+  const deleteBooking = async (bookingId) => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`${import.meta.env.VITE_VERCEL}bookings/${bookingId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setBookings(bookings.filter((booking) => booking._id !== bookingId));
+    } catch (error) {
+      console.error("Error deleting booking:", error);
+    }
+  };
   return (
     <div className="bookingContainer">
       <h1 style={{ textAlign: "center" }}>Bookings</h1>
       <div className="bookings-controls">
-        <label>
+        {userRole == "admin" && (
+          <label>
           <input
             type="checkbox"
             checked={showCompleted}
@@ -270,8 +293,8 @@ function Bookings() {
           />
           Show Completed Bookings
         </label>
+        )}
       </div>
-
       <div className="">
         <ul className="bookings">
           {bookings.map((booking) =>
@@ -305,7 +328,14 @@ function Bookings() {
                       >
                         Mark Job Complete
                       </Button>
+
+
                     )}
+                    {userRole === "admin" && (
+  <Button onClick={() => deleteBooking(booking._id)} variant="danger">
+    Delete Booking
+  </Button>
+)}
                   </div>
                   {/* Show modal only for the selected booking */}
                   {selectedBooking === booking._id && (

@@ -131,6 +131,17 @@ function Home() {
     setPrice(therapist * regularPrice * eventHours);
   }, [therapist, eventHours]);
 
+  const sendSms = async () => {
+    try{
+      const response = await axios.post(`http://localhost:3001/send-sms`, {
+        message: "New booking made",
+        phoneNumber: "9012777280"
+      });
+      console.log("SMS sent successfully");
+    }catch (error) {
+      console.error("Error sending SMS:", error);
+    }
+  };
   return (
     <div className="Grid-Container">
       <img src={Logo} alt="MOTG Logo" className="Main_Img" />
@@ -508,6 +519,7 @@ function Home() {
           <p style={{textAlign:"left"}}>sam@massageonthegomemphis.com</p>
         </div>
       </div>
+      {/* <Button onClick={sendSms}>TEXT</Button> Used for testing phone text messages using email to sms */}
     </div>
   );
 }
