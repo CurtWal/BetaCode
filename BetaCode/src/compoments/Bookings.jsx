@@ -174,6 +174,7 @@ function Bookings() {
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setIsFull(true);
+        console.log("All Spots filled sending email");
       }
 
       // **Refresh bookings in the background**

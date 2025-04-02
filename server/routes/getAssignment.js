@@ -64,12 +64,15 @@ router.post("/assign-therapist", async (req, res) => {
       return res.status(404).json({ message: "Booking not found" });
     }
     //  commented out it checks to see if the booking already sent out email if so it skips sending them
-    if (booking.emailsSent) {
-      return res.json({
-        message: "Emails already sent for this booking, skipping email notification.",
-        emailSent: false
-      });
-    }
+    // if (booking.emailsSent) {
+    //   return res.json({
+    //     message:
+    //       "Emails already sent for this booking, skipping email notification.",
+    //     emailSent: false,
+    //   });
+    // }
+
+
     
     // Check how many therapists are already assigned
     const assignedCount = await TherapistAssignment.countDocuments({
@@ -97,133 +100,186 @@ router.post("/assign-therapist", async (req, res) => {
     const assignment = new TherapistAssignment({ bookingId, therapistId });
     await assignment.save();
 
-    // Calculate remaining spots dynamically
-    const remainingSpots = booking.therapist - assignedCount - 1;
+    //  All commented out code is for sending emails to remaining therapist about remaining spots left
+    // Update the assigned count
+    // assignedCount++;
 
-    // Fetch all therapists within allowed distance
-    const therapists = await User.find(
-      { role: "therapist" },
-      "email _id zipCode"
-    );
-    const assignedTherapists = await TherapistAssignment.find({ bookingId });
-    const assignedTherapistIds = assignedTherapists.map((t) =>
-      t.therapistId.toString()
-    );
+    // // Calculate remaining spots dynamically
+    // const remainingSpots = booking.therapist - assignedCount - 1;
 
-    const remainingTherapists = [];
-    for (const therapist of therapists) {
-      if (
-        !assignedTherapistIds.includes(therapist._id.toString()) &&
-        (await checkZipDistance(booking.zipCode, therapist.zipCode, 92))
-      ) {
-        remainingTherapists.push(therapist.email);
-      }
-    }
+    // // Fetch all therapists within allowed distance
+    // const therapists = await User.find(
+    //   { role: "therapist" },
+    //   "email _id zipCode"
+    // );
+    // const assignedTherapists = await TherapistAssignment.find({ bookingId });
+    // const assignedTherapistIds = assignedTherapists.map((t) =>
+    //   t.therapistId.toString()
+    // );
 
-    let emailSent = false;
+    // const remainingTherapists = [];
+    // for (const therapist of therapists) {
+    //   if (
+    //     !assignedTherapistIds.includes(therapist._id.toString()) &&
+    //     (await checkZipDistance(booking.zipCode, therapist.zipCode, 92))
+    //   ) {
+    //     remainingTherapists.push(therapist.email);
+    //   }
+    // }
 
-    if (remainingTherapists.length > 0) {
-      const yahooEmails = remainingTherapists.filter((email) =>
-        email.includes("@yahoo.com")
-      );
-      const otherEmails = remainingTherapists.filter(
-        (email) => !email.includes("@yahoo.com")
-      );
+    // let emailSent = false;
 
-      const mg = new Mailgun(formData);
-      const mailgun = mg.client({
-        username: "api",
-        key: process.env.MAILGUN_KEY, // Add this to your .env file // Default Mailgun API URL
-      });
-      try {
-        const emailData = {
-          from: process.env.EMAIL_USER, // Must be a verified Mailgun sender
-          to: otherEmails, // Recipient email
-          subject: "Booking Spot Still Available!",
-          html: `<h2>Booking Spots Are Filling Up!</h2>
-                <p>A booking still has available therapist spots.</p>
-                <p><strong>Company Name:</strong> ${booking.companyName}</p>
-                <p><strong>Client Name:</strong> ${booking.name}</p>
-                <p><strong>Location:</strong> ${booking.address}</p>
-                <p><strong>ZipCode:</strong> ${booking.zipCode}</p>
-                <p><strong>Hours:</strong> ${booking.eventHours} hour(s)</p>
-                <p><strong>Increment:</strong> ${
-                  booking.eventIncrement
-                } minutes</p>
-                <p><strong>Available Date:</strong> ${booking.date}</p>
-                <p><strong>Start Time:</strong> ${convertTo12Hour(
-                  booking.startTime
-                )}</p>
-                <p><strong>End Time:</strong> ${convertTo12Hour(
-                  booking.endTime
-                )}</p>
-                <p><strong>Extra Info:</strong> ${booking.extra}</p>
-                <p><strong>Remaining Spots:</strong> ${remainingSpots}</p>
-                <p>Hurry up and claim your spot before it's full!</p>`,
-          "h:X-Sent-Using": "Mailgun",
-          "h:X-Source": "MassageOnTheGo",
-        };
+    // if (remainingTherapists.length > 0) {
+    //   const yahooEmails = remainingTherapists.filter((email) =>
+    //     email.includes("@yahoo.com")
+    //   );
+    //   const otherEmails = remainingTherapists.filter(
+    //     (email) => !email.includes("@yahoo.com")
+    //   );
 
-        const response = await mailgun.messages.create(
-          "motgpayment.com", // Your Mailgun domain (e.g., "mg.yourdomain.com")
-          emailData
-        );
+    //   const mg = new Mailgun(formData);
+    //   const mailgun = mg.client({
+    //     username: "api",
+    //     key: process.env.MAILGUN_KEY, // Add this to your .env file // Default Mailgun API URL
+    //   });
+    //   try {
+    //     // const emailData = {
+    //     //   from: process.env.EMAIL_USER, // Must be a verified Mailgun sender
+    //     //   to: otherEmails, // Recipient email
+    //     //   subject: "Booking Spot Still Available!",
+    //     //   html: `<h2>Booking Spots Are Filling Up!</h2>
+    //     //         <p>A booking still has available therapist spots.</p>
+    //     //         <p><strong>Company Name:</strong> ${booking.companyName}</p>
+    //     //         <p><strong>Client Name:</strong> ${booking.name}</p>
+    //     //         <p><strong>Location:</strong> ${booking.address}</p>
+    //     //         <p><strong>ZipCode:</strong> ${booking.zipCode}</p>
+    //     //         <p><strong>Hours:</strong> ${booking.eventHours} hour(s)</p>
+    //     //         <p><strong>Increment:</strong> ${
+    //     //           booking.eventIncrement
+    //     //         } minutes</p>
+    //     //         <p><strong>Available Date:</strong> ${booking.date}</p>
+    //     //         <p><strong>Start Time:</strong> ${convertTo12Hour(
+    //     //           booking.startTime
+    //     //         )}</p>
+    //     //         <p><strong>End Time:</strong> ${convertTo12Hour(
+    //     //           booking.endTime
+    //     //         )}</p>
+    //     //         <p><strong>Extra Info:</strong> ${booking.extra}</p>
+    //     //         <p><strong>Remaining Spots:</strong> ${remainingSpots}</p>
+    //     //         <p>Hurry up and claim your spot before it's full!</p>`,
+    //     //   "h:X-Sent-Using": "Mailgun",
+    //     //   "h:X-Source": "MassageOnTheGo",
+    //     // };
 
-        const sendEmailsWithDelay = async (emails) => {
-          for (const email of emails) {
-            try {
-              await mailgun.messages.create("motgpayment.com", {
-                from: process.env.EMAIL_USER,
-                to: email,
-                subject: "Booking Spot Still Available!",
-                html: `<h2>Booking Spots Are Filling Up!</h2>
-                <p>A booking still has available therapist spots.</p>
-                <p><strong>Company Name:</strong> ${booking.companyName}</p>
-                <p><strong>Client Name:</strong> ${booking.name}</p>
-                <p><strong>Location:</strong> ${booking.address}</p>
-                <p><strong>ZipCode:</strong> ${booking.zipCode}</p>
-                <p><strong>Hours:</strong> ${booking.eventHours} hour(s)</p>
-                <p><strong>Increment:</strong> ${
-                  booking.eventIncrement
-                } minutes</p>
-                <p><strong>Available Date:</strong> ${booking.date}</p>
-                <p><strong>Start Time:</strong> ${convertTo12Hour(
-                  booking.startTime
-                )}</p>
-                <p><strong>End Time:</strong> ${convertTo12Hour(
-                  booking.endTime
-                )}</p>
-                <p><strong>Extra Info:</strong> ${booking.extra}</p>
-                <p><strong>Remaining Spots:</strong> ${remainingSpots}</p>
-                <p>Hurry up and claim your spot before it's full!</p>`,
-                "h:X-Sent-Using": "Mailgun",
-                "h:X-Source": "MassageOnTheGo",
-              });
+    //     // const response = await mailgun.messages.create(
+    //     //   "motgpayment.com", // Your Mailgun domain (e.g., "mg.yourdomain.com")
+    //     //   emailData
+    //     // );
 
-              console.log(`Sent to ${email}`);
-              await new Promise((resolve) => setTimeout(resolve, 5000)); // 5-second delay
-            } catch (error) {
-              console.error(`Error sending to ${email}:`, error);
-            }
-          }
-        };
-        await sendEmailsWithDelay(yahooEmails);
-        emailSent = true;
-        console.log("Mailgun Response:", response);
-        if (emailSent) {
-          await Booking.findByIdAndUpdate(bookingId, { emailsSent: true });
-        }
-      } catch (error) {
-        console.error("Error sending email via Mailgun:", error);
-      }
-  
-    }
+    //     // const sendEmailsWithDelay = async (emails) => {
+    //     //   for (const email of emails) {
+    //     //     try {
+    //     //       await mailgun.messages.create("motgpayment.com", {
+    //     //         from: process.env.EMAIL_USER,
+    //     //         to: email,
+    //     //         subject: "Booking Spot Still Available!",
+    //     //         html: `<h2>Booking Spots Are Filling Up!</h2>
+    //     //         <p>A booking still has available therapist spots.</p>
+    //     //         <p><strong>Company Name:</strong> ${booking.companyName}</p>
+    //     //         <p><strong>Client Name:</strong> ${booking.name}</p>
+    //     //         <p><strong>Location:</strong> ${booking.address}</p>
+    //     //         <p><strong>ZipCode:</strong> ${booking.zipCode}</p>
+    //     //         <p><strong>Hours:</strong> ${booking.eventHours} hour(s)</p>
+    //     //         <p><strong>Increment:</strong> ${
+    //     //           booking.eventIncrement
+    //     //         } minutes</p>
+    //     //         <p><strong>Available Date:</strong> ${booking.date}</p>
+    //     //         <p><strong>Start Time:</strong> ${convertTo12Hour(
+    //     //           booking.startTime
+    //     //         )}</p>
+    //     //         <p><strong>End Time:</strong> ${convertTo12Hour(
+    //     //           booking.endTime
+    //     //         )}</p>
+    //     //         <p><strong>Extra Info:</strong> ${booking.extra}</p>
+    //     //         <p><strong>Remaining Spots:</strong> ${remainingSpots}</p>
+    //     //         <p>Hurry up and claim your spot before it's full!</p>`,
+    //     //         "h:X-Sent-Using": "Mailgun",
+    //     //         "h:X-Source": "MassageOnTheGo",
+    //     //       });
+
+    //     //       console.log(`Sent to ${email}`);
+    //     //       await new Promise((resolve) => setTimeout(resolve, 5000)); // 5-second delay
+    //     //     } catch (error) {
+    //     //       console.error(`Error sending to ${email}:`, error);
+    //     //     }
+    //     //   }
+    //     // };
+    //     // await sendEmailsWithDelay(yahooEmails);
+    //     const sendEmailsInBatches = async (
+    //       emails,
+    //       batchSize = 5,
+    //       delayMs = 3000
+    //     ) => {
+    //       for (let i = 0; i < emails.length; i += batchSize) {
+    //         const batch = emails.slice(i, i + batchSize);
+
+    //         try {
+    //           const response = await Promise.all(
+    //             batch.map((email) =>
+    //               mailgun.messages.create("motgpayment.com", {
+    //                 from: process.env.EMAIL_USER,
+    //                 to: email,
+    //                 subject: "Booking Spot Still Available!",
+    //                 html: `<h2>Booking Spots Are Filling Up!</h2>
+    //             <p>A booking still has available therapist spots.</p>
+    //             <p><strong>Company Name:</strong> ${booking.companyName}</p>
+    //             <p><strong>Client Name:</strong> ${booking.name}</p>
+    //             <p><strong>Location:</strong> ${booking.address}</p>
+    //             <p><strong>ZipCode:</strong> ${booking.zipCode}</p>
+    //             <p><strong>Hours:</strong> ${booking.eventHours} hour(s)</p>
+    //             <p><strong>Increment:</strong> ${
+    //               booking.eventIncrement
+    //             } minutes</p>
+    //             <p><strong>Available Date:</strong> ${booking.date}</p>
+    //             <p><strong>Start Time:</strong> ${convertTo12Hour(
+    //               booking.startTime
+    //             )}</p>
+    //             <p><strong>End Time:</strong> ${convertTo12Hour(
+    //               booking.endTime
+    //             )}</p>
+    //             <p><strong>Extra Info:</strong> ${booking.extra}</p>
+    //             <p><strong>Remaining Spots:</strong> ${remainingSpots}</p>
+    //             <p>Hurry up and claim your spot before it's full!</p>`,
+    //                 "h:X-Sent-Using": "Mailgun",
+    //                 "h:X-Source": "MassageOnTheGo",
+    //               })
+    //             )
+    //           );
+    //           console.log("Mailgun Response:", response);
+    //         } catch (error) {
+    //           console.error("Error sending email batch:", error);
+    //         }
+
+    //         if (i + batchSize < emails.length) {
+    //           await new Promise((resolve) => setTimeout(resolve, delayMs)); // Delay between batches
+    //         }
+    //       }
+    //     };
+    //     sendEmailsInBatches(remainingTherapists);
+    //     emailSent = true;
+    //     //console.log("Mailgun Response:", response);
+    //     if (emailSent) {
+    //       await Booking.findByIdAndUpdate(bookingId, { emailsSent: true });
+    //     }
+    //   } catch (error) {
+    //     console.error("Error sending email via Mailgun:", error);
+    //   }
+    // }
 
     res.json({
       message: "Therapist assigned successfully",
       assignment,
-      remainingSpots,
-      emailSent,
+      remainingSpots: booking.therapist - (assignedCount + 1),
     });
   } catch (error) {
     console.error("Error assigning therapist:", error);
@@ -275,7 +331,7 @@ router.post("/send-email-on-spot-fill", async (req, res) => {
         to: ["hello@massageonthegomemphis.com", "sam@massageonthegomemphis.com"], // Recipient email
         subject: "All Therapist Spots Have Been Filled!",
         html: `<h2>All Therapist Spots Have Been Filled!</h2>
-            <p>Good news! All therapist spots for your booking have been successfully filled.</p>
+            <p>Good news! All therapist spots for the booking have been successfully filled.</p>
             <p><strong>Booking Details:</strong></p>
             <p><strong>Company Name:</strong> ${booking.companyName}</p>
             <p><strong>Client Name:</strong> ${booking.name}</p>
@@ -405,52 +461,98 @@ router.post("/leave-booking", async (req, res) => {
         key: process.env.MAILGUN_KEY, // Add this to your .env file // Default Mailgun API URL
       });
       try {
-        const yahooEmails = remainingTherapists.filter((email) =>
-          email.includes("@yahoo.com")
-        );
-        const otherEmails = remainingTherapists.filter(
-          (email) => !email.includes("@yahoo.com")
-        );
-        const emailData = {
-          from: process.env.EMAIL_USER, // Must be a verified Mailgun sender
-          to: otherEmails, // Recipient email
-          subject: "A Therapist Spot Just Opened Up!",
-          html: `<h2>A therapist has left a booking.</h2>
-            <p>A booking now has an available therapist spot.</p>
-             <p><strong>Company Name:</strong> ${booking.companyName}</p>
-                <p><strong>Client Name:</strong> ${booking.name}</p>
-                <p><strong>Location:</strong> ${booking.address}</p>
-                <p><strong>ZipCode:</strong> ${booking.zipCode}</p>
-                <p><strong>Hours:</strong> ${booking.eventHours} hour(s)</p>
-                <p><strong>Increment:</strong> ${
-                  booking.eventIncrement
-                } minutes</p>
-                <p><strong>Available Date:</strong> ${booking.date}</p>
-                <p><strong>Start Time:</strong> ${convertTo12Hour(
-                  booking.startTime
-                )}</p>
-                <p><strong>End Time:</strong> ${convertTo12Hour(
-                  booking.endTime
-                )}</p>
-                <p><strong>Extra Info:</strong> ${booking.extra}</p>
-            <p><strong>Remaining Spots:</strong> ${remainingSpots}</p>`,
-          "h:X-Sent-Using": "Mailgun",
-          "h:X-Source": "MassageOnTheGo",
-        };
+        // const yahooEmails = remainingTherapists.filter((email) =>
+        //   email.includes("@yahoo.com")
+        // );
+        // const otherEmails = remainingTherapists.filter(
+        //   (email) => !email.includes("@yahoo.com")
+        // );
+        // const emailData = {
+        //   from: process.env.EMAIL_USER, // Must be a verified Mailgun sender
+        //   to: otherEmails, // Recipient email
+        //   subject: "A Therapist Spot Just Opened Up!",
+        //   html: `<h2>A therapist has left a booking.</h2>
+        //     <p>A booking now has an available therapist spot.</p>
+        //      <p><strong>Company Name:</strong> ${booking.companyName}</p>
+        //         <p><strong>Client Name:</strong> ${booking.name}</p>
+        //         <p><strong>Location:</strong> ${booking.address}</p>
+        //         <p><strong>ZipCode:</strong> ${booking.zipCode}</p>
+        //         <p><strong>Hours:</strong> ${booking.eventHours} hour(s)</p>
+        //         <p><strong>Increment:</strong> ${
+        //           booking.eventIncrement
+        //         } minutes</p>
+        //         <p><strong>Available Date:</strong> ${booking.date}</p>
+        //         <p><strong>Start Time:</strong> ${convertTo12Hour(
+        //           booking.startTime
+        //         )}</p>
+        //         <p><strong>End Time:</strong> ${convertTo12Hour(
+        //           booking.endTime
+        //         )}</p>
+        //         <p><strong>Extra Info:</strong> ${booking.extra}</p>
+        //     <p><strong>Remaining Spots:</strong> ${remainingSpots}</p>`,
+        //   "h:X-Sent-Using": "Mailgun",
+        //   "h:X-Source": "MassageOnTheGo",
+        // };
 
-        const response = await mailgun.messages.create(
-          "motgpayment.com", // Your Mailgun domain (e.g., "mg.yourdomain.com")
-          emailData
-        );
+        // const response = await mailgun.messages.create(
+        //   "motgpayment.com", // Your Mailgun domain (e.g., "mg.yourdomain.com")
+        //   emailData
+        // );
 
-        const sendEmailsWithDelay = async (emails) => {
-          for (const email of emails) {
+        // const sendEmailsWithDelay = async (emails) => {
+        //   for (const email of emails) {
+        //     try {
+        //       await mailgun.messages.create("motgpayment.com", {
+        //         from: process.env.EMAIL_USER,
+        //         to: email,
+        //         subject: "A Therapist Spot Just Opened Up!",
+        //         html: `<h2>A therapist has left a booking.</h2>
+        //     <p>A booking now has an available therapist spot.</p>
+        //      <p><strong>Company Name:</strong> ${booking.companyName}</p>
+        //         <p><strong>Client Name:</strong> ${booking.name}</p>
+        //         <p><strong>Location:</strong> ${booking.address}</p>
+        //         <p><strong>ZipCode:</strong> ${booking.zipCode}</p>
+        //         <p><strong>Hours:</strong> ${booking.eventHours} hour(s)</p>
+        //         <p><strong>Increment:</strong> ${
+        //           booking.eventIncrement
+        //         } minutes</p>
+        //         <p><strong>Available Date:</strong> ${booking.date}</p>
+        //         <p><strong>Start Time:</strong> ${convertTo12Hour(
+        //           booking.startTime
+        //         )}</p>
+        //         <p><strong>End Time:</strong> ${convertTo12Hour(
+        //           booking.endTime
+        //         )}</p>
+        //         <p><strong>Extra Info:</strong> ${booking.extra}</p>
+        //     <p><strong>Remaining Spots:</strong> ${remainingSpots}</p>`,
+        //         "h:X-Sent-Using": "Mailgun",
+        //         "h:X-Source": "MassageOnTheGo",
+        //       });
+
+        //       console.log(`Sent to ${email}`);
+        //       await new Promise((resolve) => setTimeout(resolve, 5000)); // 5-second delay
+        //     } catch (error) {
+        //       console.error(`Error sending to ${email}:`, error);
+        //     }
+        //   }
+        // };
+        // await sendEmailsWithDelay(yahooEmails);
+        const sendEmailsInBatches = async (
+          emails,
+          batchSize = 5,
+          delayMs = 3000
+        ) => {
+          for (let i = 0; i < emails.length; i += batchSize) {
+            const batch = emails.slice(i, i + batchSize);
+
             try {
-              await mailgun.messages.create("motgpayment.com", {
-                from: process.env.EMAIL_USER,
-                to: email,
-                subject: "A Therapist Spot Just Opened Up!",
-                html: `<h2>A therapist has left a booking.</h2>
+              const response = await Promise.all(
+                batch.map((email) =>
+                  mailgun.messages.create("motgpayment.com", {
+                    from: process.env.EMAIL_USER,
+                    to: email,
+                    subject: "A Therapist Spot Just Opened Up!",
+                    html: `<h2>A therapist has left a booking.</h2>
             <p>A booking now has an available therapist spot.</p>
              <p><strong>Company Name:</strong> ${booking.companyName}</p>
                 <p><strong>Client Name:</strong> ${booking.name}</p>
@@ -469,69 +571,32 @@ router.post("/leave-booking", async (req, res) => {
                 )}</p>
                 <p><strong>Extra Info:</strong> ${booking.extra}</p>
             <p><strong>Remaining Spots:</strong> ${remainingSpots}</p>`,
-                "h:X-Sent-Using": "Mailgun",
-                "h:X-Source": "MassageOnTheGo",
-              });
-
-              console.log(`Sent to ${email}`);
-              await new Promise((resolve) => setTimeout(resolve, 5000)); // 5-second delay
+                    "h:X-Sent-Using": "Mailgun",
+                    "h:X-Source": "MassageOnTheGo",
+                  })
+                )
+              );
+              console.log("Mailgun Response:", response);
             } catch (error) {
-              console.error(`Error sending to ${email}:`, error);
+              console.error("Error sending email batch:", error);
+            }
+
+            if (i + batchSize < emails.length) {
+              await new Promise((resolve) => setTimeout(resolve, delayMs)); // Delay between batches
             }
           }
         };
-        await sendEmailsWithDelay(yahooEmails);
-        console.log("Mailgun Response:", response);
+        sendEmailsInBatches(remainingTherapists);
+        //console.log("Mailgun Response:", response);
       } catch (error) {
         console.error("Error sending email via Mailgun:", error);
       }
-      // try {
-      //   const subject = "A Therapist Spot Just Opened Up!";
-      //   const htmlContent = `<h2>A therapist has left a booking.</h2>
-      //       <p>A booking now has an available therapist spot.</p>
-      //        <p><strong>Company Name:</strong> ${booking.companyName}</p>
-      //           <p><strong>Client Name:</strong> ${booking.name}</p>
-      //           <p><strong>Location:</strong> ${booking.address}</p>
-      //           <p><strong>ZipCode:</strong> ${booking.zipCode}</p>
-      //           <p><strong>Hours:</strong> ${booking.eventHours} hour(s)</p>
-      //           <p><strong>Increment:</strong> ${booking.eventIncrement} minutes</p>
-      //           <p><strong>Available Date:</strong> ${booking.date}</p>
-      //           <p><strong>Start Time:</strong> ${convertTo12Hour(booking.startTime)}</p>
-      //           <p><strong>End Time:</strong> ${convertTo12Hour(booking.endTime)}</p>
-      //           <p><strong>Extra Info:</strong> ${booking.extra}</p>
-      //       <p><strong>Remaining Spots:</strong> ${remainingSpots}</p>`;
-      //   await sendEmailsInBatches(remainingTherapists, subject, htmlContent);
-      //   // const msg = {
-      //   //   to: remainingTherapists,
-      //   //   from: process.env.EMAIL_USER,
-      //   //   subject: "A Therapist Spot Just Opened Up!",
-      //   //   html: `
-      //   //     <h2>A therapist has left a booking.</h2>
-      //   //     <p>A booking now has an available therapist spot.</p>
-      //   //      <p><strong>Company Name:</strong> ${booking.companyName}</p>
-      //   //         <p><strong>Client Name:</strong> ${booking.name}</p>
-      //   //         <p><strong>Location:</strong> ${booking.address}</p>
-      //   //         <p><strong>ZipCode:</strong> ${booking.zipCode}</p>
-      //   //         <p><strong>Hours:</strong> ${booking.eventHours} hour(s)</p>
-      //   //         <p><strong>Increment:</strong> ${booking.eventIncrement} minutes</p>
-      //   //         <p><strong>Available Date:</strong> ${booking.date}</p>
-      //   //         <p><strong>Start Time:</strong> ${convertTo12Hour(booking.startTime)}</p>
-      //   //         <p><strong>End Time:</strong> ${convertTo12Hour(booking.endTime)}</p>
-      //   //         <p><strong>Extra Info:</strong> ${booking.extra}</p>
-      //   //     <p><strong>Remaining Spots:</strong> ${remainingSpots}</p>
-
-      //   //   `,
-      //   // };
-
-      //   // await sgMail.sendMultiple(msg);
-      // } catch (error) {
-      //   console.error(`Error sending email: ${error}`);
-      // }
     }
 
-    // Send confirmation email to therapist who left
+    // Send confirmation email to client on who left
     const therapist = await User.findById(therapistId);
     if (therapist) {
+      const mg = new Mailgun(formData);
       const mailgun = mg.client({
         username: "api",
         key: process.env.MAILGUN_KEY, // Add this to your .env file // Default Mailgun API URL
@@ -571,29 +636,6 @@ router.post("/leave-booking", async (req, res) => {
       } catch (error) {
         console.error("Error sending email via Mailgun:", error);
       }
-      // const leaveMsg = {
-      //   to: ["curtrickwalton@gmail.com"],
-      //   from: process.env.EMAIL_USER,
-      //   subject: "Therapist Has Left a Booking",
-      //   html: `
-      //     <h4>Name: ${therapist.username}</h4>
-      //     <h4>Email: ${therapist.email}</h4>
-      //     <h4>Phone Number: ${therapist.phoneNumber}</h4>
-      //     <p><strong>Booking Details:</strong></p>
-      //     <p><strong>Company Name:</strong> ${booking.companyName}</p>
-      //     <p><strong>Client Name:</strong> ${booking.name}</p>
-      //     <p><strong>Location:</strong> ${booking.address}</p>
-      //     <p><strong>ZipCode:</strong> ${booking.zipCode}</p>
-      //     <p><strong>Hours:</strong> ${booking.eventHours} hour(s)</p>
-      //     <p><strong>Increment:</strong> ${booking.eventIncrement} minutes</p>
-      //     <p><strong>Available Date:</strong> ${booking.date}</p>
-      //     <p><strong>Start Time:</strong> ${convertTo12Hour(booking.startTime)}</p>
-      //     <p><strong>End Time:</strong> ${convertTo12Hour(booking.endTime)}</p>
-      //     <p><strong>Extra Info:</strong> ${booking.extra}</p>
-      //     <p><strong>Price:</strong> $${booking.price}</p>
-      //   `,
-      // };
-      // await sgMail.send(leaveMsg);
     }
 
     res.json({
