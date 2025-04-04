@@ -586,7 +586,7 @@ router.post("/leave-booking", async (req, res) => {
             }
           }
         };
-        sendEmailsInBatches(remainingTherapists);
+        await sendEmailsInBatches(remainingTherapists);
         //console.log("Mailgun Response:", response);
       } catch (error) {
         console.error("Error sending email via Mailgun:", error);

@@ -379,7 +379,7 @@ router.get("/confirm-booking/:id", async (req, res) => {
           }
         }
       };
-      sendEmailsInBatches(eligibleTherapists);
+      await sendEmailsInBatches(eligibleTherapists);
       //console.log("Mailgun Response:", response);
     } catch (error) {
       console.error("Error sending email via Mailgun:", error);
