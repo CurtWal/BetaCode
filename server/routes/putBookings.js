@@ -5,12 +5,10 @@ const router = express.Router();
 router.put("/bookings/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { isComplete } = req.body; // Get updated value from request
+    const updateData = req.body; // Get updated value from request
 
     const updatedBooking = await bookings.findByIdAndUpdate(
-      id,
-      { isComplete },
-      { new: true } // Return updated document
+      id, updateData, { new: true } // Return updated document
     );
 
     if (!updatedBooking) {

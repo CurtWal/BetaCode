@@ -140,6 +140,15 @@ function Home() {
   }
 }, [therapist, eventHours, regularPrice]);
 
+// const sendSms = async () => {
+//   try{
+//     const response = await axios.get(`http://localhost:3001/send-sms`);
+//     console.log("SMS SENT: ", response)
+//   }catch (error){
+//     console.error("Error sending SMS: ", error);
+//   }
+// }
+
   // const sendSms = async () => {
   //   try {
   //     const response = await axios.post(`http://localhost:3001/send-sms`, {
@@ -545,7 +554,7 @@ function Home() {
           <p style={{ textAlign: "left" }}>sam@massageonthegomemphis.com</p>
         </div>
       </div>
-      {/* <Button onClick={sendSms}>TEXT</Button> Used for testing phone text messages using email to sms */}
+      {/* <Button onClick={sendSms}>TEXT</Button> */}
     </div>
   );
 }

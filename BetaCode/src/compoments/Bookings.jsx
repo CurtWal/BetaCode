@@ -3,6 +3,9 @@ import axios from "axios";
 import Button from "react-bootstrap/Button";
 import Modal from "react-bootstrap/Modal";
 import "../App.css";
+import Col from "react-bootstrap/Col";
+import Form from "react-bootstrap/Form";
+import Row from "react-bootstrap/Row";
 function Bookings() {
   const [bookings, setBookings] = useState([]);
   const [showCompleted, setShowCompleted] = useState(false);
@@ -11,6 +14,9 @@ function Bookings() {
   const [isFull, setIsFull] = useState(false);
   const currentUserId = localStorage.getItem("userId");
   const userRole = localStorage.getItem("role");
+  const [deleteSelectedBooking, setDeleteSelectedBooking] = useState(null);
+  const [deleteType, setDeleteType] = useState("");
+
   const checkZipDistance = async (zip1, zip2, maxDistance) => {
     const API_KEY = import.meta.env.VITE_GEO_CODIO_API;
     try {
@@ -60,10 +66,10 @@ function Bookings() {
         console.error("No token found, user is not authenticated.");
         return;
       }
-  
+
       const userId = localStorage.getItem("userId");
       const userRole = localStorage.getItem("role"); // Assuming role is stored in localStorage
-  
+
       // Fetch all bookings
       const response = await axios.get(
         `${import.meta.env.VITE_VERCEL}bookings`,
@@ -75,14 +81,14 @@ function Bookings() {
         ...booking,
         startTime: convertTo12Hour(booking.startTime),
         endTime: convertTo12Hour(booking.endTime),
-      })); 
+      }));
 
       if (userRole === "admin") {
         // Admin sees all bookings
         setBookings(formattedBookings);
         return;
       }
-  
+
       if (userRole === "therapist") {
         // Fetch therapist's zip code
         const therapistResponse = await axios.get(
@@ -91,9 +97,9 @@ function Bookings() {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
-  
+
         const therapistZip = therapistResponse.data.zipCode;
-  
+
         // Filter bookings based on distance
         const filteredBookings = await Promise.all(
           formattedBookings.map(async (booking) => {
@@ -103,19 +109,20 @@ function Bookings() {
               92 // 92 miles for 1 hour 30 min distance
             );
             const isTherapistAssigned = booking.assignedTherapists.some(
-              (t) => t._id === userId);
-              const hasOpenSpots =
+              (t) => t._id === userId
+            );
+            const hasOpenSpots =
               booking.assignedTherapists.length < booking.therapist;
-  
+
             // Show if therapist is assigned OR there are open spots and therapist is nearby
             if (isTherapistAssigned || (hasOpenSpots && isNearTherapist)) {
               return booking;
             }
-  
+
             return null;
           })
         );
-  
+
         setBookings(filteredBookings.filter((booking) => booking !== null));
       }
     } catch (error) {
@@ -234,6 +241,12 @@ function Bookings() {
   const handleClose = () => {
     setSelectedBooking(null);
   };
+  const setThisDeletedBooking = (bookingId) => {
+    setDeleteSelectedBooking(bookingId);
+  };
+  const setCloseDeletedBooking = (bookingId) => {
+    setDeleteSelectedBooking(bookingId);
+  };
   const leaveBooking = async (bookingId) => {
     try {
       const token = localStorage.getItem("token");
@@ -270,125 +283,190 @@ function Bookings() {
       console.error("Error leaving booking:", error.response?.data || error);
     }
   };
-  const deleteBooking = async (bookingId) => {
+
+  const deleteBooking = async (bookingId, type) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`${import.meta.env.VITE_VERCEL}delete/bookings/${bookingId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await axios.delete(
+        `${import.meta.env.VITE_VERCEL}delete/bookings/${bookingId}?type=${type}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       setBookings(bookings.filter((booking) => booking._id !== bookingId));
+      setDeleteSelectedBooking(null);
     } catch (error) {
       console.error("Error deleting booking:", error);
     }
   };
-  return (
-    <div className="bookingContainer">
-      <h1 style={{ textAlign: "center" }}>Bookings</h1>
-      <div className="bookings-controls">
-        {userRole == "admin" && (
-          <label>
-          <input
-            type="checkbox"
-            checked={showCompleted}
-            onChange={toggleShowCompleted}
-          />
-          Show Completed Bookings
-        </label>
-        )}
-      </div>
-      <div className="">
-        <ul className="bookings">
-          {bookings.map((booking) =>
-            !booking.isComplete || showCompleted ? (
-              <li key={booking._id}>
-                <div className="booking-card">
-                  <li>Company Name: {booking.companyName}</li>
-                  <li>Name: {booking.name}</li>
-                  <li>Email: {booking.email}</li>
-                  <li>Address: {booking.address}</li>
-                  <li>ZipCode: {booking.zipCode}</li>
-                  <li># of Therapist: {booking.therapist}</li>
-                  <li>EventHours: {booking.eventHours} Hours</li>
-                  <li>EventIncrements: {booking.eventIncrement} Minutes</li>
-                  <li>Available Date: {booking.date}</li>
-                  <li>Start Time: {booking.startTime}</li>
-                  <li>End Time: {booking.endTime}</li>
-                  <li>Extra Info: {booking.extra}</li>
-                  <div className="button-container">
-                    <Button onClick={() => handleShow(booking._id)}>
-                      {booking.assignedTherapists.length < booking.therapist
-                        ? "Assign Therapist"
-                        : "Job Filled"}
-                    </Button>
 
-                    {!booking.isComplete && (
-                      <Button
-                        onClick={() => markComplete(booking._id)}
-                        style={{ marginLeft: "10px" }}
-                        variant="danger"
-                      >
-                        Mark Job Complete
+  const exportToGoogleSheet = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.post(
+        `${import.meta.env.VITE_VERCEL}api/export-bookings`,
+        null,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      alert("Bookings exported to Google Sheets!");
+    } catch (error) {
+      console.error("Export error:", error);
+      alert("Failed to export bookings.");
+    }
+  };
+  return (
+    <div>
+      <div>
+        <button onClick={exportToGoogleSheet}>Export to Google Sheet</button>
+      </div>
+      <div className="bookingContainer">
+        <h1 style={{ textAlign: "center" }}>Bookings</h1>
+        <div className="bookings-controls">
+          {userRole == "admin" && (
+            <label>
+              <input
+                type="checkbox"
+                checked={showCompleted}
+                onChange={toggleShowCompleted}
+              />
+              Show Completed Bookings
+            </label>
+          )}
+        </div>
+        <div className="">
+          <ul className="bookings">
+            {bookings.map((booking) =>
+              !booking.isComplete || showCompleted ? (
+                <li key={booking._id}>
+                  <div className="booking-card">
+                    <li>Company Name: {booking.companyName}</li>
+                    <li>Name: {booking.name}</li>
+                    <li>Email: {booking.email}</li>
+                    <li>Address: {booking.address}</li>
+                    <li>ZipCode: {booking.zipCode}</li>
+                    <li># of Therapist: {booking.therapist}</li>
+                    <li>EventHours: {booking.eventHours} Hours</li>
+                    <li>EventIncrements: {booking.eventIncrement} Minutes</li>
+                    <li>Available Date: {booking.date}</li>
+                    <li>Start Time: {booking.startTime}</li>
+                    <li>End Time: {booking.endTime}</li>
+                    <li>Extra Info: {booking.extra}</li>
+                    <div className="button-container">
+                      <Button onClick={() => handleShow(booking._id)}>
+                        {booking.assignedTherapists.length < booking.therapist
+                          ? "Assign Therapist"
+                          : "Job Filled"}
                       </Button>
 
-
-                    )}
-                    {userRole === "admin" && (
-  <Button onClick={() => deleteBooking(booking._id)} variant="danger">
-    Delete Booking
-  </Button>
-)}
-                  </div>
-                  {/* Show modal only for the selected booking */}
-                  {selectedBooking === booking._id && (
-                    <Modal show onHide={handleClose}>
-                      <Modal.Header closeButton>
-                        <h3>Therapist Names</h3>
-                      </Modal.Header>
-                      <Modal.Body>
-                        <div className="input-container">
-                          <ul style={{ textAlign: "center" }}>
-                            Assigned Therapists:{" "}
-                            {booking.assignedTherapists &&
-                            booking.assignedTherapists.length > 0 ? (
-                              booking.assignedTherapists.map((therapist) => (
-                                <li key={therapist._id}>
-                                  {therapist.username
-                                    ? therapist.username
-                                    : "Unknown"}
-                                </li>
-                              ))
-                            ) : (
-                              <span>No therapists assigned yet</span>
-                            )}
-                          </ul>
-                        </div>
-                      </Modal.Body>
-                      <Modal.Footer>
-                        {booking.assignedTherapists.length <
-                          booking.therapist && (
-                          <Button onClick={() => joinBooking(booking._id)}>
-                            Join Booking
-                          </Button>
-                        )}
-                        {currentUserId &&
-                          booking.assignedTherapists.some(
-                            (t) => t._id === currentUserId
-                          ) && (
-                            <Button
-                              variant="danger"
-                              onClick={() => leaveBooking(booking._id)}
-                            >
-                              Leave Booking
+                      {!booking.isComplete && (
+                        <Button
+                          onClick={() => markComplete(booking._id)}
+                          style={{ marginLeft: "10px" }}
+                          variant="danger"
+                        >
+                          Mark Job Complete
+                        </Button>
+                      )}
+                      {userRole === "admin" && (
+                        // <Button onClick={() => deleteBooking(booking._id)} variant="danger">
+                        //   Delete Booking
+                        // </Button>
+                        <Button
+                          onClick={() => setThisDeletedBooking(booking._id)}
+                          variant="danger"
+                        >
+                          Delete / Cancel Booking
+                        </Button>
+                      )}
+                    </div>
+                    {/* Show modal only for the selected booking */}
+                    {selectedBooking === booking._id && (
+                      <Modal show onHide={handleClose}>
+                        <Modal.Header closeButton>
+                          <h3>Therapist Names</h3>
+                        </Modal.Header>
+                        <Modal.Body>
+                          <div className="input-container">
+                            <ul style={{ textAlign: "center" }}>
+                              Assigned Therapists:{" "}
+                              {booking.assignedTherapists &&
+                              booking.assignedTherapists.length > 0 ? (
+                                booking.assignedTherapists.map((therapist) => (
+                                  <li key={therapist._id}>
+                                    {therapist.username
+                                      ? therapist.username
+                                      : "Unknown"}
+                                  </li>
+                                ))
+                              ) : (
+                                <span>No therapists assigned yet</span>
+                              )}
+                            </ul>
+                          </div>
+                        </Modal.Body>
+                        <Modal.Footer>
+                          {booking.assignedTherapists.length <
+                            booking.therapist && (
+                            <Button onClick={() => joinBooking(booking._id)}>
+                              Join Booking
                             </Button>
                           )}
-                      </Modal.Footer>
-                    </Modal>
-                  )}
-                </div>
-              </li>
-            ) : null
-          )}
-        </ul>
+                          {currentUserId &&
+                            booking.assignedTherapists.some(
+                              (t) => t._id === currentUserId
+                            ) && (
+                              <Button
+                                variant="danger"
+                                onClick={() => leaveBooking(booking._id)}
+                              >
+                                Leave Booking
+                              </Button>
+                            )}
+                        </Modal.Footer>
+                      </Modal>
+                    )}
+
+                    {deleteSelectedBooking === booking._id && (
+                      <Modal show onHide={setCloseDeletedBooking}>
+                        <Modal.Header closeButton>
+                          <h3 class="text-black">Delete / Cancel Booking</h3>
+                        </Modal.Header>
+                        <Modal.Body>
+                          <div className="input-container">
+                            <Form.Check
+                              type="radio"
+                              label="Delete (No SMS)"
+                              name="deleteOptions"
+                              id="deletebooking1"
+                              onChange={() => setDeleteType("delete")}
+                            />
+                            <Form.Check
+                              type="radio"
+                              label="Cancel Booking (Send SMS)"
+                              name="deleteOptions"
+                              id="deletebooking2"
+                              onChange={() => setDeleteType("cancel")}
+                            />
+
+                            <Button
+                              onClick={() =>
+                                deleteBooking(booking._id, deleteType)
+                              }
+                            >
+                              Delete / Cancel Booking
+                            </Button>
+                          </div>
+                        </Modal.Body>
+                      </Modal>
+                    )}
+                  </div>
+                </li>
+              ) : null
+            )}
+          </ul>
+        </div>
       </div>
     </div>
   );

@@ -17,6 +17,7 @@ const authRoutes = require("./routes/authRoutes");
 const getAssignment = require("./routes/getAssignment");
 const adminRoute = require("./routes/admin");
 //const sms = require("./routes/sms");
+const bookingsExport = require("./routes/export-bookings")
 const deleteBookings = require("./routes/deleteBooking");
 const PORT = process.env.PORT || 3003;
 const app = express();
@@ -45,7 +46,7 @@ app.use(postPayment);
 app.use(getAssignment);
 app.use("/admin", adminRoute);
 //app.use(sms);
-app.use("/delete", deleteBookings)
-
+app.use("/delete", deleteBookings);
+app.use("/api", bookingsExport);
 // app.use('/api', paymentRoute);
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
