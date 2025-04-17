@@ -15,51 +15,16 @@ sgMail.setApiKey(process.env.SENDGRID_KEY);
 const formData = require("form-data");
 const Mailgun = require("mailgun.js");
 
-const checkZipDistance = async (zip1, zip2, maxDistance) => {
-  const API_KEY = process.env.GEO_CODIO_API; // Ensure your API key is correct
-  try {
-    const [loc1, loc2] = await Promise.all([
-      axios.get(
-        `https://api.geocod.io/v1.7/geocode?q=${zip1}&api_key=${API_KEY}`
-      ),
-      axios.get(
-        `https://api.geocod.io/v1.7/geocode?q=${zip2}&api_key=${API_KEY}`
-      ),
-    ]);
-
-    // console.log("Geocodio Response 1:", loc1.data);
-    // console.log("Geocodio Response 2:", loc2.data);
-
-    if (!loc1.data.results.length || !loc2.data.results.length) {
-      console.error("Invalid ZIP code response");
-      return false;
-    }
-
-    const { lat: lat1, lng: lon1 } = loc1.data.results[0].location;
-    const { lat: lat2, lng: lon2 } = loc2.data.results[0].location;
-
-    return getDistance(lat1, lon1, lat2, lon2) <= maxDistance;
-  } catch (error) {
-    console.error(
-      "Error fetching ZIP code data:",
-      error.response?.data || error.message
-    );
-    return false;
-  }
-};
-
-const getDistance = (lat1, lon1, lat2, lon2) => {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * (Math.PI / 180);
-  const dLon = (lon2 - lon1) * (Math.PI / 180);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * (Math.PI / 180)) *
-      Math.cos(lat2 * (Math.PI / 180)) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+const checkLocationDistance = (lat1, lon1, lat2, lon2, maxMiles) => {
+  const toRad = (deg) => deg * Math.PI / 180;
+  const R = 3958.8; // Earth radius in miles
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+            Math.sin(dLon / 2) ** 2;
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c * 0.621371;
+  return R * c <= maxMiles;
 };
 const convertTo12Hour = (time) => {
   if (!time) return ""; // Handle empty or undefined values
@@ -113,6 +78,11 @@ router.post("/new-booking", async (req, res) => {
       extra,
     } = req.body;
 
+    const geoRes = await axios.get(
+      `https://api.geocod.io/v1.7/geocode?q=${zipCode}&api_key=${process.env.GEO_CODIO_API2}`
+    );
+    const location = geoRes?.data?.results?.[0]?.location || null;
+
     // Save booking in the database
     const newBooking = await bookings.create({
       companyName,
@@ -130,6 +100,7 @@ router.post("/new-booking", async (req, res) => {
       extra,
       date,
       confirmed: false,
+      location,
     });
     const confirmationLink = `https://motgpayment.com/confirm-booking/${newBooking._id}`;
 
@@ -238,7 +209,7 @@ router.get("/confirm-booking/:id", async (req, res) => {
 
     const therapists = await User.find(
       { role: "therapist" },
-      "email phoneNumber zipCode"
+      "email phoneNumber zipCode location"
     );
 
     if (!therapists.length) {
@@ -247,16 +218,20 @@ router.get("/confirm-booking/:id", async (req, res) => {
 
     const maxDistance = 92;
     const eligibleTherapists = [];
-
+    console.log("Therapists:", therapists);
     for (const therapist of therapists) {
-      const inRange = await checkZipDistance(
-        booking.zipCode,
-        therapist.zipCode,
-        maxDistance
+      console.log("Booking Location:", booking.location);
+  console.log("Therapist Location:", therapist.location);
+      const inRange = checkLocationDistance(
+        booking.location.lat,
+        booking.location.lng,
+        therapist.location.lat,
+        therapist.location.lng,
+        92
       );
       if (inRange) eligibleTherapists.push(therapist);
     }
-
+    console.log("Therapist", eligibleTherapists)
     if (!eligibleTherapists.length) {
       return res.status(404).send("No therapists in range");
     }
@@ -291,9 +266,7 @@ router.get("/confirm-booking/:id", async (req, res) => {
                 <p><strong>Start:</strong> ${convertTo12Hour(
                   booking.startTime
                 )}</p>
-                <p><strong>End:</strong> ${convertTo12Hour(
-                  booking.endTime
-                )}</p>
+                <p><strong>End:</strong> ${convertTo12Hour(booking.endTime)}</p>
                 <p><strong>Address:</strong> ${booking.address}</p>
                 <p>Log in to accept this booking.</p>`,
             })

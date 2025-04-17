@@ -15,6 +15,10 @@ const AssignTherapist = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  lastReminderSent: {
+    type: Date,
+    default: null,
+  },
 });
 
 const therapistAssign = mongoose.model("AssignTherapist", AssignTherapist);

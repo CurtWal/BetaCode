@@ -17,41 +17,18 @@ function Bookings() {
   const [deleteSelectedBooking, setDeleteSelectedBooking] = useState(null);
   const [deleteType, setDeleteType] = useState("");
 
-  const checkZipDistance = async (zip1, zip2, maxDistance) => {
-    const API_KEY = import.meta.env.VITE_GEO_CODIO_API;
-    try {
-      const [loc1, loc2] = await Promise.all([
-        axios.get(
-          `https://api.geocod.io/v1.7/geocode?q=${zip1}&api_key=${API_KEY}`
-        ),
-        axios.get(
-          `https://api.geocod.io/v1.7/geocode?q=${zip2}&api_key=${API_KEY}`
-        ),
-      ]);
-
-      const { lat: lat1, lng: lon1 } = loc1.data.results[0].location;
-      const { lat: lat2, lng: lon2 } = loc2.data.results[0].location;
-
-      return getDistance(lat1, lon1, lat2, lon2) <= maxDistance;
-    } catch (error) {
-      console.error("Error fetching ZIP code data:", error);
-      return false;
-    }
-  };
-
-  const getDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * (Math.PI / 180);
-    const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const checkLocationDistance = (lat1, lon1, lat2, lon2, maxMiles) => {
+    const toRad = (deg) => (deg * Math.PI) / 180;
+    const R = 3958.8; // Earth radius in miles
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
     const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * (Math.PI / 180)) *
-        Math.cos(lat2 * (Math.PI / 180)) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c * 0.621371;
+    return R * c <= maxMiles;
   };
+
   const convertTo12Hour = (time) => {
     if (!time) return ""; // Handle empty or undefined values
     const [hour, minute] = time.split(":").map(Number);
@@ -59,6 +36,7 @@ function Bookings() {
     const formattedHour = hour % 12 || 12; // Convert 0 to 12 for 12AM
     return `${formattedHour}:${minute.toString().padStart(2, "0")} ${period}`;
   };
+
   const getBookings = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -82,7 +60,7 @@ function Bookings() {
         startTime: convertTo12Hour(booking.startTime),
         endTime: convertTo12Hour(booking.endTime),
       }));
-
+      
       if (userRole === "admin") {
         // Admin sees all bookings
         setBookings(formattedBookings);
@@ -91,39 +69,42 @@ function Bookings() {
 
       if (userRole === "therapist") {
         // Fetch therapist's zip code
-        const therapistResponse = await axios.get(
-          `${import.meta.env.VITE_VERCEL}api/therapist/${userId}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+        // const therapistResponse = await axios.get(
+        //   `${import.meta.env.VITE_VERCEL2}api/therapist/${userId}`,
+        //   {
+        //     headers: { Authorization: `Bearer ${token}` },
+        //   }
+        // );
+        
+        // const therapistLocation = therapistResponse.data.location;
+        // //const bookingLocation = response.data.location;
+        // // Filter bookings based on distance
+        // const filteredBookings = await Promise.all(
+        //   formattedBookings.map(async (booking) => {
+        //     if (!booking.location || !therapistLocation) return null;
+        //     const isNearTherapist = checkLocationDistance(
+        //       booking.location.lat,
+        //       booking.location.lng,
+        //       therapistLocation.lat,
+        //       therapistLocation.lng,
+        //       92
+        //     );
+        
+        //     const isTherapistAssigned = booking.assignedTherapists.some(
+        //       (t) => t._id === userId
+        //     );
+        //     const hasOpenSpots =
+        //       booking.assignedTherapists.length < booking.therapist;
+        
+        //     if (isTherapistAssigned || (hasOpenSpots && isNearTherapist)) {
+        //       return booking;
+        //     }
+        
+        //     return null;
+        //   })
+        // );
 
-        const therapistZip = therapistResponse.data.zipCode;
-
-        // Filter bookings based on distance
-        const filteredBookings = await Promise.all(
-          formattedBookings.map(async (booking) => {
-            const isNearTherapist = await checkZipDistance(
-              therapistZip,
-              booking.zipCode,
-              92 // 92 miles for 1 hour 30 min distance
-            );
-            const isTherapistAssigned = booking.assignedTherapists.some(
-              (t) => t._id === userId
-            );
-            const hasOpenSpots =
-              booking.assignedTherapists.length < booking.therapist;
-
-            // Show if therapist is assigned OR there are open spots and therapist is nearby
-            if (isTherapistAssigned || (hasOpenSpots && isNearTherapist)) {
-              return booking;
-            }
-
-            return null;
-          })
-        );
-
-        setBookings(filteredBookings.filter((booking) => booking !== null));
+        setBookings(response.data);
       }
     } catch (error) {
       console.error("Error fetching bookings:", error.response?.data || error);
@@ -288,7 +269,9 @@ function Bookings() {
     try {
       const token = localStorage.getItem("token");
       await axios.delete(
-        `${import.meta.env.VITE_VERCEL}delete/bookings/${bookingId}?type=${type}`,
+        `${
+          import.meta.env.VITE_VERCEL
+        }delete/bookings/${bookingId}?type=${type}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -318,9 +301,12 @@ function Bookings() {
   };
   return (
     <div>
-      <div>
-        <button onClick={exportToGoogleSheet}>Export to Google Sheet</button>
-      </div>
+      {userRole == "admin" && (
+        <div>
+          <button onClick={exportToGoogleSheet}>Export to Google Sheet</button>
+        </div>
+      )}
+
       <div className="bookingContainer">
         <h1 style={{ textAlign: "center" }}>Bookings</h1>
         <div className="bookings-controls">

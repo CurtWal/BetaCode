@@ -19,6 +19,7 @@ const adminRoute = require("./routes/admin");
 //const sms = require("./routes/sms");
 const bookingsExport = require("./routes/export-bookings")
 const deleteBookings = require("./routes/deleteBooking");
+//const Booking = require("./model/bookings")
 const PORT = process.env.PORT || 3003;
 const app = express();
 
@@ -35,6 +36,57 @@ mongoose
 app.get("/", (req, res) => {
   res.send("Hello World!");
 });
+
+// const API_KEY = process.env.GEO_CODIO_API2;
+
+// const geocodeZip = async (zip) => {
+//   const url = `https://api.geocod.io/v1.7/geocode?q=${zip}&api_key=${API_KEY}`;
+//   const res = await axios.get(url);
+//   return res.data.results[0].location;
+// };
+
+// const updateBookingLocations = async () => {
+//   await mongoose.connect(process.env.MERNDBDATA); // Replace with your DB URI
+
+//   try {
+//     const bookings = await Booking.find({
+//       zipCode: { $ne: "" },
+//       location: { $exists: false },
+//     });
+
+//     console.log(`Found ${bookings.length} bookings to update.`);
+
+//     const zipCache = {}; // Avoid duplicate API calls
+
+//     for (const booking of bookings) {
+//       const zip = booking.zipCode;
+
+//       if (!zipCache[zip]) {
+//         try {
+//           const loc = await geocodeZip(zip);
+//           zipCache[zip] = loc;
+//         } catch (err) {
+//           console.error(`Failed to geocode ZIP ${zip}:`, err.message);
+//           continue;
+//         }
+//       }
+
+//       const { lat, lng } = zipCache[zip];
+//       booking.location = { lat, lng };
+//       await booking.save();
+
+//       console.log(`✅ Updated booking ${booking._id} with ${lat}, ${lng}`);
+//     }
+
+//     console.log("✅ Finished updating bookings.");
+//   } catch (err) {
+//     console.error("Error updating bookings:", err);
+//   } finally {
+//     await mongoose.disconnect();
+//   }
+// };
+
+// updateBookingLocations();
 
 app.use(authRoutes);
 app.use(getBookings);

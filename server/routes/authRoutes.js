@@ -5,6 +5,7 @@ const User = require("../model/user");
 const router = express.Router();
 const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(process.env.SENDGRID_KEY);
+const axios = require("axios");
 
 const formData = require("form-data");
 const Mailgun = require("mailgun.js");
@@ -95,6 +96,14 @@ router.post("/therapistregister", async (req, res) => {
     address,
   } = req.body;
   try {
+        const geoRes = await axios.get(
+          `https://api.geocod.io/v1.7/geocode?q=${zipCode}&api_key=${process.env.GEO_CODIO_API}`
+        );
+        location = geoRes?.data?.results?.[0]?.location || null;
+      } catch (error) {
+        console.error("Geocoding failed:", error.message);
+      }
+  try {
     //Check if user already exists
     const user = await User.findOne({ email });
     if (user) return res.status(400).json({ error: "User already exists" });
@@ -111,6 +120,7 @@ router.post("/therapistregister", async (req, res) => {
       phoneNumber,
       zipCode,
       address,
+      location,
     });
     await newUser.save();
     const mg = new Mailgun(formData);
@@ -189,6 +199,9 @@ router.post("/login", async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "10hr" }
     );
+
+    console.log("Login successful for:", user.username);
+
     res.json({
       token,
       role: user.role,
@@ -196,7 +209,7 @@ router.post("/login", async (req, res) => {
       username: user.username,
     });
   } catch (err) {
-    console.error(err);
+    console.error("Login Error:", err.message, err.stack);
     res.status(500).json({ error: "Server error", message: err.message });
   }
 });

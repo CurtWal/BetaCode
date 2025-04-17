@@ -21,6 +21,10 @@ const bookingSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  location: {
+    lat: { type: Number },
+    lng: { type: Number },
+  },
   therapist: {
     type: Number,
     required: true,

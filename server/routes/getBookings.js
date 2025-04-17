@@ -6,41 +6,16 @@ const router = express.Router();
 const User = require("../model/user");
 const axios = require("axios");
 
-const getDistance = (lat1, lon1, lat2, lon2) => {
-  const R = 6371; // Earth radius in km
-  const dLat = (lat2 - lat1) * (Math.PI / 180);
-  const dLon = (lon2 - lon1) * (Math.PI / 180);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * (Math.PI / 180)) *
-      Math.cos(lat2 * (Math.PI / 180)) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+const checkLocationDistance = (lat1, lon1, lat2, lon2, maxMiles) => {
+  const toRad = (deg) => deg * Math.PI / 180;
+  const R = 3958.8; // Earth radius in miles
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+            Math.sin(dLon / 2) ** 2;
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c * 0.621371; // Return distance in miles
-};
-
-// Function to check if two zip codes are within maxDistance (in miles)
-const checkZipDistance = async (zip1, zip2, maxDistance) => {
-  const API_KEY = process.env.GEO_CODIO_API; // Store API Key in env variables
-  try {
-    const [loc1, loc2] = await Promise.all([
-      axios.get(
-        `https://api.geocod.io/v1.7/geocode?q=${zip1}&api_key=${API_KEY}`
-      ),
-      axios.get(
-        `https://api.geocod.io/v1.7/geocode?q=${zip2}&api_key=${API_KEY}`
-      ),
-    ]);
-
-    const { lat: lat1, lng: lon1 } = loc1.data.results[0].location;
-    const { lat: lat2, lng: lon2 } = loc2.data.results[0].location;
-
-    return getDistance(lat1, lon1, lat2, lon2) <= maxDistance; // Return true if within distance
-  } catch (error) {
-    console.error("Error fetching ZIP code data:", error);
-    return false;
-  }
+  return R * c <= maxMiles;
 };
 
 // Endpoint to fetch bookings filtered by therapist's zip code distance
@@ -87,9 +62,11 @@ router.get(
             .map((assignment) => assignment.therapistId); // Extract therapist details
 
           // Check if the booking is within 1 hour of therapist's zip code
-          const isWithinDistance = await checkZipDistance(
-            therapistZip,
-            booking.zipCode,
+          const isWithinDistance = checkLocationDistance(
+            booking.location.lat,
+            booking.location.lng,
+            therapist.location.lat,
+            therapist.location.lng,
             92
           ); // 60 miles = 1 hour
 
