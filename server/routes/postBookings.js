@@ -79,7 +79,7 @@ router.post("/new-booking", async (req, res) => {
     } = req.body;
 
     const geoRes = await axios.get(
-      `https://api.geocod.io/v1.7/geocode?q=${zipCode}&api_key=${process.env.GEO_CODIO_API2}`
+      `https://api.geocod.io/v1.7/geocode?q=${zipCode}&api_key=${process.env.GEO_CODIO_API}`
     );
     const location = geoRes?.data?.results?.[0]?.location || null;
 
