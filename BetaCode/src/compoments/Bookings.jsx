@@ -103,12 +103,30 @@ function Bookings() {
         //     return null;
         //   })
         // );
-
-        setBookings(response.data);
+        const filteredBookings = formattedBookings.filter((booking) => {
+          const isTherapistAssigned = booking.assignedTherapists?.some(
+            (t) => t._id === userId
+          );
+          const isNotFull =
+            booking.assignedTherapists?.length < booking.therapist;
+      
+          return isTherapistAssigned || isNotFull;
+        });
+      
+        setBookings(filteredBookings);
+        return;
       }
     } catch (error) {
       console.error("Error fetching bookings:", error.response?.data || error);
     }
+  };
+  const formatEventHours = (hours) => {
+    const num = parseFloat(hours);
+    const wholeHours = Math.floor(num);
+    const minutes = num % 1 !== 0 ? 30 : 0;
+    return `${wholeHours} Hour${wholeHours !== 1 ? "s" : ""}${
+      minutes ? ` ${minutes} Minutes` : ""
+    }`;
   };
 
   const joinBooking = async (bookingId) => {
@@ -333,7 +351,7 @@ function Bookings() {
                     <li>Address: {booking.address}</li>
                     <li>ZipCode: {booking.zipCode}</li>
                     <li># of Therapist: {booking.therapist}</li>
-                    <li>EventHours: {booking.eventHours} Hours</li>
+                    <li>EventHours: {formatEventHours(booking.eventHours)}</li>
                     <li>EventIncrements: {booking.eventIncrement} Minutes</li>
                     <li>Available Date: {booking.date}</li>
                     <li>Start Time: {booking.startTime}</li>

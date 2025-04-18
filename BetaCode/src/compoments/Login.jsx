@@ -1,8 +1,14 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import {
+  useNavigate,
+  BrowserRouter as Router,
+  Route,
+  Link,
+  Routes,
+} from "react-router-dom";
 import "../Register.css";
 import Logo from "../assets/MOTG_Revised_Logo.png";
-
+import RequestReset from "./RequestReset";
 function Login({ onLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -54,6 +60,14 @@ function Login({ onLogin }) {
             />
             <button type="submit">Login</button>
           </form>
+          <p style={{ marginTop: "10px" }}>
+            <Link
+              to="/forgot-password"
+              style={{ color: "#007bff", textDecoration: "underline" }}
+            >
+              Forgot your password?
+            </Link>
+          </p>
         </div>
       </div>
     </div>

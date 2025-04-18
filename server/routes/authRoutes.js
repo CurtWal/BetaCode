@@ -214,4 +214,65 @@ router.post("/login", async (req, res) => {
   }
 });
 
+router.post("/request-password-reset", async (req, res) => {
+  const { email } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    console.log("User: ", user)
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1h",
+    });
+
+    const resetLink = `https://motgpayment.com/reset-password/${token}`;
+    const mg = new Mailgun(formData);
+    const mailgun = mg.client({
+      username: "api",
+      key: process.env.MAILGUN_KEY, // Add this to your .env file // Default Mailgun API URL
+    });
+    const msg = {
+      to: user.email,
+      from: process.env.EMAIL_USER,
+      subject: "Password Reset Request",
+      html: `
+        <p>Hello ${user.username},</p>
+        <p>You requested a password reset. Click the link below to reset your password:</p>
+        <a href="${resetLink}">${resetLink}</a>
+        <p>This link expires in 1 hour.</p>
+      `,
+    };
+
+    const response = await mailgun.messages.create(
+      "motgpayment.com", // Your Mailgun domain (e.g., "mg.yourdomain.com")
+      msg
+    );
+    console.log("Mailgun Response:", response);
+    res.status(200).json({ message: "Password reset link sent" });
+  } catch (err) {
+    console.error("Error sending reset email:", err.response?.body || err.message);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+router.post("/reset-password/:token", async (req, res) => {
+  const { token } = req.params;
+  const { password } = req.body;
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(password, salt);
+    await user.save();
+
+    res.status(200).json({ message: "Password reset successful" });
+  } catch (err) {
+    console.error("Reset password error:", err.message);
+    res.status(400).json({ error: "Invalid or expired token" });
+  }
+});
+
 module.exports = router;

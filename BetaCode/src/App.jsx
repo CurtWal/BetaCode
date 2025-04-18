@@ -19,6 +19,8 @@ import Modal from "react-bootstrap/Modal";
 import SpecialForm from "./compoments/SpecialForm";
 import TherapistRegister from "./compoments/TherapistRegister";
 import ConfirmBooking from "./compoments/ConfirmBooking";
+import RequestReset from "./compoments/RequestReset";
+import ResetPassword from "./compoments/ResetPassword";
 
 import { jwtDecode } from "jwt-decode";
 import axios from "axios";
@@ -209,6 +211,8 @@ function Layout() {
         <Route path="/special-form" element={<SpecialForm />} />
         <Route path="/therapistregister" element={<TherapistRegister />} />
         <Route path="/confirm-booking/:id" element={<ConfirmBooking />} />
+        <Route path="/forgot-password" element={<RequestReset />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
       </Routes>
     </div>
   );
