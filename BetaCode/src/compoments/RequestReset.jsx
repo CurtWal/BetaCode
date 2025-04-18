@@ -37,7 +37,7 @@ function RequestReset() {
       <div className="container">
         <div className="form-section">
           <img src={Logo} alt="Massage On The Go Logo" />
-          <h1>Reset Password</h1>
+          <h4>Reset Password</h4>
           <form onSubmit={handleSubmit}>
             <input
               type="email"

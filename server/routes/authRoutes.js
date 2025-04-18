@@ -243,11 +243,11 @@ router.post("/request-password-reset", async (req, res) => {
       `,
     };
 
-    const response = await mailgun.messages.create(
+      await mailgun.messages.create(
       "motgpayment.com", // Your Mailgun domain (e.g., "mg.yourdomain.com")
       msg
     );
-    console.log("Mailgun Response:", response);
+    // console.log("Mailgun Response:", response);
     res.status(200).json({ message: "Password reset link sent" });
   } catch (err) {
     console.error("Error sending reset email:", err.response?.body || err.message);
