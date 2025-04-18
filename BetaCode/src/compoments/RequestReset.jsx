@@ -2,18 +2,20 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../Register.css";
 import Logo from "../assets/MOTG_Revised_Logo.png";
+import { Spinner } from "react-bootstrap";
 
 function RequestReset() {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const [reseting, setResetting] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage("");
     setError("");
-
+    setResetting(true);
     const res = await fetch(
       `${import.meta.env.VITE_VERCEL}request-password-reset`,
       {
@@ -22,13 +24,12 @@ function RequestReset() {
         body: JSON.stringify({ email }),
       }
     );
-
     const data = await res.json();
-
     if (res.ok) {
       setMessage("Password reset link sent! Please check your email.");
-    } else {
-      setError(data.error || "Something went wrong. Try again.");
+      setResetting(false);
+    } else{
+    setError(data.error || "Something went wrong. Try again.");  
     }
   };
 
@@ -46,7 +47,21 @@ function RequestReset() {
               onChange={(e) => setEmail(e.target.value.toLowerCase())}
               required
             />
-            <button type="submit">Send Reset Link</button>
+            <button type="submit">{reseting ? (
+                <>
+                  <Spinner
+                    as="span"
+                    animation="border"
+                    size="sm"
+                    role="status"
+                    aria-hidden="true"
+                    className="me-2"
+                  />
+                  Processing...
+                </>
+              ) : (
+                "Reset Password"
+              )}</button>
           </form>
           {message && <p style={{ color: "green" }}>{message}</p>}
           {error && <p style={{ color: "red" }}>{error}</p>}

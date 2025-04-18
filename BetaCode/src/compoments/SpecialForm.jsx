@@ -382,6 +382,20 @@ function SpecialForm() {
                   <option value="4.5">4 Hours 30 Minutes</option>
                   <option value="5">5 Hours</option>
                   <option value="5.5">5 Hours 30 Minutes</option>
+                  <option value="6">6 Hours</option>
+                  <option value="6.5">6 Hours 30 Minutes</option>
+                  <option value="7">7 Hours 30 Minutes</option>
+                  <option value="7.5">7 Hours 30 Minutes</option>
+                  <option value="8">8 Hours</option>
+                  <option value="8.5">8 Hours 30 Minutes</option>
+                  <option value="9">9 Hours</option>
+                  <option value="9.5">9 Hours</option>
+                  <option value="10">10 Hours</option>
+                  <option value="10.5">10 Hours 30 Minutes</option>
+                  <option value="11">11 Hours</option>
+                  <option value="11.5">11 Hours 30 Minutes</option>
+                  <option value="12">12 Hours</option>
+                  <option value="12.5">12 Hours 30 Minutes</option>
                 </Form.Select>
               </Form.Group>
 
