@@ -44,6 +44,7 @@ router.post("/export-bookings", verifyToken, async (req, res) => {
     
         for (const b of bookings) {
           const row = [
+            b._id.toString(),
             `$${b.price}`,
             b.companyName,
             b.name,
@@ -56,43 +57,27 @@ router.post("/export-bookings", verifyToken, async (req, res) => {
             b.date,
             convertTo12Hour(b.startTime),
             convertTo12Hour(b.endTime),
-            b.isComplete ? "TRUE" : "FALSE", // Column M
+            b.isComplete ? "TRUE" : "FALSE", // Column n
           ];
     
-          const matchIndex = existingRows.findIndex((r) =>
-            r[0] === row[0] &&
-            r[1] === row[1] &&
-            r[2] === row[2] &&
-            r[3] === row[3] &&
-            r[4] === row[4] &&
-            r[5] === row[5] &&
-            r[6] === row[6] &&
-            r[7] === row[7] &&
-            r[8] === row[8] &&
-            r[9] === row[9] &&
-            r[10] === row[10] &&
-            r[11] === row[11]
-          );
+          const matchIndex = existingRows.findIndex(r => r[0] === b._id.toString());
     
           if (matchIndex === -1) {
             // Booking not in sheet, add to newRows
             newRows.push(row);
           } else {
             // Booking already in sheet, check isComplete
-            const sheetIsComplete = existingRows[matchIndex][12]; // Column M
-            if (b.isComplete && sheetIsComplete !== "TRUE") {
-              const rowNumber = matchIndex + 1; // Google Sheets is 1-indexed
-              updates.push(
-                sheets.spreadsheets.values.update({
-                  spreadsheetId,
-                  range: `Sheet1!M${rowNumber}`,
-                  valueInputOption: "RAW",
-                  resource: {
-                    values: [["TRUE"]],
-                  },
-                })
-              );
-            }
+            const rowNumber = matchIndex + 1;
+            updates.push(
+              sheets.spreadsheets.values.update({
+                spreadsheetId,
+                range: `Sheet1!A${rowNumber}:N${rowNumber}`,
+                valueInputOption: "RAW",
+                resource: {
+                  values: [row],
+                },
+              })
+            );
           }
         }
     

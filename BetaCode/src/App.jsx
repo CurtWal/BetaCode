@@ -127,6 +127,11 @@ function Layout() {
                   Users
                 </Link>
               </li>
+              <li>
+                <Link to={import.meta.env.VITE_SPREADSHEET} target="_blank" className="!text-white hover:!text-red-500">
+                  SpreadSheet
+                </Link>
+              </li>
             </div>
           )}
           {localStorage.getItem("role") === "therapist" && (

@@ -16,6 +16,8 @@ function Bookings() {
   const userRole = localStorage.getItem("role");
   const [deleteSelectedBooking, setDeleteSelectedBooking] = useState(null);
   const [deleteType, setDeleteType] = useState("");
+  const [joiningBookingId, setJoiningBookingId] = useState(null);
+  const [sortOption, setSortOption] = useState("recent");
 
   const checkLocationDistance = (lat1, lon1, lat2, lon2, maxMiles) => {
     const toRad = (deg) => (deg * Math.PI) / 180;
@@ -35,6 +37,35 @@ function Bookings() {
     const period = hour >= 12 ? "PM" : "AM";
     const formattedHour = hour % 12 || 12; // Convert 0 to 12 for 12AM
     return `${formattedHour}:${minute.toString().padStart(2, "0")} ${period}`;
+  };
+
+  const sortBookings = (bookingsList, option) => {
+    const sorted = [...bookingsList];
+    switch (option) {
+      case "recent":
+        return sorted.sort((a, b) => new Date(b.date) - new Date(a.date));
+      case "oldest":
+        return sorted.sort((a, b) => new Date(a.date) - new Date(b.date));
+      case "mostHours":
+        return sorted.sort(
+          (a, b) => parseFloat(b.eventHours) - parseFloat(a.eventHours)
+        );
+      case "leastHours":
+        return sorted.sort(
+          (a, b) => parseFloat(a.eventHours) - parseFloat(b.eventHours)
+        );
+      case "notFilled":
+        return sorted.sort((a, b) => {
+          const aFilled = (a.assignedTherapists?.length || 0) >= a.therapist;
+          const bFilled = (b.assignedTherapists?.length || 0) >= b.therapist;
+      
+          // Unfilled bookings should come before filled ones
+          if (aFilled === bFilled) return 0;
+          return aFilled ? 1 : -1;
+        });
+      default:
+        return sorted;
+    }
   };
 
   const getBookings = async () => {
@@ -60,7 +91,7 @@ function Bookings() {
         startTime: convertTo12Hour(booking.startTime),
         endTime: convertTo12Hour(booking.endTime),
       }));
-      
+
       if (userRole === "admin") {
         // Admin sees all bookings
         setBookings(formattedBookings);
@@ -75,7 +106,7 @@ function Bookings() {
         //     headers: { Authorization: `Bearer ${token}` },
         //   }
         // );
-        
+
         // const therapistLocation = therapistResponse.data.location;
         // //const bookingLocation = response.data.location;
         // // Filter bookings based on distance
@@ -89,17 +120,17 @@ function Bookings() {
         //       therapistLocation.lng,
         //       92
         //     );
-        
+
         //     const isTherapistAssigned = booking.assignedTherapists.some(
         //       (t) => t._id === userId
         //     );
         //     const hasOpenSpots =
         //       booking.assignedTherapists.length < booking.therapist;
-        
+
         //     if (isTherapistAssigned || (hasOpenSpots && isNearTherapist)) {
         //       return booking;
         //     }
-        
+
         //     return null;
         //   })
         // );
@@ -109,17 +140,23 @@ function Bookings() {
           );
           const isNotFull =
             booking.assignedTherapists?.length < booking.therapist;
-      
+
           return isTherapistAssigned || isNotFull;
         });
-      
-        setBookings(filteredBookings);
+        const sortedBookings = sortBookings(filteredBookings, sortOption);
+
+        setBookings(sortedBookings);
         return;
       }
     } catch (error) {
       console.error("Error fetching bookings:", error.response?.data || error);
     }
   };
+
+  useEffect(() => {
+    setBookings((prev) => sortBookings(prev, sortOption));
+  }, [sortOption]);
+
   const formatEventHours = (hours) => {
     const num = parseFloat(hours);
     const wholeHours = Math.floor(num);
@@ -130,6 +167,9 @@ function Bookings() {
   };
 
   const joinBooking = async (bookingId) => {
+    if (joiningBookingId === bookingId) return; // Prevent rapid double-clicks
+
+    setJoiningBookingId(bookingId);
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -140,10 +180,52 @@ function Bookings() {
       const therapistId = localStorage.getItem("userId");
       const therapistName = localStorage.getItem("username");
 
-      // **Update UI instantly**
+      const newBooking = bookings.find((b) => b._id === bookingId);
+      const newDate = newBooking.date;
+      const newStartTime = newBooking.startTime;
+      const newEndTime = newBooking.endTime;
+
+      // Convert 12-hour to 24-hour for comparison
+      const parseTime = (timeStr) => {
+        const [time, modifier] = timeStr.split(" ");
+        let [hours, minutes] = time.split(":").map(Number);
+        if (modifier === "PM" && hours !== 12) hours += 12;
+        if (modifier === "AM" && hours === 12) hours = 0;
+        return hours * 60 + minutes;
+      };
+
+      const newStart = parseTime(newStartTime);
+      const newEnd = parseTime(newEndTime);
+
+      // Check for time conflicts with other assigned bookings
+      const conflictingBooking = bookings.find((b) => {
+        if (
+          b._id !== bookingId &&
+          b.date === newDate &&
+          b.assignedTherapists?.some((t) => t._id === therapistId)
+        ) {
+          const existingStart = parseTime(b.startTime);
+          const existingEnd = parseTime(b.endTime);
+
+          // Time overlap logic
+          return newStart < existingEnd && existingStart < newEnd;
+        }
+        return false;
+      });
+
+      if (conflictingBooking) {
+        alert(
+          `You are already assigned to a booking that overlaps in time on ${newDate}. Please leave that booking first.`
+        );
+        setJoiningBookingId(null);
+        return;
+      }
+
+      // Optimistic UI update
       setBookings((prevBookings) =>
         prevBookings.map((booking) =>
-          booking._id === bookingId
+          booking._id === bookingId &&
+          !booking.assignedTherapists.some((t) => t._id === therapistId) // prevent duplicate in UI
             ? {
                 ...booking,
                 assignedTherapists: [
@@ -155,14 +237,13 @@ function Bookings() {
         )
       );
 
-      // **Send API request to assign therapist**
+      // Backend assignment
       await axios.post(
         `${import.meta.env.VITE_VERCEL}assign-therapist`,
         { bookingId, therapistId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      // **Check if all spots are filled**
+      // Check for full booking
       const bookingResponse = await axios.get(
         `${import.meta.env.VITE_VERCEL}bookings/${bookingId}`,
         { headers: { Authorization: `Bearer ${token}` } }
@@ -171,8 +252,8 @@ function Bookings() {
       const booking = bookingResponse.data;
       const assignedCount = booking.assignedTherapists.length;
       const remainingSpots = booking.therapist - assignedCount;
-
-      // **If no spots are left, send email to Samuel**
+      console.log(booking);
+      console.log(currentUserId);
       if (remainingSpots === 0) {
         await axios.post(
           `${import.meta.env.VITE_VERCEL}send-email-on-spot-fill`,
@@ -183,12 +264,14 @@ function Bookings() {
         console.log("All Spots filled sending email");
       }
 
-      // **Refresh bookings in the background**
-      getBookings();
+      getBookings(); // refresh UI
     } catch (error) {
       console.error("Error joining booking:", error.response?.data || error);
+    } finally {
+      setJoiningBookingId(null);
     }
   };
+
   useEffect(() => {
     getBookings(); // Initial fetch
   }, []);
@@ -312,6 +395,14 @@ function Bookings() {
         }
       );
       alert("Bookings exported to Google Sheets!");
+      if (
+        window.confirm(
+          'If you click "ok" you would be redirected To SpreadSheet. Cancel will load this website '
+        )
+      ) {
+        window.location.href =
+          "https://docs.google.com/spreadsheets/d/1SZ_8iRJTdS0dz5iwMOWHV6wnPBO0d0skE7gSSEcQdoc/edit?gid=0#gid=0";
+      }
     } catch (error) {
       console.error("Export error:", error);
       alert("Failed to export bookings.");
@@ -327,6 +418,7 @@ function Bookings() {
 
       <div className="bookingContainer">
         <h1 style={{ textAlign: "center" }}>Bookings</h1>
+
         <div className="bookings-controls">
           {userRole == "admin" && (
             <label>
@@ -338,6 +430,21 @@ function Bookings() {
               Show Completed Bookings
             </label>
           )}
+          <div style={{ marginBottom: "10px" }}>
+            <label htmlFor="sortSelect">Sort by: </label>
+            <select
+              id="sortSelect"
+              value={sortOption}
+              onChange={(e) => setSortOption(e.target.value)}
+              style={{ width: "150px" }}
+            >
+              <option value="recent">Most Recent</option>
+              <option value="oldest">Oldest</option>
+              <option value="mostHours">Most Hours</option>
+              <option value="leastHours">Least Hours</option>
+              <option value="notFilled">Still Available</option>
+            </select>
+          </div>
         </div>
         <div className="">
           <ul className="bookings">
@@ -380,6 +487,7 @@ function Bookings() {
                         <Button
                           onClick={() => setThisDeletedBooking(booking._id)}
                           variant="danger"
+                          style={{overflow:"clip"}}
                         >
                           Delete / Cancel Booking
                         </Button>
@@ -413,7 +521,15 @@ function Bookings() {
                         <Modal.Footer>
                           {booking.assignedTherapists.length <
                             booking.therapist && (
-                            <Button onClick={() => joinBooking(booking._id)}>
+                            <Button
+                              onClick={() => joinBooking(booking._id)}
+                              disabled={
+                                currentUserId &&
+                                booking.assignedTherapists.some(
+                                  (t) => t._id === currentUserId
+                                )
+                              }
+                            >
                               Join Booking
                             </Button>
                           )}

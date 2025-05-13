@@ -2,8 +2,6 @@ const express = require("express");
 const PromoPrice = require("../model/PromoPrice");
 const router = express.Router();
 
-
-
 // Get current free hour status
 router.get("/freehour-status", async (req, res) => {
   try {

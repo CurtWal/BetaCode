@@ -147,7 +147,7 @@ router.post("/new-booking", async (req, res) => {
         emailData
       );
 
-      console.log("Mailgun Response:", response);
+      //console.log("Mailgun Response:", response);
     } catch (error) {
       console.error("Error sending email via Mailgun:", error);
     }
@@ -218,10 +218,10 @@ router.get("/confirm-booking/:id", async (req, res) => {
 
     const maxDistance = 92;
     const eligibleTherapists = [];
-    console.log("Therapists:", therapists);
+    //console.log("Therapists:", therapists);
     for (const therapist of therapists) {
-      console.log("Booking Location:", booking.location);
-  console.log("Therapist Location:", therapist.location);
+      //console.log("Booking Location:", booking.location);
+  //console.log("Therapist Location:", therapist.location);
       const inRange = checkLocationDistance(
         booking.location.lat,
         booking.location.lng,
@@ -231,7 +231,7 @@ router.get("/confirm-booking/:id", async (req, res) => {
       );
       if (inRange) eligibleTherapists.push(therapist);
     }
-    console.log("Therapist", eligibleTherapists)
+    //console.log("Therapist", eligibleTherapists)
     if (!eligibleTherapists.length) {
       return res.status(404).send("No therapists in range");
     }

@@ -15,11 +15,14 @@ const AssignTherapist = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-  lastReminderSent: {
+  dateSent: {
     type: Date,
-    default: null,
+    default: Date.now,
   },
 });
+
+//  Add unique index to prevent duplicate assignments
+AssignTherapist.index({ bookingId: 1, therapistId: 1 }, { unique: true });
 
 const therapistAssign = mongoose.model("AssignTherapist", AssignTherapist);
 module.exports = therapistAssign;
