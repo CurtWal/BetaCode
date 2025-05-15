@@ -76,6 +76,7 @@ router.post("/new-booking", async (req, res) => {
       endTime,
       date,
       extra,
+      formType
     } = req.body;
 
     const geoRes = await axios.get(
@@ -101,6 +102,7 @@ router.post("/new-booking", async (req, res) => {
       date,
       confirmed: false,
       location,
+      formType,
     });
     const confirmationLink = `https://motgpayment.com/confirm-booking/${newBooking._id}`;
 

@@ -21,6 +21,9 @@ const ConfirmBooking = () => {
   const [extra, setExtra] = useState("");
   const [price, setPrice] = useState(0);
   const [confirming, setConfirming] = useState(false);
+  const [regularPrice, setRegularPrice] = useState(150);
+  const [formType, setFormType] = useState("");
+  const [specialPrice, setSpecialPrice] = useState(90);
 
   useEffect(() => {
     const fetchBooking = async () => {
@@ -42,6 +45,7 @@ const ConfirmBooking = () => {
         setEndTime(data.endTime || "");
         setExtra(data.extra || "");
         setPrice(data.price || 0);
+        setFormType(data.formType || "");
       } catch (err) {
         console.error("Failed to fetch booking", err);
       }
@@ -67,6 +71,7 @@ const ConfirmBooking = () => {
         endTime,
         extra,
         price,
+        formType,
       });
       alert("Booking updated!");
     } catch (err) {
@@ -87,7 +92,41 @@ const ConfirmBooking = () => {
       setConfirming(false);
     }
   };
-
+    const getBookingPrices = async () => {
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_VERCEL}admin/booking-prices`
+        );
+        setRegularPrice(response.data.regularBooking);
+        setSpecialPrice(response.data.specialBooking);
+      } catch (error) {
+        console.error("Error fetching booking prices:", error);
+      }
+    };
+    useEffect(() => {
+      getBookingPrices();
+    }, []);
+  useEffect(() => {
+    if (formType == "regular" && eventHours) {
+      const hours = parseFloat(eventHours); // Convert to a number
+      const wholeHours = Math.floor(hours); // Full hours
+      const isHalfHour = hours % 1 !== 0; // Check if there's a half-hour
+      
+      const basePrice = therapist * regularPrice * wholeHours; // Price for full hours
+      const halfHourPrice = isHalfHour ? therapist * (regularPrice * 0.5) : 0; // Half-hour price
+  
+      setPrice(basePrice + halfHourPrice);
+    }else if(formType == "special" && eventHours){
+      const hours = parseFloat(eventHours); // Convert to a number
+      const wholeHours = Math.floor(hours); // Full hours
+      const isHalfHour = hours % 1 !== 0; // Check if there's a half-hour
+      
+      const basePrice = therapist * specialPrice * wholeHours; // Price for full hours
+      const halfHourPrice = isHalfHour ? therapist * (specialPrice * 0.5) : 0; // Half-hour price
+  
+      setPrice(basePrice + halfHourPrice);
+    }
+  }, [therapist, eventHours, regularPrice, specialPrice]);
   return (
     <div className="FormInput">
       <Form noValidate validated={validated} onSubmit={handleSubmit}>
@@ -195,6 +234,20 @@ const ConfirmBooking = () => {
               <option value="4.5">4 Hours 30 Minutes</option>
               <option value="5">5 Hours</option>
               <option value="5.5">5 Hours 30 Minutes</option>
+              <option value="6">6 Hours</option>
+              <option value="6.5">6 Hours 30 Minutes</option>
+              <option value="7">7 Hours 30 Minutes</option>
+              <option value="7.5">7 Hours 30 Minutes</option>
+              <option value="8">8 Hours</option>
+              <option value="8.5">8 Hours 30 Minutes</option>
+              <option value="9">9 Hours</option>
+              <option value="9.5">9 Hours</option>
+              <option value="10">10 Hours</option>
+              <option value="10.5">10 Hours 30 Minutes</option>
+              <option value="11">11 Hours</option>
+              <option value="11.5">11 Hours 30 Minutes</option>
+              <option value="12">12 Hours</option>
+              <option value="12.5">12 Hours 30 Minutes</option>
             </Form.Select>
           </Form.Group>
 

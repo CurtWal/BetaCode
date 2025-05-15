@@ -38,6 +38,23 @@ app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
+// const updateBookings = async () => {
+//   try {
+//     await mongoose.connect(process.env.MERNDBDATA);
+
+//     const result = await Booking.updateMany(
+//       { formType: { $exists: false } },
+//       { $set: { formType: "regular" } }
+//     );
+
+//     console.log(`Updated ${result.modifiedCount} bookings.`);
+//     mongoose.disconnect();
+//   } catch (err) {
+//     console.error("Error updating bookings:", err);
+//   }
+// };
+
+// updateBookings();
 // const API_KEY = process.env.GEO_CODIO_API2;
 
 // const geocodeZip = async (zip) => {

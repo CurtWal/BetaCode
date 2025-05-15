@@ -65,7 +65,14 @@ const bookingSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  emailsSent: { type: Boolean, default: false }
+  emailsSent: { 
+    type: Boolean, 
+    default: false,
+   },
+  formType: {
+    type: String,
+    required: true,
+  }
 });
 
 const bookingModel = mongoose.model("Booking", bookingSchema);

@@ -105,6 +105,7 @@ function Home() {
         endTime,
         extra,
         date,
+        formType
       };
 
       await axios.post(`${import.meta.env.VITE_VERCEL}new-booking`, newBooking);

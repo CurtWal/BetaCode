@@ -105,7 +105,8 @@ function SpecialForm() {
         startTime,
         endTime,
         extra,
-        date
+        date,
+        formType
       };
 
       await axios.post(
