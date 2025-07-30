@@ -1187,28 +1187,6 @@ function Bookings() {
           </div>
         </div>
       </div>
-      {bookings.map((booking) => {
-        const remainingSlots =
-          booking.therapist - booking.assignedTherapists.length;
-
-        return (
-          <div key={booking._id}>
-            <h3>{booking.service}</h3>
-            <p>Name: {booking.companyName}</p>
-            <p>Date: {booking.date}</p>
-            <p>
-              Assigned: {booking.assignedTherapists.length} /{" "}
-              {booking.therapist}
-            </p>
-            <p style={{ color: remainingSlots === 0 ? "red" : "green" }}>
-              {remainingSlots === 0
-                ? "Fully Booked"
-                : `${remainingSlots} Spot${remainingSlots > 1 ? "s" : ""} Left`}
-            </p>
-            {/* ... other buttons/actions */}
-          </div>
-        );
-      })}
     </div>
   );
 }
