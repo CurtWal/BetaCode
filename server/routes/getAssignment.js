@@ -584,7 +584,10 @@ router.post("/leave-booking", async (req, res) => {
       try {
         const emailData = {
           from: process.env.EMAIL_USER, // Must be a verified Mailgun sender
-          to: ["hello@massageonthegomemphis.com", "sam@massageonthegomemphis.com"], // Recipient email
+          to: [
+            "hello@massageonthegomemphis.com",
+            "sam@massageonthegomemphis.com",
+          ], // Recipient email
           subject: "Therapist Has Left a Booking",
           html: `<h4>Name: ${therapist.username}</h4>
           <h4>Email: ${therapist.email}</h4>
@@ -620,6 +623,39 @@ router.post("/leave-booking", async (req, res) => {
 
     res.json({
       message: "Therapist successfully removed and notifications sent.",
+    });
+  } catch (error) {
+    console.error("Error removing therapist:", error);
+    res.status(500).json({ message: "Error removing therapist", error });
+  }
+});
+
+router.post("/admin-remove-therapist", async (req, res) => {
+  try {
+    const { bookingId, therapistId } = req.body;
+
+    // Optional: Add admin check here if needed
+    // const adminUser = await User.findById(req.userId);
+    // if (!adminUser || adminUser.role !== "admin") {
+    //   return res.status(403).json({ message: "Unauthorized" });
+    // }
+
+    const assignment = await TherapistAssignment.findOneAndDelete({
+      bookingId,
+      therapistId,
+    });
+
+    if (!assignment) {
+      return res
+        .status(404)
+        .json({ message: "Therapist not assigned to this booking." });
+    }
+    const remainingAssignments = await TherapistAssignment.find({ bookingId });
+    const remainingCount = remainingAssignments.length;
+
+    res.json({
+      message: "Therapist successfully removed from the booking.",
+      remainingSpots: remainingCount,
     });
   } catch (error) {
     console.error("Error removing therapist:", error);

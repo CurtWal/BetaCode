@@ -30,7 +30,7 @@ function Login({ onLogin }) {
     //console.log(data);
     if (data.token) {
       localStorage.setItem("token", data.token);
-      localStorage.setItem("role", data.role);
+      localStorage.setItem("role", JSON.stringify(data.role));
       localStorage.setItem("userId", data.userId);
       localStorage.setItem("username", data.username);
       setRole(data.role);

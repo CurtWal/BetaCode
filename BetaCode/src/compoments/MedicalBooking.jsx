@@ -10,7 +10,7 @@ import InputGroup from "react-bootstrap/InputGroup";
 import Select from "react-select";
 import makeAnimated from "react-select/animated";
 
-function Bookings() {
+function MedicalBookings() {
   const [bookings, setBookings] = useState([]);
   const [showCompleted, setShowCompleted] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
@@ -43,7 +43,23 @@ function Bookings() {
   const [regularPrice, setRegularPrice] = useState(150);
   const [formRoles, setFormRoles] = useState([]);
 
-
+  const [fullName, setFullName] = useState("");
+  const [dob, setDob] = useState("");
+  const [phone, setPhone] = useState("");
+  const [emergencyContact, setEmergencyContact] = useState("");
+  const [insuranceProvider, setInsuranceProvider] = useState("");
+  const [memberId, setMemberId] = useState("");
+  const [fsaProvider, setFsaProvider] = useState("");
+  const [physicianContact, setPhysicianContact] = useState("");
+  const [prescriptionOnFile, setPrescriptionOnFile] = useState("");
+  const [painAreas, setPainAreas] = useState("");
+  const [treatmentGoal, setTreatmentGoal] = useState("");
+  const [underPhysicianCare, setUnderPhysicianCare] = useState("");
+  const [surgeries, setSurgeries] = useState("");
+  const [medications, setMedications] = useState("");
+  const [pressurePreference, setPressurePreference] = useState("");
+  const [sensitiveAreas, setSensitiveAreas] = useState("");
+  const [allergies, setAllergies] = useState("");
   const animatedComponents = makeAnimated();
 
   const options = [
@@ -85,7 +101,7 @@ function Bookings() {
   const getBookingPrices = async () => {
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_VERCEL}admin/booking-prices`
+        `${import.meta.env.VITE_VERCEL2}admin/booking-prices`
       );
       setRegularPrice(response.data.regularBooking);
       setSpecialPrice(response.data.specialBooking);
@@ -119,6 +135,7 @@ function Bookings() {
       setPrice(basePrice + halfHourPrice);
     }
   }, [therapist, eventHours, regularPrice, specialPrice]);
+
   const sortBookings = (bookingsList, option) => {
     const sorted = [...bookingsList];
     switch (option) {
@@ -178,11 +195,12 @@ function Bookings() {
 
       // Fetch all bookings
       const response = await axios.get(
-        `${import.meta.env.VITE_VERCEL}bookings`,
+        `${import.meta.env.VITE_VERCEL2}medical-bookings`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
+      
       const formattedBookings = response.data.map((booking) => ({
         ...booking,
         startTime: convertTo12Hour(booking.startTime),
@@ -192,68 +210,30 @@ function Bookings() {
       if (userRole.includes("admin")) {
         // Admin sees all bookings
         setBookings(formattedBookings);
+        
         return;
       }
-
-      //
-      // Fetch therapist's zip code
-      // const therapistResponse = await axios.get(
-      //   `${import.meta.env.VITE_VERCEL2}api/therapist/${userId}`,
-      //   {
-      //     headers: { Authorization: `Bearer ${token}` },
-      //   }
-      // );
-
-      // const therapistLocation = therapistResponse.data.location;
-      // //const bookingLocation = response.data.location;
-      // // Filter bookings based on distance
-      // const filteredBookings = await Promise.all(
-      //   formattedBookings.map(async (booking) => {
-      //     if (!booking.location || !therapistLocation) return null;
-      //     const isNearTherapist = checkLocationDistance(
-      //       booking.location.lat,
-      //       booking.location.lng,
-      //       therapistLocation.lat,
-      //       therapistLocation.lng,
-      //       92
-      //     );
-
-      //     const isTherapistAssigned = booking.assignedTherapists.some(
-      //       (t) => t._id === userId
-      //     );
-      //     const hasOpenSpots =
-      //       booking.assignedTherapists.length < booking.therapist;
-
-      //     if (isTherapistAssigned || (hasOpenSpots && isNearTherapist)) {
-      //       return booking;
-      //     }
-
-      //     return null;
-      //   })
-      // );
-      // }
-      // For non-admin users, filter bookings by role match OR assignment availability
-
       const filtered = formattedBookings.filter((booking) => {
         const bookingRoles = Array.isArray(booking.formRoles)
           ? booking.formRoles
-          : ["therapist"];
+          : [];
 
         const hasMatchingRole = bookingRoles.some((role) =>
           userRoles.includes(role)
         );
-        
         const totalSlots = booking.therapist ?? 1;
 
         const isTherapistAssigned =
           Array.isArray(booking.assignedTherapists) &&
           booking.assignedTherapists.some((t) => t?._id === userId);
         const isNotFull = booking.assignedTherapists?.length < totalSlots;
-
+  
         // User sees the booking if they have a matching role AND are either assigned or it's open
         return hasMatchingRole && (isTherapistAssigned || isNotFull);
       });
+
       const sorted = sortBookings(filtered, sortOption);
+      
       setBookings(sorted);
 
       return;
@@ -361,13 +341,13 @@ function Bookings() {
 
       // Backend assignment
       await axios.post(
-        `${import.meta.env.VITE_VERCEL}assign-therapist`,
+        `${import.meta.env.VITE_VERCEL2}assign-therapist`,
         { bookingId, therapistId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       // Check for full booking
       const bookingResponse = await axios.get(
-        `${import.meta.env.VITE_VERCEL}bookings/${bookingId}`,
+        `${import.meta.env.VITE_VERCEL2}bookings/${bookingId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -378,7 +358,7 @@ function Bookings() {
       //console.log(currentUserId);
       if (remainingSpots === 0) {
         await axios.post(
-          `${import.meta.env.VITE_VERCEL}send-email-on-spot-fill`,
+          `${import.meta.env.VITE_VERCEL2}send-email-on-spot-fill`,
           { bookingId },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -404,7 +384,7 @@ function Bookings() {
       }
 
       await axios.put(
-        `${import.meta.env.VITE_VERCEL}bookings/${id}`,
+        `${import.meta.env.VITE_VERCEL2}bookings/${id}`,
         {
           isComplete: true,
         },
@@ -473,7 +453,7 @@ function Bookings() {
 
       // Send API request to remove therapist
       await axios.post(
-        `${import.meta.env.VITE_VERCEL}leave-booking`,
+        `${import.meta.env.VITE_VERCEL2}leave-booking`,
         { bookingId, therapistId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -508,7 +488,7 @@ function Bookings() {
 
       // Backend call to remove the therapist
       await axios.post(
-        `${import.meta.env.VITE_VERCEL}admin-remove-therapist`,
+        `${import.meta.env.VITE_VERCEL2}admin-remove-therapist`,
         { bookingId, therapistId: therapistIdToRemove },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -524,8 +504,8 @@ function Bookings() {
       const token = localStorage.getItem("token");
       await axios.delete(
         `${
-          import.meta.env.VITE_VERCEL
-        }delete/bookings/${bookingId}?type=${type}`,
+          import.meta.env.VITE_VERCEL2
+        }delete/medical-bookings/${bookingId}?type=${type}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -541,7 +521,7 @@ function Bookings() {
     try {
       const token = localStorage.getItem("token");
       await axios.post(
-        `${import.meta.env.VITE_VERCEL}api/export-bookings`,
+        `${import.meta.env.VITE_VERCEL2}api/export-bookings`,
         null,
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -565,24 +545,31 @@ function Bookings() {
     setEditBooking(id);
     try {
       const res = await axios.get(
-        `${import.meta.env.VITE_VERCEL}bookings/${id}`
+        `${import.meta.env.VITE_VERCEL2}medical-bookings/${id}`
       );
       const data = res.data;
-      setCompanyName(data.companyName || "");
-      setName(data.name || "");
-      setEmail(data.email || "");
-      setAddress(data.address || "");
-      setZipCode(data.zipCode || "");
-      setTherapist(data.therapist || 1);
-      setEventHours(data.eventHours || "2");
-      setEventIncrement(data.eventIncrement || "10");
-      setDate(data.date?.split("T")[0] || "");
-      setStartTime(data.startTime || "");
-      setEndTime(data.endTime || "");
-      setExtra(data.extra || "");
-      setPrice(data.price || 0);
-      setFormType(data.formType || "");
-      setFormRoles(data.formRoles || []);
+      setFullName(data.fullName || "");
+        setDob(data.dob || "");
+        setEmail(data.email || "");
+        setAddress(data.address || "");
+        setZipCode(data.zipCode || "");
+        setPhone(data.phone || 1);
+        setEmergencyContact(data.emergencyContact || "");
+        setInsuranceProvider(data.insuranceProvider || "");
+        setMemberId(data.memberId || "");
+        setFsaProvider(data.fsaProvider || "");
+        setPhysicianContact(data.physicianContact || "");
+        setPrescriptionOnFile(data.prescriptionOnFile || "");
+        setPainAreas(data.painAreas || "");  
+        setTreatmentGoal(data.treatmentGoal || "");  
+        setUnderPhysicianCare(data.underPhysicianCare || "");  
+        setSurgeries(data.surgeries || "");  
+        setMedications(data.medications || "");  
+        setPressurePreference(data.pressurePreference || "");  
+        setSensitiveAreas(data.sensitiveAreas || "");  
+        setAllergies(data.allergies || "");  
+        setFormType(data.formType || "");
+        setFormRoles(data.formRoles || []);
     } catch (err) {
       console.error("Failed to fetch booking", err);
     }
@@ -602,7 +589,7 @@ function Bookings() {
       try {
         const id = editBooking;
         //console.log(id);
-        await axios.put(`${import.meta.env.VITE_VERCEL}bookings/${id}`, {
+        await axios.put(`${import.meta.env.VITE_VERCEL2}mdeical-bookings/${id}`, {
           companyName,
           name,
           email,
@@ -678,19 +665,27 @@ function Bookings() {
                 !booking.isComplete || showCompleted ? (
                   <li key={booking._id}>
                     <div className="booking-card">
-                      <li>Company Name: {booking.companyName}</li>
-                      <li>Name: {booking.name}</li>
+                      <li>Company Name: {booking.fullName}</li>
                       <li>Email: {booking.email}</li>
                       <li>Address: {booking.address}</li>
                       <li>ZipCode: {booking.zipCode}</li>
-                      <li># of Therapist: {booking.therapist}</li>
+                      <li>Contact: {booking.phone}</li>
+                      <li>Emergency Contact: {booking.emergencyContact}</li>
+                      <li>Physician Contact: {booking.physicianContact}</li>
                       <li>
-                        EventHours: {formatEventHours(booking.eventHours)}
+                        Prescription On File: {booking.prescriptionOnFile}
                       </li>
-                      <li>EventIncrements: {booking.eventIncrement} Minutes</li>
-                      <li>Available Date: {booking.date}</li>
-                      <li>Start Time: {booking.startTime}</li>
-                      <li>End Time: {booking.endTime}</li>
+                      <li>Pain Areas: {booking.painAreas}</li>
+                      <li>Treatment Goal: {booking.treatmentGoal}</li>
+                      <li>
+                        Under Physician Care: {booking.underPhysicianCare}
+                      </li>
+                      <li>Surgeries: {booking.surgeries}</li>
+                      <li>Medications: {booking.medications}</li>
+                      <li>Pressure Preference: {booking.pressurePreference}</li>
+                      <li>Sensitive Areas: {booking.sensitiveAreas}</li>
+                      <li>Allergies: {booking.allergies}</li>
+
                       {booking.documentUrl && (
                         <li>
                           <a
@@ -702,7 +697,6 @@ function Bookings() {
                           </a>
                         </li>
                       )}
-                      <li>Extra Info: {booking.extra}</li>
 
                       <div className="button-container">
                         <Button onClick={() => handleShow(booking._id)}>
@@ -741,7 +735,11 @@ function Bookings() {
                               </Modal.Header>
                               <Modal.Body>
                                 <div className="FormInput">
-                                  <Form noValidate validated={validated}>
+                                  <Form
+                                    noValidate
+                                    validated={validated}
+                                    onSubmit={handleSubmit}
+                                  >
                                     <Row className="mb-3">
                                       <Form.Group
                                         as={Col}
@@ -749,18 +747,18 @@ function Bookings() {
                                         md={4}
                                         controlId="validationCustom01"
                                       >
-                                        <Form.Label>Company Name</Form.Label>
+                                        <Form.Label>Full Name</Form.Label>
                                         <Form.Control
                                           required
                                           type="text"
-                                          placeholder="Company Name"
-                                          value={companyName}
+                                          placeholder="Full Name"
+                                          value={fullName}
                                           onChange={(e) =>
-                                            setCompanyName(e.target.value)
+                                            setFullName(e.target.value)
                                           }
                                         />
                                         <Form.Control.Feedback type="invalid">
-                                          Please provide a valid Company Name.
+                                          Please provide a valid Full Name.
                                         </Form.Control.Feedback>
                                         <Form.Control.Feedback>
                                           Looks good!
@@ -772,14 +770,14 @@ function Bookings() {
                                         md={4}
                                         controlId="validationCustom01"
                                       >
-                                        <Form.Label>Name</Form.Label>
+                                        <Form.Label>Date of Birth</Form.Label>
                                         <Form.Control
                                           required
-                                          type="text"
-                                          placeholder="Name"
-                                          value={name}
+                                          type="date"
+                                          placeholder="Date of Birth"
+                                          value={dob}
                                           onChange={(e) =>
-                                            setName(e.target.value)
+                                            setDob(e.target.value)
                                           }
                                         />
                                         <Form.Control.Feedback type="invalid">
@@ -864,20 +862,18 @@ function Bookings() {
                                         md={4}
                                         controlId="validationCustom05"
                                       >
-                                        <Form.Label># of Therapist</Form.Label>
+                                        <Form.Label>Phone Number</Form.Label>
                                         <Form.Control
                                           type="number"
-                                          placeholder="Number of Therapist"
-                                          value={therapist}
+                                          placeholder="Phone"
+                                          value={phone}
                                           onChange={(e) =>
-                                            setTherapist(e.target.value)
+                                            setPhone(e.target.value)
                                           }
-                                          min="1"
                                           required
                                         />
                                         <Form.Control.Feedback type="invalid">
-                                          Please provide a valid Therapist
-                                          Number.
+                                          Please provide a valid Phone Number.
                                         </Form.Control.Feedback>
                                       </Form.Group>
                                     </Row>
@@ -886,61 +882,50 @@ function Bookings() {
                                         as={Col}
                                         xs={12}
                                         md={4}
+                                        controlId="validationCustom05"
+                                      >
+                                        <Form.Label>
+                                          Emergency Contact
+                                        </Form.Label>
+                                        <Form.Control
+                                          type="text"
+                                          placeholder="Emergency Contact"
+                                          value={emergencyContact}
+                                          onChange={(e) =>
+                                            setEmergencyContact(e.target.value)
+                                          }
+                                          min="1"
+                                          required
+                                        />
+                                        <Form.Control.Feedback type="invalid">
+                                          Please provide a valid Emergency
+                                          Contact.
+                                        </Form.Control.Feedback>
+                                      </Form.Group>
+
+                                      <Form.Group
+                                        as={Col}
+                                        xs={12}
+                                        md={4}
                                         controlId="validationCustom06"
                                       >
-                                        <Form.Label>Event Hours</Form.Label>
-                                        <Form.Select
-                                          value={eventHours}
+                                        <Form.Label>
+                                          Insurance Provider
+                                        </Form.Label>
+                                        <Form.Control
+                                          type="text"
+                                          placeholder="Insurance Provider"
+                                          value={insuranceProvider}
                                           onChange={(e) =>
-                                            setEventHours(e.target.value)
+                                            setInsuranceProvider(e.target.value)
                                           }
+                                          min="1"
                                           required
-                                        >
-                                          <option value="2">2 Hours</option>
-                                          <option value="2.5">
-                                            2 Hours 30 Minutes
-                                          </option>
-                                          <option value="3">3 Hours</option>
-                                          <option value="3.5">
-                                            3 Hours 30 Minutes
-                                          </option>
-                                          <option value="4">4 Hours</option>
-                                          <option value="4.5">
-                                            4 Hours 30 Minutes
-                                          </option>
-                                          <option value="5">5 Hours</option>
-                                          <option value="5.5">
-                                            5 Hours 30 Minutes
-                                          </option>
-                                          <option value="6">6 Hours</option>
-                                          <option value="6.5">
-                                            6 Hours 30 Minutes
-                                          </option>
-                                          <option value="7">
-                                            7 Hours 30 Minutes
-                                          </option>
-                                          <option value="7.5">
-                                            7 Hours 30 Minutes
-                                          </option>
-                                          <option value="8">8 Hours</option>
-                                          <option value="8.5">
-                                            8 Hours 30 Minutes
-                                          </option>
-                                          <option value="9">9 Hours</option>
-                                          <option value="9.5">9 Hours</option>
-                                          <option value="10">10 Hours</option>
-                                          <option value="10.5">
-                                            10 Hours 30 Minutes
-                                          </option>
-                                          <option value="11">11 Hours</option>
-                                          <option value="11.5">
-                                            11 Hours 30 Minutes
-                                          </option>
-                                          <option value="12">12 Hours</option>
-                                          <option value="12.5">
-                                            12 Hours 30 Minutes
-                                          </option>
-                                        </Form.Select>
+                                        />
+                                        <Form.Control.Feedback type="invalid">
+                                          Please provide a valid Insurance
+                                          Provider.
+                                        </Form.Control.Feedback>
                                       </Form.Group>
 
                                       <Form.Group
@@ -949,40 +934,95 @@ function Bookings() {
                                         as={Col}
                                         controlId="validationCustom07"
                                       >
+                                        <Form.Label>MemberId</Form.Label>
+                                        <Form.Control
+                                          type="text"
+                                          placeholder="memberId"
+                                          value={memberId}
+                                          onChange={(e) =>
+                                            setMemberId(e.target.value)
+                                          }
+                                          min="1"
+                                          required
+                                        />
+                                        <Form.Control.Feedback type="invalid">
+                                          Please provide a valid MemberId.
+                                        </Form.Control.Feedback>
+                                      </Form.Group>
+                                      <Form.Group
+                                        as={Col}
+                                        xs={12}
+                                        md={4}
+                                        controlId="validationCustom05"
+                                      >
+                                        <Form.Label>FsaProvider</Form.Label>
+                                        <Form.Control
+                                          type="text"
+                                          placeholder="fsaProvider"
+                                          value={fsaProvider}
+                                          onChange={(e) =>
+                                            setFsaProvider(e.target.value)
+                                          }
+                                          min="1"
+                                          required
+                                        />
+                                        <Form.Control.Feedback type="invalid">
+                                          Please provide a valid FsaProvider.
+                                        </Form.Control.Feedback>
+                                      </Form.Group>
+                                      <Form.Group
+                                        as={Col}
+                                        xs={12}
+                                        md={4}
+                                        controlId="validationCustom05"
+                                      >
                                         <Form.Label>
-                                          Massage Increments
+                                          Physician Contact
+                                        </Form.Label>
+                                        <Form.Control
+                                          type="tett"
+                                          placeholder="Physician Contact"
+                                          value={physicianContact}
+                                          onChange={(e) =>
+                                            setPhysicianContact(e.target.value)
+                                          }
+                                          min="1"
+                                          required
+                                        />
+                                        <Form.Control.Feedback type="invalid">
+                                          Please provide a valid Physician
+                                          Contact.
+                                        </Form.Control.Feedback>
+                                      </Form.Group>
+                                      <Form.Group
+                                        as={Col}
+                                        xs={12}
+                                        md={4}
+                                        controlId="validationCustom05"
+                                      >
+                                        <Form.Label>
+                                          Prescription On File
                                         </Form.Label>
                                         <Form.Select
-                                          value={eventIncrement}
-                                          onChange={(e) =>
-                                            setEventIncrement(e.target.value)
-                                          }
                                           required
+                                          name="Prescription On File"
+                                          value={prescriptionOnFile}
+                                          onChange={(e) =>
+                                            setPrescriptionOnFile(
+                                              e.target.value
+                                            )
+                                          }
+                                          min="1"
                                         >
-                                          <option value="10">10 Minutes</option>
-                                          <option value="15">15 Minutes</option>
-                                          <option value="20">20 Minutes</option>
+                                          <option value="">
+                                            Select Yes/No
+                                          </option>
+                                          <option value="Yes">Yes</option>
+                                          <option value="No">No</option>
                                         </Form.Select>
-                                      </Form.Group>
-                                      <Form.Group
-                                        as={Col}
-                                        xs={12}
-                                        md={4}
-                                        controlId="validationCustom05"
-                                      >
-                                        <Form.Label>Availiable Date</Form.Label>
-                                        <Form.Control
-                                          type="Date"
-                                          placeholder="Date"
-                                          value={date}
-                                          onChange={(e) =>
-                                            setDate(e.target.value)
-                                          }
-                                          min="1"
-                                          required
-                                        />
                                         <Form.Control.Feedback type="invalid">
-                                          Please provide a valid date.
+                                          Please provide a valid Prescription On
+                                          File.
                                         </Form.Control.Feedback>
                                       </Form.Group>
                                       <Form.Group
@@ -991,67 +1031,188 @@ function Bookings() {
                                         md={4}
                                         controlId="validationCustom05"
                                       >
-                                        <Form.Label>Start Time</Form.Label>
-                                        <Form.Control
-                                          type="time"
-                                          placeholder="Time"
-                                          value={startTime}
-                                          onChange={(e) =>
-                                            setStartTime(e.target.value)
-                                          }
-                                          min="1"
-                                          required
-                                        />
-                                        <Form.Control.Feedback type="invalid">
-                                          Please provide a valid Start Time.
-                                        </Form.Control.Feedback>
-                                      </Form.Group>
-                                      <Form.Group
-                                        as={Col}
-                                        xs={12}
-                                        md={4}
-                                        controlId="validationCustom05"
-                                      >
-                                        <Form.Label>End Time</Form.Label>
-                                        <Form.Control
-                                          type="time"
-                                          placeholder="Time"
-                                          value={endTime}
-                                          onChange={(e) =>
-                                            setEndTime(e.target.value)
-                                          }
-                                          min="1"
-                                          required
-                                        />
-                                        <Form.Control.Feedback type="invalid">
-                                          Please provide a valid End Time.
-                                        </Form.Control.Feedback>
-                                      </Form.Group>
-                                      <InputGroup>
-                                        <InputGroup.Text>
-                                          Anything else?
-                                        </InputGroup.Text>
+                                        <Form.Label>Pain Areas</Form.Label>
                                         <Form.Control
                                           as="textarea"
-                                          aria-label="With textarea"
-                                          value={extra}
-                                          onChange={(e) => {
-                                            setExtra(e.target.value);
-                                            //console.log(extra);
-                                          }}
+                                          placeholder="Pain Areas"
+                                          value={painAreas}
+                                          onChange={(e) =>
+                                            setPainAreas(e.target.value)
+                                          }
+                                          min="1"
+                                          required
                                         />
-                                      </InputGroup>
+                                        <Form.Control.Feedback type="invalid">
+                                          Please provide valid Pain Areas.
+                                        </Form.Control.Feedback>
+                                      </Form.Group>
                                       <Form.Group
                                         as={Col}
-                                        controlId="validationCustom07"
-                                        style={{ marginTop: "6%" }}
+                                        xs={12}
+                                        md={4}
+                                        controlId="validationCustom05"
                                       >
-                                        <p>Total: ${price}</p>
+                                        <Form.Label>Treatment Goal</Form.Label>
+                                        <Form.Control
+                                          as="textarea"
+                                          placeholder="Treatment Goal"
+                                          value={treatmentGoal}
+                                          onChange={(e) =>
+                                            setTreatmentGoal(e.target.value)
+                                          }
+                                          min="1"
+                                          required
+                                        />
+                                        <Form.Control.Feedback type="invalid">
+                                          Please provide valid Treatment Goal.
+                                        </Form.Control.Feedback>
+                                      </Form.Group>
+                                      <Form.Group
+                                        as={Col}
+                                        xs={12}
+                                        md={4}
+                                        controlId="validationCustom05"
+                                      >
+                                        <Form.Label>
+                                          Under Physician Care
+                                        </Form.Label>
+                                        <Form.Control
+                                          as="textarea"
+                                          placeholder="Under Physician Care"
+                                          value={underPhysicianCare}
+                                          onChange={(e) =>
+                                            setUnderPhysicianCare(
+                                              e.target.value
+                                            )
+                                          }
+                                          min="1"
+                                          required
+                                        />
+                                        <Form.Control.Feedback type="invalid">
+                                          Please provide valid Under Physician
+                                          Care.
+                                        </Form.Control.Feedback>
+                                      </Form.Group>
+                                      <Form.Group
+                                        as={Col}
+                                        xs={12}
+                                        md={4}
+                                        controlId="validationCustom05"
+                                      >
+                                        <Form.Label>Surgeries</Form.Label>
+                                        <Form.Control
+                                          as="textarea"
+                                          placeholder="Surgeries"
+                                          value={surgeries}
+                                          onChange={(e) =>
+                                            setSurgeries(e.target.value)
+                                          }
+                                          min="1"
+                                          required
+                                        />
+                                        <Form.Control.Feedback type="invalid">
+                                          Please provide valid Surgeries.
+                                        </Form.Control.Feedback>
+                                      </Form.Group>
+                                      <Form.Group
+                                        as={Col}
+                                        xs={12}
+                                        md={4}
+                                        controlId="validationCustom05"
+                                      >
+                                        <Form.Label>Medications</Form.Label>
+                                        <Form.Control
+                                          as="textarea"
+                                          placeholder="Medications"
+                                          value={medications}
+                                          onChange={(e) =>
+                                            setMedications(e.target.value)
+                                          }
+                                          min="1"
+                                          required
+                                        />
+                                        <Form.Control.Feedback type="invalid">
+                                          Please provide valid Medications.
+                                        </Form.Control.Feedback>
+                                      </Form.Group>
+                                      <Form.Group
+                                        as={Col}
+                                        xs={12}
+                                        md={4}
+                                        controlId="validationCustom05"
+                                      >
+                                        <Form.Label>
+                                          Pressure Preference
+                                        </Form.Label>
+                                        <Form.Select
+                                          required
+                                          type="text"
+                                          name="pressurePreference"
+                                          value={pressurePreference}
+                                          onChange={(e) =>
+                                            setPressurePreference(
+                                              e.target.value
+                                            )
+                                          }
+                                        >
+                                          <option value="">
+                                            Select Preferred Pressure
+                                          </option>
+                                          <option value="Light">Light</option>
+                                          <option value="Medium">Medium</option>
+                                          <option value="Firm">Firm</option>
+                                        </Form.Select>
+                                        <Form.Control.Feedback type="invalid">
+                                          Please provide valid Pressure
+                                          Preference.
+                                        </Form.Control.Feedback>
+                                      </Form.Group>
+                                      <Form.Group
+                                        as={Col}
+                                        xs={12}
+                                        md={4}
+                                        controlId="validationCustom05"
+                                      >
+                                        <Form.Label>Sensitive Areas</Form.Label>
+                                        <Form.Control
+                                          type="text"
+                                          placeholder="Sensitive Areas"
+                                          value={sensitiveAreas}
+                                          onChange={(e) =>
+                                            setSensitiveAreas(e.target.value)
+                                          }
+                                          min="1"
+                                          required
+                                        />
+                                        <Form.Control.Feedback type="invalid">
+                                          Please provide valid Sensitive Areas.
+                                        </Form.Control.Feedback>
+                                      </Form.Group>
+                                      <Form.Group
+                                        as={Col}
+                                        xs={12}
+                                        md={4}
+                                        controlId="validationCustom05"
+                                      >
+                                        <Form.Label>Allergies</Form.Label>
+                                        <Form.Control
+                                          type="text"
+                                          placeholder="Allergies"
+                                          value={allergies}
+                                          onChange={(e) =>
+                                            setAllergies(e.target.value)
+                                          }
+                                          min="1"
+                                          required
+                                        />
+                                        <Form.Control.Feedback type="invalid">
+                                          Please provide valid Allergies.
+                                        </Form.Control.Feedback>
                                       </Form.Group>
                                     </Row>
                                     <Row>
                                       <Form.Group as={Col}>
-                                        <Button onClick={handleSubmit}>
+                                        <Button type="submit">
                                           Update Booking
                                         </Button>
                                       </Form.Group>
@@ -1213,4 +1374,4 @@ function Bookings() {
   );
 }
 
-export default Bookings;
+export default MedicalBookings;

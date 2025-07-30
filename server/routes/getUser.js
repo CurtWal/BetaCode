@@ -50,5 +50,15 @@ router.get("/api/therapist/:id", async (req, res) => {
     res.status(500).json({ message: "Error fetching therapist data", error });
   }
 });
-
+router.get("/account/:id", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json({ username: user.username, address: user.address, phone: user.phoneNumber, zipCode: user.zipCode, email: user.email, role: user.role });
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching User data", error });
+  }
+});
 module.exports = router;

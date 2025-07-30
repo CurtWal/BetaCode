@@ -24,16 +24,19 @@ const verifyToken = (req, res, next) => {
 };
 
 const checkRole = (roles) => (req, res, next) => {
-  if (!req.user || !roles.includes(req.user.role)) {
+  if (!req.user || !req.user.role) {
     return res.status(403).json({ message: "Access Denied" });
   }
-  //console.log("User role:", req.user.role); // Debugging
 
-  if (!roles.includes(req.user.role)) {
-    return res
-      .status(403)
-      .json({ message: "Access Denied: Insufficient Permissions" });
+  // Normalize to array for consistency
+  const userRoles = Array.isArray(req.user.role) ? req.user.role : [req.user.role];
+
+  const hasRole = roles.some((r) => userRoles.includes(r));
+
+  if (!hasRole) {
+    return res.status(403).json({ message: "Access Denied: Insufficient Permissions" });
   }
+
   next();
 };
 

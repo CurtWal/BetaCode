@@ -116,7 +116,7 @@ function SpecialForm() {
 
       alert("Payment successful! Booking email Sent.");
 
-      console.log("Booking successful");
+      //console.log("Booking successful");
     }
   };
   const getBookingPrices = async () => {
@@ -146,8 +146,9 @@ function SpecialForm() {
   }, [therapist, eventHours, specialPrice]);
 
   return (
+    <div class="Main-Content">
     <div className="Grid-Container">
-      <img src={Logo} alt="MOTG Logo" className="Main_Img" />
+      {/* <img src={Logo} alt="MOTG Logo" className="Main_Img" /> */}
       <div className="Container">
         <div className="Text-Info">
           <h3>1 Therapist</h3>
@@ -250,6 +251,7 @@ function SpecialForm() {
           </Modal>
         </div>
         <div className="FormInput">
+          <h2 style={{color:"black", textAlign:"center"}}>St. Jude Wellness</h2>
           <Form noValidate validated={validated} onSubmit={postBookings}>
             <Row className="mb-3">
               <Form.Group
@@ -472,7 +474,7 @@ function SpecialForm() {
               </Form.Group>
               <InputGroup>
                 <InputGroup.Text>Anything else?</InputGroup.Text>
-                <Form.Control as="textarea" aria-label="With textarea" onChange={(e) => {setExtra(e.target.value); console.log(extra)}} />
+                <Form.Control as="textarea" aria-label="With textarea" onChange={(e) => {setExtra(e.target.value);}} />
               </InputGroup>
               <Form.Group
                 as={Col}
@@ -537,6 +539,7 @@ function SpecialForm() {
           <p style={{textAlign:"left"}}>sam@massageonthegomemphis.com</p>
         </div>
       </div>
+    </div>
     </div>
   );
 }

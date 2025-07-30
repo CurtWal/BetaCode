@@ -1,5 +1,17 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  text-decoration: none;
+  border: none;
+  outline: none;
+  /* font-family: 'Poppins', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale; */
+}
+
 /* General Styles */
-body {
+/* body {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -7,19 +19,52 @@ body {
   margin: 0;
   color: black;
   background-color: #f5f5f5;
+} */
+.Main-Content {
+  margin-top: 2.3%;
+  
+}
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background: white;
+  display: flex;
+  align-items: center;
+  z-index: 1000;
+  transition: 0.5s;
+  box-shadow: black 3px 3px 3px;
+}
+
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* Push title left, links right */
+  flex-wrap: wrap; /* Allow wrapping if needed */
+  padding: 1rem 2rem;
+  gap: 1rem;
+}
+
+.navbar h4 {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.navbar a,
+.navbar p {
+  margin: 0 0.5rem;
+  font-size: 1rem;
+  white-space: nowrap;
 }
 
 .Grid-Container {
-  display: grid;
-  grid-template-areas:
-    "img"
-    "info"
-    "forminfo";
-  gap: 20px;
-  width: 100%;
-  max-width: 1200px;
-  padding: 20px;
+  display: flex;
   justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  margin: 0;
+  background-color: white;
 }
 
 .Main_Img {
@@ -49,7 +94,6 @@ body {
   box-shadow: 0px 4px 10px #060142;
 }
 
-/* Horizontal Rule */
 hr {
   border: 2px solid black;
   width: 75%;
@@ -151,6 +195,9 @@ hr {
 }
 
 /* Booking Section */
+.bookContentSize {
+  margin-top: 2.3%;
+}
 .bookingContainer {
   background-color: white;
   width: 100%;
@@ -221,6 +268,12 @@ hr {
 }
 
 @media (max-width: 768px) {
+  .bookContentSize {
+    margin-top: 25%;
+  }
+  .Main-Content {
+    margin-top: 25%;
+  }
   .Grid-Container {
     grid-template-areas:
       "img"
@@ -246,9 +299,32 @@ hr {
     align-items: center;
     width: 100%;
   }
+  .navbar {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .navbar h4 {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .navbar a,
+  .navbar p {
+    font-size: 0.9rem;
+    padding: 0.25rem 0.5rem;
+  }
 }
 
 @media (max-width: 480px) {
+  .bookContentSize {
+    margin-top: 65%;
+  }
+  .Main-Content {
+    margin-top: 65%;
+  }
   .Grid-Container {
     grid-template-areas:
       "img"
@@ -292,6 +368,15 @@ hr {
     align-items: center;
     width: 100%;
     gap: 2%;
+  }
+  .navbar {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .navbar a,
+  .navbar p {
+    font-size: 0.85rem;
   }
 }
 

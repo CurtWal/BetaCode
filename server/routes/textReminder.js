@@ -4,7 +4,7 @@ const TherapistAssignment = require("../model/AssignTherapist");
 const User = require("../model/user");
 const router = express.Router();
 const twilio = require("twilio");
-const TherapistReminder = require("../model/TherapistReminder")
+const TherapistReminder = require("../model/TherapistReminder");
 
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
@@ -60,89 +60,107 @@ router.get("/reminder", async (req, res) => {
       date: { $exists: true },
     });
     //console.log(bookings);
-    const therapists = await User.find({
-      role: "therapist",
-      phoneNumber: { $ne: "" },
-      location: { $exists: true },
-    });
+    // const therapists = await User.find({
+    //    $or: [
+    //   { role: { $in: bookings.formRoles } },
+    //   { role: { $in: bookings.formRoles.map((r) => r.toLowerCase()) } },
+    // ],
+    //   phoneNumber: { $ne: "" },
+    //   location: { $exists: true },
+    // });
     const therapistBookingMap = new Map(); // therapistId => [booking, ...]
-const remindersToLog = [];
+    const remindersToLog = [];
 
-for (const booking of bookings) {
-  if (!booking.location?.lat || !booking.location?.lng) continue;
-  if (booking.isComplete) continue;
+    for (const booking of bookings) {
+      if (!booking.location?.lat || !booking.location?.lng) continue;
+      if (booking.isComplete) continue;
 
-  const assigned = await TherapistAssignment.find({ bookingId: booking._id });
-  if (assigned.length >= booking.therapist) continue;
-
-  const assignedIds = assigned.map((a) => a.therapistId.toString());
-
-  for (const therapist of therapists) {
-    if (!therapist.location?.lat || !therapist.location?.lng) continue;
-    if (assignedIds.includes(therapist._id.toString())) continue;
-
-    const isNearby = checkLocationDistance(
-      booking.location.lat,
-      booking.location.lng,
-      therapist.location.lat,
-      therapist.location.lng,
-      maxDistance
-    );
-    if (!isNearby) continue;
-
-    const alreadyReminded = await TherapistReminder.findOne({
-      bookingId: booking._id,
-      therapistId: therapist._id,
-      sentAt: { $gte: threeMinutesAgo, $lte: now },
-    });
-
-    if (alreadyReminded) continue;
-
-    if (!therapistBookingMap.has(therapist._id.toString())) {
-      therapistBookingMap.set(therapist._id.toString(), {
-        therapist,
-        bookings: [],
+      const therapists = await User.find({
+        $or: [
+          { role: { $in: bookings.formRoles } },
+          { role: { $in: bookings.formRoles.map((r) => r.toLowerCase()) } },
+        ],
+        phoneNumber: { $ne: "" },
+        location: { $exists: true },
       });
+      const assigned = await TherapistAssignment.find({
+        bookingId: booking._id,
+      });
+      if (assigned.length >= booking.therapist) continue;
+
+      const assignedIds = assigned.map((a) => a.therapistId.toString());
+
+      for (const therapist of therapists) {
+        if (!therapist.location?.lat || !therapist.location?.lng) continue;
+        if (assignedIds.includes(therapist._id.toString())) continue;
+
+        const isNearby = checkLocationDistance(
+          booking.location.lat,
+          booking.location.lng,
+          therapist.location.lat,
+          therapist.location.lng,
+          maxDistance
+        );
+        if (!isNearby) continue;
+
+        const alreadyReminded = await TherapistReminder.findOne({
+          bookingId: booking._id,
+          therapistId: therapist._id,
+          sentAt: { $gte: threeMinutesAgo, $lte: now },
+        });
+
+        if (alreadyReminded) continue;
+
+        if (!therapistBookingMap.has(therapist._id.toString())) {
+          therapistBookingMap.set(therapist._id.toString(), {
+            therapist,
+            bookings: [],
+          });
+        }
+
+        therapistBookingMap
+          .get(therapist._id.toString())
+          .bookings.push(booking);
+
+        remindersToLog.push({
+          bookingId: booking._id,
+          therapistId: therapist._id,
+          dateSent: new Date(),
+        });
+      }
     }
 
-    therapistBookingMap.get(therapist._id.toString()).bookings.push(booking);
+    // Create SMS messages
+    const smsQueue = [];
+    for (const { therapist, bookings } of therapistBookingMap.values()) {
+      const messageLines = bookings.map(
+        (b) =>
+          `${b.companyName} on ${b.date} at ${b.startTime} and ends at ${b.endTime}`
+      );
+      const message = `Reminder! There are ${
+        bookings.length
+      } open bookings nearby:\n\n${messageLines.join(
+        "\n"
+      )}\n\nLog in to accept!`;
 
-    remindersToLog.push({
-      bookingId: booking._id,
-      therapistId: therapist._id,
-      dateSent: new Date(),
+      smsQueue.push({ to: therapist.phoneNumber, message });
+    }
+
+    // Send in batches
+    const batches = chunkArray(smsQueue, BATCH_SIZE);
+    for (let i = 0; i < batches.length; i++) {
+      await Promise.all(batches[i].map((msg) => sendSMS(msg)));
+      if (i < batches.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY_MS));
+      }
+    }
+
+    // Save reminders
+    await TherapistReminder.insertMany(remindersToLog);
+
+    return res.status(200).json({
+      message: `Sent ${smsQueue.length} SMS reminders to therapists.`,
     });
-  }
-}
-
-// Create SMS messages
-const smsQueue = [];
-for (const { therapist, bookings } of therapistBookingMap.values()) {
-  const messageLines = bookings.map(
-    (b) => `${b.companyName} on ${b.date} at ${b.startTime} and ends at ${b.endTime}`
-  );
-  const message = `Reminder! There are ${bookings.length} open bookings nearby:\n\n${messageLines.join(
-    "\n"
-  )}\n\nLog in to accept!`;
-
-  smsQueue.push({ to: therapist.phoneNumber, message });
-}
-
-// Send in batches
-const batches = chunkArray(smsQueue, BATCH_SIZE);
-for (let i = 0; i < batches.length; i++) {
-  await Promise.all(batches[i].map((msg) => sendSMS(msg)));
-  if (i < batches.length - 1) {
-    await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY_MS));
-  }
-}
-
-// Save reminders
-await TherapistReminder.insertMany(remindersToLog);
-
-return res.status(200).json({
-  message: `Sent ${smsQueue.length} SMS reminders to therapists.`,
-});
   } catch (error) {
     console.error("Reminder error:", error);
     return res.status(500).json({ message: "Server error" });

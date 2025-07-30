@@ -1,18 +1,57 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "../updatepromo.css";
+import Select from "react-select";
+import makeAnimated from "react-select/animated";
+
 function Users() {
   const [users, setUsers] = useState([]);
   const [freeHourEnabled, setFreeHourEnabled] = useState(true);
   const [regularPrice, setRegularPrice] = useState(150);
   const [specialPrice, setSpecialPrice] = useState(90);
   const [searchTerm, setSearchTerm] = useState("");
+  const animatedComponents = makeAnimated();
 
+  const roleOptions = [
+    { value: "user", label: "user" },
+    { value: "admin", label: "admin" },
+    { value: "therapist", label: "Massage Therapist" },
+    { value: "personal", label: "Personal Trainer" },
+    { value: "yoga", label: "Yoga Instructor" },
+    { value: "group", label: "Group Fitness Instructor" },
+    { value: "nutritionist", label: "Nutritionist" },
+    { value: "pilates", label: "Pilates Instructor" },
+    { value: "stretch", label: "Stretch Therapist" },
+    { value: "cpr", label: "CPR Instructor" },
+    { value: "meditation", label: "Meditation Coach" },
+    { value: "zumba", label: "Zumba Instructor" },
+    { value: "wellness", label: "Wellness Coach" },
+    { value: "ergonomics", label: "Ergonomics Specialist" },
+    { value: "breathwork", label: "Breathwork Coach" },
+  ];
+  const userRoles = [
+    "therapist",
+    "group",
+    "nutritionist",
+    "pilates",
+    "stretch",
+    "cpr",
+    "meditation",
+    "zumba",
+    "wellness",
+    "ergonomics",
+    "breathwork",
+  ];
   useEffect(() => {
     getUsers();
     getFreeHourStatus();
     getBookingPrices();
   }, []);
+  const hasRole = (user, targetRoles) => {
+  const userRoles = Array.isArray(user.role) ? user.role : [user.role];
+  return userRoles.some((role) => targetRoles.includes(role));
+};
+
 
   const getUsers = async () => {
     try {
@@ -28,7 +67,7 @@ function Users() {
         `${import.meta.env.VITE_VERCEL}admin/freehour-status`
       );
       setFreeHourEnabled(response.data.freeHourEnabled);
-      console.log("FreeHour enabled:", response.data.freeHourEnabled);
+      //console.log("FreeHour enabled:", response.data.freeHourEnabled);
     } catch (error) {
       console.error("Error fetching free hour status:", error);
     }
@@ -97,7 +136,7 @@ function Users() {
     user.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
   return (
-    <div>
+    <div class="User">
       <div className="toggle-container">
         <label className="toggle-label">
           Free Hour Promotion: {freeHourEnabled ? "ON" : "OFF"}
@@ -144,12 +183,12 @@ function Users() {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="input-field"
-          style={{backgroundColor:"white"}}
+          style={{ backgroundColor: "white" }}
         />
       </div>
       <ul className="bookings">
         {filteredUsers
-          .filter((user) => user.role === "user")
+          .filter((user) => hasRole(user, "user"))
           .map((user) => (
             <li key={user._id}>
               <div className="booking-card">
@@ -157,14 +196,19 @@ function Users() {
                 <p>Email: {user.email}</p>
                 <p>
                   Role:
-                  <select
-                    value={user.role}
-                    onChange={(e) => updateRole(user._id, e.target.value)}
-                  >
-                    <option value="user">User</option>
-                    <option value="therapist">Therapist</option>
-                    <option value="admin">Admin</option>
-                  </select>
+                  <Select
+                    closeMenuOnSelect={false}
+                    isMulti
+                    components={animatedComponents}
+                    options={roleOptions}
+                    value={roleOptions.filter((opt) =>
+                      user.role?.includes(opt.value)
+                    )}
+                    onChange={(selected) => {
+                      const roles = selected.map((opt) => opt.value);
+                      updateRole(user._id, roles); // send array of roles
+                    }}
+                  />
                 </p>
                 <p>Points: {user.points}</p>
                 <p>FreeHour: {user.freehour}</p>
@@ -172,10 +216,15 @@ function Users() {
             </li>
           ))}
       </ul>
-      <h1>Manage Therapist</h1>
+      <h1>Manage Workers</h1>
       <ul className="bookings">
         {filteredUsers
-          .filter((user) => user.role === "therapist")
+          .filter((user) =>
+            hasRole(
+              user,
+              userRoles
+            )
+          )
           .map((user) => (
             <li key={user._id}>
               <div className="booking-card">
@@ -186,14 +235,19 @@ function Users() {
                 <p>Zip Code: {user.zipCode}</p>
                 <p>
                   Role:
-                  <select
-                    value={user.role}
-                    onChange={(e) => updateRole(user._id, e.target.value)}
-                  >
-                    <option value="user">User</option>
-                    <option value="therapist">Therapist</option>
-                    <option value="admin">Admin</option>
-                  </select>
+                  <Select
+                    closeMenuOnSelect={false}
+                    isMulti
+                    components={animatedComponents}
+                    options={roleOptions}
+                    value={roleOptions.filter((opt) =>
+                      user.role?.includes(opt.value)
+                    )}
+                    onChange={(selected) => {
+                      const roles = selected.map((opt) => opt.value);
+                      updateRole(user._id, roles); // send array of roles
+                    }}
+                  />
                 </p>
                 <p>Points: {user.points}</p>
                 <p>FreeHour: {user.freehour}</p>
@@ -204,22 +258,28 @@ function Users() {
       <h1>Manage Admin</h1>
       <ul className="bookings">
         {filteredUsers
-          .filter((user) => user.role === "admin")
+          .filter((user) => hasRole(user, "admin"))
           .map((user) => (
             <li key={user._id}>
               <div className="booking-card">
                 <p>Name: {user.username}</p>
                 <p>Email: {user.email}</p>
+                <p>Phone: {user.phoneNumber}</p>
                 <p>
                   Role:
-                  <select
-                    value={user.role}
-                    onChange={(e) => updateRole(user._id, e.target.value)}
-                  >
-                    <option value="user">User</option>
-                    <option value="therapist">Therapist</option>
-                    <option value="admin">Admin</option>
-                  </select>
+                  <Select
+                    closeMenuOnSelect={false}
+                    isMulti
+                    components={animatedComponents}
+                    options={roleOptions}
+                    value={roleOptions.filter((opt) =>
+                      user.role?.includes(opt.value)
+                    )}
+                    onChange={(selected) => {
+                      const roles = selected.map((opt) => opt.value);
+                      updateRole(user._id, roles); // send array of roles
+                    }}
+                  />
                 </p>
                 <p>Points: {user.points}</p>
                 <p>FreeHour: {user.freehour}</p>

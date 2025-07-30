@@ -9,6 +9,10 @@ import axios from "axios";
 import Modal from "react-bootstrap/Modal";
 import Payment from "./payment";
 import Logo from "../assets/MOTG_Revised_Logo.png";
+import Select from "react-select";
+import makeAnimated from "react-select/animated";
+import Services from "./Services";
+
 function Home() {
   const [name, setName] = useState("");
   const [companyName, setCompanyName] = useState("");
@@ -29,9 +33,13 @@ function Home() {
   const [formType, setFormType] = useState("regular");
   const [show, setShow] = useState(false);
   const [payModal, setPayModal] = useState(false);
+  const [formRoles, setFormRoles] = useState([]);
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
   const payModalClose = () => setPayModal(false);
+  const animatedComponents = makeAnimated();
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadedFileUrl, setUploadedFileUrl] = useState("");
 
   const data = [
     {
@@ -66,6 +74,43 @@ function Home() {
     },
   ];
 
+  const options = [
+    { value: "therapist", label: "Massage Therapist" },
+    { value: "personal", label: "Personal Trainer" },
+    { value: "yoga", label: "Yoga Instructor" },
+    { value: "group", label: "Group Fitness Instructor" },
+    { value: "nutritionist", label: "Nutritionist" },
+    { value: "pilates", label: "Pilates Instructor" },
+    { value: "stretch", label: "Stretch Therapist" },
+    { value: "cpr", label: "CPR Instructor" },
+    { value: "meditation", label: "Meditation Coach" },
+    { value: "zumba", label: "Zumba Instructor" },
+    { value: "wellness", label: "Wellness Coach" },
+    { value: "ergonomics", label: "Ergonomics Specialist" },
+    { value: "breathwork", label: "Breathwork Coach" },
+  ];
+
+  // const handleFileUpload = async () => {
+  //   if (!selectedFile) return;
+
+  //   const formData = new FormData();
+  //   formData.append("file", selectedFile);
+  //   formData.append("upload_preset", "Testing"); // From Cloudinary
+  //   formData.append("folder", "motg_documents"); // Optional: your folder name
+
+  //   try {
+  //     const response = await axios.post(
+  //       "https://api.cloudinary.com/v1_1/doaympsks/auto/upload",
+  //       formData
+  //     );
+
+  //     setUploadedFileUrl(response.data.secure_url); // ✅ Save the Cloudinary URL
+  //     console.log("Uploaded File URL:", response.data.secure_url);
+  //   } catch (error) {
+  //     console.error("Error uploading file to Cloudinary:", error);
+  //   }
+  // };
+
   const postBookings = async (e) => {
     const form = e.currentTarget;
     if (form.checkValidity() === false) {
@@ -90,6 +135,27 @@ function Home() {
     setValidated(true);
     e.preventDefault();
     if (form.checkValidity() === true) {
+      // let documentUrl = "";
+      // if (selectedFile) {
+      //   const formData = new FormData();
+      //   formData.append("file", selectedFile);
+      //   formData.append("upload_preset", "Testing"); // Your Cloudinary preset
+      //   formData.append("folder", "motg_documents");
+
+      //   try {
+      //     const response = await axios.post(
+      //       "https://api.cloudinary.com/v1_1/doaympsks/auto/upload",
+      //       formData
+      //     );
+      //     documentUrl = response.data.secure_url;
+      //     console.log("Cloudinary URL:", documentUrl);
+      //   } catch (err) {
+      //     console.error("Cloudinary upload failed:", err);
+      //     alert("Upload failed. Try again.");
+      //     return;
+      //   }
+      // }
+
       const newBooking = {
         companyName,
         name,
@@ -105,14 +171,22 @@ function Home() {
         endTime,
         extra,
         date,
-        formType
+        formType,
+        formRoles,
+        //documentUrl, 
       };
 
-      await axios.post(`${import.meta.env.VITE_VERCEL}new-booking`, newBooking);
-
-      alert("Payment successful! Booking email Sent.");
-
-      console.log("Booking successful");
+      try {
+        await axios.post(
+          `${import.meta.env.VITE_VERCEL}new-booking`,
+          newBooking
+        );
+        alert("Payment successful! Booking email sent.");
+        //console.log("Booking successful");
+      } catch (err) {
+        console.error("Error posting booking:", err);
+        alert("Booking failed.");
+      }
     }
   };
   const getBookingPrices = async () => {
@@ -125,45 +199,29 @@ function Home() {
       console.error("Error fetching booking prices:", error);
     }
   };
+
   useEffect(() => {
     getBookingPrices();
   }, []);
   useEffect(() => {
-  if (eventHours) {
-    const hours = parseFloat(eventHours); // Convert to a number
-    const wholeHours = Math.floor(hours); // Full hours
-    const isHalfHour = hours % 1 !== 0; // Check if there's a half-hour
-    
-    const basePrice = therapist * regularPrice * wholeHours; // Price for full hours
-    const halfHourPrice = isHalfHour ? therapist * (regularPrice * 0.5) : 0; // Half-hour price
+    if (eventHours) {
+      const hours = parseFloat(eventHours); // Convert to a number
+      const wholeHours = Math.floor(hours); // Full hours
+      const isHalfHour = hours % 1 !== 0; // Check if there's a half-hour
 
-    setPrice(basePrice + halfHourPrice);
-  }
-}, [therapist, eventHours, regularPrice]);
+      const basePrice = therapist * regularPrice * wholeHours; // Price for full hours
+      const halfHourPrice = isHalfHour ? therapist * (regularPrice * 0.5) : 0; // Half-hour price
 
-// const sendSms = async () => {
-//   try{
-//     const response = await axios.get(`http://localhost:3001/send-sms`);
-//     console.log("SMS SENT: ", response)
-//   }catch (error){
-//     console.error("Error sending SMS: ", error);
-//   }
-// }
+      setPrice(basePrice + halfHourPrice);
+    }
+  }, [therapist, eventHours, regularPrice]);
 
-  // const sendSms = async () => {
-  //   try {
-  //     const response = await axios.post(`http://localhost:3001/send-sms`, {
-  //       message: "New booking made",
-  //       phoneNumber: "",
-  //     });
-  //     console.log("SMS sent successfully");
-  //   } catch (error) {
-  //     console.error("Error sending SMS:", error);
-  //   }
-  // };
   return (
+    <div class="Main-Content">
+      <Services/>
     <div className="Grid-Container">
-      <img src={Logo} alt="MOTG Logo" className="Main_Img" />
+      
+      {/* <img src={Logo} alt="MOTG Logo" className="Main_Img" /> */}
       <div className="Container">
         <div className="Text-Info">
           <h3>1 Therapist</h3>
@@ -266,6 +324,7 @@ function Home() {
           </Modal>
         </div>
         <div className="FormInput">
+          <h2 style={{textAlign:"center"}}>Corporate Wellbeing</h2>
           <Form noValidate validated={validated} onSubmit={postBookings}>
             <Row className="mb-3">
               <Form.Group
@@ -366,20 +425,42 @@ function Home() {
                 md={4}
                 controlId="validationCustom05"
               >
-                <Form.Label># of Therapist</Form.Label>
+                <Form.Label>Wellness Field</Form.Label>
+                <Select
+                  className="roleSelect"
+                  closeMenuOnSelect={false}
+                  components={animatedComponents}
+                  isMulti
+                  name="roles"
+                  options={options}
+                  onChange={(selectedOptions) => {
+                    const values = selectedOptions.map(
+                      (option) => option.value
+                    );
+                    setFormRoles(values);
+                  }}
+                />
+              </Form.Group>
+            </Row>
+            <Row className="mb-3">
+              <Form.Group
+                as={Col}
+                xs={12}
+                md={4}
+                controlId="validationCustom05"
+              >
+                <Form.Label># of Workers</Form.Label>
                 <Form.Control
                   type="number"
-                  placeholder="Number of Therapist"
+                  placeholder="Number of Workers"
                   onChange={(e) => setTherapist(e.target.value)}
                   min="1"
                   required
                 />
                 <Form.Control.Feedback type="invalid">
-                  Please provide a valid Therapist Number.
+                  Please provide a valid Worker Number.
                 </Form.Control.Feedback>
               </Form.Group>
-            </Row>
-            <Row className="mb-3">
               <Form.Group
                 as={Col}
                 xs={12}
@@ -415,14 +496,13 @@ function Home() {
                   <option value="12.5">12 Hours 30 Minutes</option>
                 </Form.Select>
               </Form.Group>
-
               <Form.Group
                 xs={12}
                 md={4}
                 as={Col}
                 controlId="validationCustom07"
               >
-                <Form.Label>Massage Increments</Form.Label>
+                <Form.Label>Events Increments</Form.Label>
                 <Form.Select
                   onChange={(e) => setEventIncrement(e.target.value)}
                   required
@@ -486,14 +566,25 @@ function Home() {
                   Please provide a valid End Time.
                 </Form.Control.Feedback>
               </Form.Group>
+              {/* <Form.Group
+                as={Col}
+                controlId="validationCustom07"
+                style={{ marginTop: "6%" }}
+              >
+                <p>Medical Docs</p>
+              </Form.Group>
+              <input
+                type="file"
+                onChange={(e) => setSelectedFile(e.target.files[0])}
+              /> */}
               <InputGroup>
                 <InputGroup.Text>Anything else?</InputGroup.Text>
                 <Form.Control
                   as="textarea"
                   aria-label="With textarea"
+                  placeholder="Amount of each wellness field needed?"
                   onChange={(e) => {
                     setExtra(e.target.value);
-                    console.log(extra);
                   }}
                 />
               </InputGroup>
@@ -570,6 +661,7 @@ function Home() {
         </div>
       </div>
       {/* <Button onClick={sendSms}>TEXT</Button> */}
+    </div>
     </div>
   );
 }

@@ -3,6 +3,9 @@ import { useParams } from "react-router-dom";
 import axios from "axios";
 import { Row, Col, Form, Button, InputGroup } from "react-bootstrap";
 import { Spinner } from "react-bootstrap";
+import Select from "react-select";
+import makeAnimated from "react-select/animated";
+import "../App.css"; 
 
 const ConfirmBooking = () => {
   const { id } = useParams();
@@ -24,6 +27,24 @@ const ConfirmBooking = () => {
   const [regularPrice, setRegularPrice] = useState(150);
   const [formType, setFormType] = useState("");
   const [specialPrice, setSpecialPrice] = useState(90);
+  const [formRoles, setFormRoles] = useState([]);
+  const animatedComponents = makeAnimated();
+
+  const options = [
+    { value: "therapist", label: "Massage Therapist" },
+    { value: "personal", label: "Personal Trainer" },
+    { value: "yoga", label: "Yoga Instructor" },
+    { value: "group", label: "Group Fitness Instructor" },
+    { value: "nutritionist", label: "Nutritionist" },
+    { value: "pilates", label: "Pilates Instructor" },
+    { value: "stretch", label: "Stretch Therapist" },
+    { value: "cpr", label: "CPR Instructor" },
+    { value: "meditation", label: "Meditation Coach" },
+    { value: "zumba", label: "Zumba Instructor" },
+    { value: "wellness", label: "Wellness Coach" },
+    { value: "ergonomics", label: "Ergonomics Specialist" },
+    { value: "breathwork", label: "Breathwork Coach" },
+  ];
 
   useEffect(() => {
     const fetchBooking = async () => {
@@ -46,6 +67,7 @@ const ConfirmBooking = () => {
         setExtra(data.extra || "");
         setPrice(data.price || 0);
         setFormType(data.formType || "");
+        setFormRoles(data.formRoles || []);
       } catch (err) {
         console.error("Failed to fetch booking", err);
       }
@@ -72,6 +94,7 @@ const ConfirmBooking = () => {
         extra,
         price,
         formType,
+        formRoles,
       });
       alert("Booking updated!");
     } catch (err) {
@@ -92,42 +115,48 @@ const ConfirmBooking = () => {
       setConfirming(false);
     }
   };
-    const getBookingPrices = async () => {
-      try {
-        const response = await axios.get(
-          `${import.meta.env.VITE_VERCEL}admin/booking-prices`
-        );
-        setRegularPrice(response.data.regularBooking);
-        setSpecialPrice(response.data.specialBooking);
-      } catch (error) {
-        console.error("Error fetching booking prices:", error);
-      }
-    };
-    useEffect(() => {
-      getBookingPrices();
-    }, []);
+  const getBookingPrices = async () => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_VERCEL}admin/booking-prices`
+      );
+      setRegularPrice(response.data.regularBooking);
+      setSpecialPrice(response.data.specialBooking);
+    } catch (error) {
+      console.error("Error fetching booking prices:", error);
+    }
+  };
+  useEffect(() => {
+    getBookingPrices();
+  }, []);
   useEffect(() => {
     if (formType == "regular" && eventHours) {
       const hours = parseFloat(eventHours); // Convert to a number
       const wholeHours = Math.floor(hours); // Full hours
       const isHalfHour = hours % 1 !== 0; // Check if there's a half-hour
-      
+
       const basePrice = therapist * regularPrice * wholeHours; // Price for full hours
       const halfHourPrice = isHalfHour ? therapist * (regularPrice * 0.5) : 0; // Half-hour price
-  
+
       setPrice(basePrice + halfHourPrice);
-    }else if(formType == "special" && eventHours){
+    } else if (formType == "special" && eventHours) {
       const hours = parseFloat(eventHours); // Convert to a number
       const wholeHours = Math.floor(hours); // Full hours
       const isHalfHour = hours % 1 !== 0; // Check if there's a half-hour
-      
+
       const basePrice = therapist * specialPrice * wholeHours; // Price for full hours
       const halfHourPrice = isHalfHour ? therapist * (specialPrice * 0.5) : 0; // Half-hour price
-  
+
       setPrice(basePrice + halfHourPrice);
     }
   }, [therapist, eventHours, regularPrice, specialPrice]);
+
+  const getSelectedOptions = (selectedValues) => {
+  return options.filter((opt) => selectedValues.includes(opt.value));
+};
   return (
+    <div class="Main-Content">
+      <div className="Grid-Container">
     <div className="FormInput">
       <Form noValidate validated={validated} onSubmit={handleSubmit}>
         <Row className="mb-3">
@@ -204,21 +233,40 @@ const ConfirmBooking = () => {
             </Form.Control.Feedback>
           </Form.Group>
           <Form.Group as={Col} xs={12} md={4} controlId="validationCustom05">
-            <Form.Label># of Therapist</Form.Label>
+            <Form.Label>Wellness Field</Form.Label>
+            <Select
+              className="roleSelect"
+              closeMenuOnSelect={false}
+              components={animatedComponents}
+              isMulti
+              name="roles"
+              options={options}
+              onChange={(selectedOptions) => {
+                const values = selectedOptions.map((option) => option.value);
+                setFormRoles(values);
+                //console.log(formRoles);
+              }}
+               value={getSelectedOptions(formRoles)}
+            />
+          </Form.Group>
+          </Row>
+          <Row className="mb-3">
+          <Form.Group as={Col} xs={12} md={4} controlId="validationCustom05">
+            <Form.Label># of Workers</Form.Label>
             <Form.Control
               type="number"
-              placeholder="Number of Therapist"
+              placeholder="Number of Workers"
               value={therapist}
               onChange={(e) => setTherapist(e.target.value)}
               min="1"
               required
             />
             <Form.Control.Feedback type="invalid">
-              Please provide a valid Therapist Number.
+              Please provide a valid Worker Number.
             </Form.Control.Feedback>
           </Form.Group>
-        </Row>
-        <Row className="mb-3">
+        
+        
           <Form.Group as={Col} xs={12} md={4} controlId="validationCustom06">
             <Form.Label>Event Hours</Form.Label>
             <Form.Select
@@ -252,7 +300,7 @@ const ConfirmBooking = () => {
           </Form.Group>
 
           <Form.Group xs={12} md={4} as={Col} controlId="validationCustom07">
-            <Form.Label>Massage Increments</Form.Label>
+            <Form.Label>Event Increments</Form.Label>
             <Form.Select
               value={eventIncrement}
               onChange={(e) => setEventIncrement(e.target.value)}
@@ -313,7 +361,7 @@ const ConfirmBooking = () => {
               value={extra}
               onChange={(e) => {
                 setExtra(e.target.value);
-                console.log(extra);
+                //console.log(extra);
               }}
             />
           </InputGroup>
@@ -354,6 +402,8 @@ const ConfirmBooking = () => {
           </Form.Group>
         </Row>
       </Form>
+    </div>
+    </div>
     </div>
   );
 };

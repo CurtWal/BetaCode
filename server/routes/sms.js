@@ -1,6 +1,45 @@
-// const express = require("express");
-// const axios = require("axios");
-// const router = express.Router();
+const express = require("express");
+const axios = require("axios");
+const router = express.Router();
+const twilio = require("twilio");
+
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+const PhoneNumber = process.env.TWILIO_NUMBER;
+const client = twilio(accountSid, authToken);
+
+router.get("/send-sms", async (req, res) =>{
+    const phoneNumbers = ["+19012777280"]; // Add +1 for US numbers
+    const results = [];
+  
+    try {
+      for (const number of phoneNumbers) {
+        const message = await client.messages.create({
+          body: "Booking is available please check it out!!!",
+          from: PhoneNumber,
+          to: number,
+        });
+  
+        console.log(`Sent to ${number}: SID ${message.sid}`);
+        results.push({ number, sid: message.sid });
+      }
+  
+      res.status(200).json({ message: "SMS sent to all", results });
+    } catch (err) {
+      console.error("Failed to send SMS:", err);
+      res.status(500).json({ message: "Failed to send SMS", error: err.message });
+    }
+})
+
+module.exports = router
+
+
+
+
+
+
+
+
 
 // // Your Mailgun API credentials
 // const MAILGUN_DOMAIN = "motgpayment.com"; // Example: "sandboxxxxxxxxxxxxx.mailgun.org"

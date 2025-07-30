@@ -141,7 +141,7 @@ const Payment = ({
 
         alert("Payment successful! Booking email Sent.");
 
-        console.log("Booking successful");
+        //console.log("Booking successful");
         payModalClose();
       } else {
         throw new Error("Payment processing failed");

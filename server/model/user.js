@@ -15,8 +15,8 @@ const UserSchema = new mongoose.Schema({
     required: true,
   },
   role: {
-    type: String,
-    enum: ["admin", "user", "therapist"],
+    type: [String],
+    enum: ["admin", "user", "therapist", "personal", "yoga", "group", "nutritionist", "pilates", "stretch", "cpr", "meditation", "zumba", "wellness", "ergonomics", "breathwork"], 
     default: "user",
   },
   licenseId: {

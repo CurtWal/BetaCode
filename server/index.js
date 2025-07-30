@@ -21,6 +21,7 @@ const bookingsExport = require("./routes/export-bookings")
 const deleteBookings = require("./routes/deleteBooking");
 const textReminder = require("./routes/textReminder");
 //const Booking = require("./model/bookings")
+
 const PORT = process.env.PORT || 3003;
 const app = express();
 

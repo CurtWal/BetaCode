@@ -69,10 +69,19 @@ const bookingSchema = new mongoose.Schema({
     type: Boolean, 
     default: false,
    },
-  formType: {
+  formType: 
+  {
     type: String,
     required: true,
-  }
+  },
+  formRoles:{
+    type: [String],
+    require: true,
+  },
+  // documentUrl: { 
+  //   type: String,
+  //   default: "",
+  //  },
 });
 
 const bookingModel = mongoose.model("Booking", bookingSchema);
