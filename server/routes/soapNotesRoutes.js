@@ -86,7 +86,7 @@ router.post("/soapnotes", async (req, res) => {
 
     await mailgun.messages.create("motgpayment.com", {
       from: process.env.EMAIL_USER,
-      to: "curtrickwalton@gmail.com",
+      to: ["hello@massageonthegomemphis.com", "sam@massageonthegomemphis.com"],
       subject: "New SOAP Note Submitted",
       html,
     });
