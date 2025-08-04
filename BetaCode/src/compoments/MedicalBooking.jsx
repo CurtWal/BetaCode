@@ -31,18 +31,15 @@ function MedicalBookings() {
   const [address, setAddress] = useState("");
   const [zipCode, setZipCode] = useState("");
   const [therapist, setTherapist] = useState(1);
-  const [eventHours, setEventHours] = useState("2");
-  const [eventIncrement, setEventIncrement] = useState("10");
   const [date, setDate] = useState("");
   const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
   const [extra, setExtra] = useState("");
   const [price, setPrice] = useState(0);
   const [formType, setFormType] = useState("");
   const [specialPrice, setSpecialPrice] = useState(90);
   const [regularPrice, setRegularPrice] = useState(150);
   const [formRoles, setFormRoles] = useState([]);
-
+const [eventHours, setEventHours] = useState("")
   const [fullName, setFullName] = useState("");
   const [dob, setDob] = useState("");
   const [phone, setPhone] = useState("");
@@ -101,7 +98,7 @@ function MedicalBookings() {
   const getBookingPrices = async () => {
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_VERCEL2}admin/booking-prices`
+        `${import.meta.env.VITE_VERCEL}admin/booking-prices`
       );
       setRegularPrice(response.data.regularBooking);
       setSpecialPrice(response.data.specialBooking);
@@ -195,12 +192,12 @@ function MedicalBookings() {
 
       // Fetch all bookings
       const response = await axios.get(
-        `${import.meta.env.VITE_VERCEL2}medical-bookings`,
+        `${import.meta.env.VITE_VERCEL}medical-bookings`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      
+
       const formattedBookings = response.data.map((booking) => ({
         ...booking,
         startTime: convertTo12Hour(booking.startTime),
@@ -210,7 +207,7 @@ function MedicalBookings() {
       if (userRole.includes("admin")) {
         // Admin sees all bookings
         setBookings(formattedBookings);
-        
+
         return;
       }
       const filtered = formattedBookings.filter((booking) => {
@@ -227,13 +224,13 @@ function MedicalBookings() {
           Array.isArray(booking.assignedTherapists) &&
           booking.assignedTherapists.some((t) => t?._id === userId);
         const isNotFull = booking.assignedTherapists?.length < totalSlots;
-  
+
         // User sees the booking if they have a matching role AND are either assigned or it's open
         return hasMatchingRole && (isTherapistAssigned || isNotFull);
       });
 
       const sorted = sortBookings(filtered, sortOption);
-      
+
       setBookings(sorted);
 
       return;
@@ -341,13 +338,13 @@ function MedicalBookings() {
 
       // Backend assignment
       await axios.post(
-        `${import.meta.env.VITE_VERCEL2}assign-therapist`,
+        `${import.meta.env.VITE_VERCEL}assign-medical-therapist`,
         { bookingId, therapistId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       // Check for full booking
       const bookingResponse = await axios.get(
-        `${import.meta.env.VITE_VERCEL2}bookings/${bookingId}`,
+        `${import.meta.env.VITE_VERCEL}medical-bookings/${bookingId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -358,7 +355,7 @@ function MedicalBookings() {
       //console.log(currentUserId);
       if (remainingSpots === 0) {
         await axios.post(
-          `${import.meta.env.VITE_VERCEL2}send-email-on-spot-fill`,
+          `${import.meta.env.VITE_VERCEL}send-medical-email-on-spot-fill`,
           { bookingId },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -371,37 +368,6 @@ function MedicalBookings() {
       console.error("Error joining booking:", error.response?.data || error);
     } finally {
       setJoiningBookingId(null);
-    }
-  };
-
-  const markComplete = async (id) => {
-    try {
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        console.error("No token found, user is not authenticated.");
-        return;
-      }
-
-      await axios.put(
-        `${import.meta.env.VITE_VERCEL2}bookings/${id}`,
-        {
-          isComplete: true,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`, // Ensure "Bearer" is present
-          },
-        }
-      );
-
-      setBookings(
-        bookings.map((booking) =>
-          booking._id === id ? { ...booking, isComplete: true } : booking
-        )
-      );
-    } catch (error) {
-      console.error("Error updating booking:", error.response?.data || error);
     }
   };
 
@@ -453,7 +419,7 @@ function MedicalBookings() {
 
       // Send API request to remove therapist
       await axios.post(
-        `${import.meta.env.VITE_VERCEL2}leave-booking`,
+        `${import.meta.env.VITE_VERCEL}leave-medical-booking`,
         { bookingId, therapistId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -488,7 +454,7 @@ function MedicalBookings() {
 
       // Backend call to remove the therapist
       await axios.post(
-        `${import.meta.env.VITE_VERCEL2}admin-remove-therapist`,
+        `${import.meta.env.VITE_VERCEL}admin-remove-medical-therapist`,
         { bookingId, therapistId: therapistIdToRemove },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -504,7 +470,7 @@ function MedicalBookings() {
       const token = localStorage.getItem("token");
       await axios.delete(
         `${
-          import.meta.env.VITE_VERCEL2
+          import.meta.env.VITE_VERCEL
         }delete/medical-bookings/${bookingId}?type=${type}`,
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -517,59 +483,61 @@ function MedicalBookings() {
     }
   };
 
-  const exportToGoogleSheet = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      await axios.post(
-        `${import.meta.env.VITE_VERCEL2}api/export-bookings`,
-        null,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      alert("Bookings exported to Google Sheets!");
-      if (
-        window.confirm(
-          'If you click "ok" you would be redirected To SpreadSheet. Cancel will load this website '
-        )
-      ) {
-        window.location.href =
-          "https://docs.google.com/spreadsheets/d/1SZ_8iRJTdS0dz5iwMOWHV6wnPBO0d0skE7gSSEcQdoc/edit?gid=0#gid=0";
-      }
-    } catch (error) {
-      console.error("Export error:", error);
-      alert("Failed to export bookings.");
-    }
-  };
+  // const exportToGoogleSheet = async () => {
+  //   try {
+  //     const token = localStorage.getItem("token");
+  //     await axios.post(
+  //       `${import.meta.env.VITE_VERCEL2}api/export-bookings`,
+  //       null,
+  //       {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //       }
+  //     );
+  //     alert("Bookings exported to Google Sheets!");
+  //     if (
+  //       window.confirm(
+  //         'If you click "ok" you would be redirected To SpreadSheet. Cancel will load this website '
+  //       )
+  //     ) {
+  //       window.location.href =
+  //         "https://docs.google.com/spreadsheets/d/1SZ_8iRJTdS0dz5iwMOWHV6wnPBO0d0skE7gSSEcQdoc/edit?gid=0#gid=0";
+  //     }
+  //   } catch (error) {
+  //     console.error("Export error:", error);
+  //     alert("Failed to export bookings.");
+  //   }
+  // };
   const handleEditModal = async (id) => {
     setEditBooking(id);
     try {
       const res = await axios.get(
-        `${import.meta.env.VITE_VERCEL2}medical-bookings/${id}`
+        `${import.meta.env.VITE_VERCEL}medical-bookings/${id}`
       );
       const data = res.data;
       setFullName(data.fullName || "");
-        setDob(data.dob || "");
-        setEmail(data.email || "");
-        setAddress(data.address || "");
-        setZipCode(data.zipCode || "");
-        setPhone(data.phone || 1);
-        setEmergencyContact(data.emergencyContact || "");
-        setInsuranceProvider(data.insuranceProvider || "");
-        setMemberId(data.memberId || "");
-        setFsaProvider(data.fsaProvider || "");
-        setPhysicianContact(data.physicianContact || "");
-        setPrescriptionOnFile(data.prescriptionOnFile || "");
-        setPainAreas(data.painAreas || "");  
-        setTreatmentGoal(data.treatmentGoal || "");  
-        setUnderPhysicianCare(data.underPhysicianCare || "");  
-        setSurgeries(data.surgeries || "");  
-        setMedications(data.medications || "");  
-        setPressurePreference(data.pressurePreference || "");  
-        setSensitiveAreas(data.sensitiveAreas || "");  
-        setAllergies(data.allergies || "");  
-        setFormType(data.formType || "");
-        setFormRoles(data.formRoles || []);
+      setDob(data.dob || "");
+      setEmail(data.email || "");
+      setAddress(data.address || "");
+      setZipCode(data.zipCode || "");
+      setPhone(data.phone || 1);
+      setEmergencyContact(data.emergencyContact || "");
+      setInsuranceProvider(data.insuranceProvider || "");
+      setMemberId(data.memberId || "");
+      setFsaProvider(data.fsaProvider || "");
+      setPhysicianContact(data.physicianContact || "");
+      setPrescriptionOnFile(data.prescriptionOnFile || "");
+      setPainAreas(data.painAreas || "");
+      setTreatmentGoal(data.treatmentGoal || "");
+      setUnderPhysicianCare(data.underPhysicianCare || "");
+      setSurgeries(data.surgeries || "");
+      setMedications(data.medications || "");
+      setPressurePreference(data.pressurePreference || "");
+      setSensitiveAreas(data.sensitiveAreas || "");
+      setAllergies(data.allergies || "");
+      setFormType(data.formType || "");
+      setFormRoles(data.formRoles || []);
+      setDate(data.date || "");
+      setStartTime(data.startTime || "")
     } catch (err) {
       console.error("Failed to fetch booking", err);
     }
@@ -589,23 +557,31 @@ function MedicalBookings() {
       try {
         const id = editBooking;
         //console.log(id);
-        await axios.put(`${import.meta.env.VITE_VERCEL2}mdeical-bookings/${id}`, {
-          companyName,
-          name,
-          email,
-          address,
-          zipCode,
-          therapist,
-          eventHours,
-          eventIncrement,
-          date,
-          startTime,
-          endTime,
-          extra,
-          price,
-          formType,
-          formRoles,
-        });
+        await axios.put(
+          `${import.meta.env.VITE_VERCEL}medical-bookings/${id}`,
+          {
+            fullName,
+            email,
+            address,
+            zipCode,
+            date,
+            startTime,
+            formType,
+            formRoles,
+            dob,
+            phone,
+            emergencyContact,
+            physicianContact,
+            painAreas,
+            treatmentGoal,
+            underPhysicianCare,
+            surgeries,
+            medications,
+            pressurePreference,
+            sensitiveAreas,
+            allergies,
+          }
+        );
         alert("Booking updated!");
       } catch (err) {
         console.error("Error updating booking", err);
@@ -616,20 +592,22 @@ function MedicalBookings() {
   useEffect(() => {
     getBookings(); // Initial fetch
   }, [handleSubmit]);
-
+  const getSelectedOptions = (selectedValues) => {
+    return options.filter((opt) => selectedValues.includes(opt.value));
+  };
   return (
     <div class="bookContentSize">
       <div>
-        {hasRole("admin") && (
+        {/* {hasRole("admin") && (
           <div style={{ marginTop: "60px" }}>
             <button onClick={exportToGoogleSheet}>
               Export to Google Sheet
             </button>
           </div>
-        )}
+        )} */}
 
         <div className="bookingContainer">
-          <h1 style={{ textAlign: "center" }}>Bookings</h1>
+          <h1 style={{ textAlign: "center" }}>Medical Bookings</h1>
 
           <div className="bookings-controls">
             {hasRole("admin") && (
@@ -685,6 +663,8 @@ function MedicalBookings() {
                       <li>Pressure Preference: {booking.pressurePreference}</li>
                       <li>Sensitive Areas: {booking.sensitiveAreas}</li>
                       <li>Allergies: {booking.allergies}</li>
+                      <li>Date: {booking.date}</li>
+                      <li>Start Time: {booking.startTime}</li>
 
                       {booking.documentUrl && (
                         <li>
@@ -902,74 +882,6 @@ function MedicalBookings() {
                                           Contact.
                                         </Form.Control.Feedback>
                                       </Form.Group>
-
-                                      <Form.Group
-                                        as={Col}
-                                        xs={12}
-                                        md={4}
-                                        controlId="validationCustom06"
-                                      >
-                                        <Form.Label>
-                                          Insurance Provider
-                                        </Form.Label>
-                                        <Form.Control
-                                          type="text"
-                                          placeholder="Insurance Provider"
-                                          value={insuranceProvider}
-                                          onChange={(e) =>
-                                            setInsuranceProvider(e.target.value)
-                                          }
-                                          min="1"
-                                          required
-                                        />
-                                        <Form.Control.Feedback type="invalid">
-                                          Please provide a valid Insurance
-                                          Provider.
-                                        </Form.Control.Feedback>
-                                      </Form.Group>
-
-                                      <Form.Group
-                                        xs={12}
-                                        md={4}
-                                        as={Col}
-                                        controlId="validationCustom07"
-                                      >
-                                        <Form.Label>MemberId</Form.Label>
-                                        <Form.Control
-                                          type="text"
-                                          placeholder="memberId"
-                                          value={memberId}
-                                          onChange={(e) =>
-                                            setMemberId(e.target.value)
-                                          }
-                                          min="1"
-                                          required
-                                        />
-                                        <Form.Control.Feedback type="invalid">
-                                          Please provide a valid MemberId.
-                                        </Form.Control.Feedback>
-                                      </Form.Group>
-                                      <Form.Group
-                                        as={Col}
-                                        xs={12}
-                                        md={4}
-                                        controlId="validationCustom05"
-                                      >
-                                        <Form.Label>FsaProvider</Form.Label>
-                                        <Form.Control
-                                          type="text"
-                                          placeholder="fsaProvider"
-                                          value={fsaProvider}
-                                          onChange={(e) =>
-                                            setFsaProvider(e.target.value)
-                                          }
-                                          min="1"
-                                          required
-                                        />
-                                        <Form.Control.Feedback type="invalid">
-                                          Please provide a valid FsaProvider.
-                                        </Form.Control.Feedback>
-                                      </Form.Group>
                                       <Form.Group
                                         as={Col}
                                         xs={12}
@@ -992,37 +904,6 @@ function MedicalBookings() {
                                         <Form.Control.Feedback type="invalid">
                                           Please provide a valid Physician
                                           Contact.
-                                        </Form.Control.Feedback>
-                                      </Form.Group>
-                                      <Form.Group
-                                        as={Col}
-                                        xs={12}
-                                        md={4}
-                                        controlId="validationCustom05"
-                                      >
-                                        <Form.Label>
-                                          Prescription On File
-                                        </Form.Label>
-                                        <Form.Select
-                                          required
-                                          name="Prescription On File"
-                                          value={prescriptionOnFile}
-                                          onChange={(e) =>
-                                            setPrescriptionOnFile(
-                                              e.target.value
-                                            )
-                                          }
-                                          min="1"
-                                        >
-                                          <option value="">
-                                            Select Yes/No
-                                          </option>
-                                          <option value="Yes">Yes</option>
-                                          <option value="No">No</option>
-                                        </Form.Select>
-                                        <Form.Control.Feedback type="invalid">
-                                          Please provide a valid Prescription On
-                                          File.
                                         </Form.Control.Feedback>
                                       </Form.Group>
                                       <Form.Group
@@ -1209,6 +1090,65 @@ function MedicalBookings() {
                                           Please provide valid Allergies.
                                         </Form.Control.Feedback>
                                       </Form.Group>
+                                      <Form.Group
+                                        as={Col}
+                                        xs={12}
+                                        md={4}
+                                        controlId="validationCustom05"
+                                      >
+                                        <Form.Label>Wellness Field</Form.Label>
+                                        <Select
+                                          className="roleSelect"
+                                          closeMenuOnSelect={false}
+                                          components={animatedComponents}
+                                          isMulti
+                                          name="roles"
+                                          value={getSelectedOptions(formRoles)}
+                                          options={options}
+                                          onChange={(selectedOptions) => {
+                                            const values = selectedOptions.map(
+                                              (option) => option.value
+                                            );
+                                            setFormRoles(values);
+                                          }}
+                                        />
+                                      </Form.Group>
+                                      <Form.Group
+                                        as={Col}
+                                        xs={12}
+                                        md={4}
+                                        controlId="validationCustom02"
+                                      >
+                                        <Form.Label>Date</Form.Label>
+                                        <Form.Control
+                                          required
+                                          type="date"
+                                          placeholder="Date"
+                                          name="date"
+                                          value={date}
+                                          onChange={(e) =>
+                                            setDate(e.target.value)
+                                          }
+                                        />
+                                      </Form.Group>
+                                      <Form.Group
+                                        as={Col}
+                                        xs={12}
+                                        md={4}
+                                        controlId="validationCustom02"
+                                      >
+                                        <Form.Label>Start Time</Form.Label>
+                                        <Form.Control
+                                          required
+                                          type="time"
+                                          placeholder="Time"
+                                          name="startTime"
+                                          value={startTime}
+                                          onChange={(e) =>
+                                            setStartTime(e.target.value)
+                                          }
+                                        />
+                                      </Form.Group>
                                     </Row>
                                     <Row>
                                       <Form.Group as={Col}>
@@ -1348,28 +1288,6 @@ function MedicalBookings() {
           </div>
         </div>
       </div>
-      {bookings.map((booking) => {
-        const remainingSlots =
-          booking.therapist - booking.assignedTherapists.length;
-
-        return (
-          <div key={booking._id}>
-            <h3>{booking.service}</h3>
-            <p>Name: {booking.companyName}</p>
-            <p>Date: {booking.date}</p>
-            <p>
-              Assigned: {booking.assignedTherapists.length} /{" "}
-              {booking.therapist}
-            </p>
-            <p style={{ color: remainingSlots === 0 ? "red" : "green" }}>
-              {remainingSlots === 0
-                ? "Fully Booked"
-                : `${remainingSlots} Spot${remainingSlots > 1 ? "s" : ""} Left`}
-            </p>
-            {/* ... other buttons/actions */}
-          </div>
-        );
-      })}
     </div>
   );
 }

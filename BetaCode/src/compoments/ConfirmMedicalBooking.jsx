@@ -35,6 +35,8 @@ const ConfirmMedicalBooking = () => {
   const [confirming, setConfirming] = useState(false);
   const [formType, setFormType] = useState("");
   const [formRoles, setFormRoles] = useState([]);
+  const [date, setDate] = useState("");
+  const [startTime, setStartTime] = useState("");
   const [regularPrice, setRegularPrice] = useState(150);
   const [specialPrice, setSpecialPrice] = useState(90);
   const animatedComponents = makeAnimated();
@@ -59,10 +61,10 @@ const ConfirmMedicalBooking = () => {
     const fetchBooking = async () => {
       try {
         const res = await axios.get(
-          `${import.meta.env.VITE_VERCEL2}medical-bookings/${id}`
+          `${import.meta.env.VITE_VERCEL}medical-bookings/${id}`
         );
         const data = res.data;
-        console.log(data)
+        //console.log(data);
         setFullName(data.fullName || "");
         setDob(data.dob || "");
         setEmail(data.email || "");
@@ -85,6 +87,8 @@ const ConfirmMedicalBooking = () => {
         setAllergies(data.allergies || "");
         setFormType(data.formType || "");
         setFormRoles(data.formRoles);
+        setDate(data.date || "");
+        setStartTime(data.startTime || "");
       } catch (err) {
         console.error("Failed to fetch booking", err);
       }
@@ -96,7 +100,7 @@ const ConfirmMedicalBooking = () => {
     event.preventDefault();
     setValidated(true);
     try {
-      await axios.put(`${import.meta.env.VITE_VERCEL2}medical-bookings/${id}`, {
+      await axios.put(`${import.meta.env.VITE_VERCEL}medical-bookings/${id}`, {
         fullName,
         dob,
         email,
@@ -118,6 +122,8 @@ const ConfirmMedicalBooking = () => {
         allergies,
         formType,
         formRoles,
+        date,
+        startTime,
       });
       alert("Booking updated!");
     } catch (err) {
@@ -130,7 +136,7 @@ const ConfirmMedicalBooking = () => {
     setConfirming(true);
     try {
       await axios.get(
-        `${import.meta.env.VITE_VERCEL2}confirm-medicalbooking/${id}`
+        `${import.meta.env.VITE_VERCEL}confirm-medicalbooking/${id}`
       );
       alert("Notifications sent and booking marked as ready.");
     } catch (err) {
@@ -140,9 +146,9 @@ const ConfirmMedicalBooking = () => {
       setConfirming(false);
     }
   };
-   const getSelectedOptions = (selectedValues) => {
-  return options.filter((opt) => selectedValues.includes(opt.value));
-};
+  const getSelectedOptions = (selectedValues) => {
+    return options.filter((opt) => selectedValues.includes(opt.value));
+  };
   return (
     <div class="Main-Content">
       <div className="Grid-Container">
@@ -562,6 +568,38 @@ const ConfirmMedicalBooking = () => {
                     );
                     setFormRoles(values);
                   }}
+                />
+              </Form.Group>
+              <Form.Group
+                as={Col}
+                xs={12}
+                md={4}
+                controlId="validationCustom02"
+              >
+                <Form.Label>Date</Form.Label>
+                <Form.Control
+                  required
+                  type="date"
+                  placeholder="Date"
+                  name="date"
+                  value={date}
+                  onChange={(e)=> setDate(e.target.value)}
+                />
+              </Form.Group>
+              <Form.Group
+                as={Col}
+                xs={12}
+                md={4}
+                controlId="validationCustom02"
+              >
+                <Form.Label>Start Time</Form.Label>
+                <Form.Control
+                  required
+                  type="time"
+                  placeholder="Time"
+                  name="startTime"
+                  value={startTime}
+                  onChange={(e)=> setStartTime(e.target.value)}
                 />
               </Form.Group>
             </Row>

@@ -121,7 +121,10 @@ router.post("/new-booking", async (req, res) => {
     try {
       const emailData = {
         from: process.env.EMAIL_USER, // Must be a verified Mailgun sender
-        to: ["hello@massageonthegomemphis.com", "sam@massageonthegomemphis.com"], // Recipient email
+        to: [
+          "hello@massageonthegomemphis.com",
+          "sam@massageonthegomemphis.com",
+        ], // Recipient email
         subject: "New Massage Booking Confirmation",
         html: `<h2>New Booking Details</h2>
             <p><strong>Price:</strong> $${newBooking.price} ${payType}</p>
@@ -358,6 +361,8 @@ router.post("/new-medicalbooking", async (req, res) => {
       signatureDate,
       formType,
       formRoles,
+      date,
+      startTime,
       //documentUrl,
     } = req.body;
 
@@ -392,10 +397,13 @@ router.post("/new-medicalbooking", async (req, res) => {
       signatureDate,
       formType,
       location,
-      formRoles
+      formRoles,
+      therapist: 1,
+      date,
+      startTime,
       //documentUrl,
     });
-    const confirmationLink = `http://localhost:5173/confirm-medicalbooking/${newBooking._id}`;
+    const confirmationLink = `https://motgpayment.com/confirm-medicalbooking/${newBooking._id}`;
 
     // Set up email transporter
     const mg = new Mailgun(formData);
@@ -406,7 +414,10 @@ router.post("/new-medicalbooking", async (req, res) => {
     try {
       const emailData = {
         from: process.env.EMAIL_USER, // Must be a verified Mailgun sender
-        to: ["curtrickwalton@gmail.com"], // Recipient email
+        to: [
+          "hello@massageonthegomemphis.com",
+          "sam@massageonthegomemphis.com",
+        ], // Recipient email
         subject: "New Massage Booking Confirmation",
         html: `<h2>New Booking Details</h2>
             <p><strong>Medical Booking</strong></p>
@@ -416,17 +427,11 @@ router.post("/new-medicalbooking", async (req, res) => {
             <p><strong>Address:</strong> ${newBooking.address}</p>
             <p><strong>ZipCode:</strong> ${newBooking.zipCode}</p>
             <p><strong>Phone Number:</strong> ${newBooking.phone}</p>
-            <p><strong>EmergencyContact:</strong> ${
-              newBooking.emergencyContact
-            }</p>
-            <p><strong>InsuranceProvider:</strong> ${
-              newBooking.insuranceProvider
-            }</p>
+            <p><strong>EmergencyContact:</strong> ${newBooking.emergencyContact}</p>
+            <p><strong>InsuranceProvider:</strong> ${newBooking.insuranceProvider}</p>
             <p><strong>MemberId:</strong> ${newBooking.memberId}</p>
             <p><strong>FSAProvider:</strong> ${newBooking.fsaProvider}</p>
-            <p><strong>PhysicianContact:</strong> ${
-              newBooking.physicianContact
-            }</p>
+            <p><strong>PhysicianContact:</strong> ${newBooking.physicianContact}</p>
             <p><strong>PrescriptionOnFile:</strong> ${newBooking.prescriptionOnFile}</p>
             <p><strong>TreatmentGoal:</strong> ${newBooking.treatmentGoal}</p>
             <p><strong>UnderPhysicianCare:</strong> ${newBooking.underPhysicianCare}</p>

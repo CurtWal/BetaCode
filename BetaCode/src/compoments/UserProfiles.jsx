@@ -15,21 +15,6 @@ function UserProfiles() {
     email: "",
     role: formRoles,
   });
-  const roleOptions = [
-    { value: "therapist", label: "Massage Therapist" },
-    { value: "personal", label: "Personal Trainer" },
-    { value: "yoga", label: "Yoga Instructor" },
-    { value: "group", label: "Group Fitness Instructor" },
-    { value: "nutritionist", label: "Nutritionist" },
-    { value: "pilates", label: "Pilates Instructor" },
-    { value: "stretch", label: "Stretch Therapist" },
-    { value: "cpr", label: "CPR Instructor" },
-    { value: "meditation", label: "Meditation Coach" },
-    { value: "zumba", label: "Zumba Instructor" },
-    { value: "wellness", label: "Wellness Coach" },
-    { value: "ergonomics", label: "Ergonomics Specialist" },
-    { value: "breathwork", label: "Breathwork Coach" },
-  ];
 
   const userRoles = [
     "therapist",
@@ -83,7 +68,7 @@ function UserProfiles() {
         );
 
         const user = res.data;
-        console.log(user);
+        //console.log(user);
         setForm({
           name: user.username || "",
           address: user.address || "",
@@ -110,11 +95,9 @@ function UserProfiles() {
     const userId = localStorage.getItem("userId");
 
     try {
-      await axios.put(
-        `${import.meta.env.VITE_VERCEL}account/${userId}`,
-        form,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await axios.put(`${import.meta.env.VITE_VERCEL}account/${userId}`, form, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       alert("Account updated successfully!");
     } catch (err) {
       console.error("Error updating user:", err.response?.data || err);
@@ -221,7 +204,7 @@ function UserProfiles() {
                   />
                 </Form.Group>
                 <Form.Group controlId="email" className="mt-3">
-                  <Form.Label>Email</Form.Label>
+                  <Form.Label>Wellness Field</Form.Label>
                   <p>
                     Role:
                     <Select
@@ -235,6 +218,10 @@ function UserProfiles() {
                           (option) => option.value
                         );
                         setFormRoles(values);
+                        setForm((prevForm) => ({
+                          ...prevForm,
+                          role: values,
+                        }));
                       }}
                     />
                   </p>

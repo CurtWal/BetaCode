@@ -20,11 +20,11 @@ const adminRoute = require("./routes/admin");
 const bookingsExport = require("./routes/export-bookings")
 const deleteBookings = require("./routes/deleteBooking");
 const textReminder = require("./routes/textReminder");
-//const Booking = require("./model/bookings")
-
+const Booking = require("./model/bookings")
+const SoapNotes = require("./routes/soapNotesRoutes")
 const PORT = process.env.PORT || 3003;
 const app = express();
-
+const Users = require("./model/user")
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
@@ -107,6 +107,25 @@ app.get("/", (req, res) => {
 
 // updateBookingLocations();
 
+// const updateUsers = async()=>{
+// const users = await Users.find();
+
+// for (const user of users) {
+//   if (typeof user.role === "string") {
+//     // Split comma-separated roles into array
+//     user.role = user.role.split(",").map((r) => r.trim());
+//     await user.save();
+//     console.log(`Migrated user ${user.email} to array role`);
+//   } else if (Array.isArray(user.role) && user.role.some(r => typeof r !== "string")) {
+//     // Handle edge case: role array contains non-strings
+//     user.role = user.role.map(r => String(r).trim());
+//     await user.save();
+//     console.log(`Cleaned up role array for user ${user.email}`);
+//   }
+// }
+// }
+// updateUsers();
+
 app.use(authRoutes);
 app.use(getBookings);
 app.use(getUsers);
@@ -120,5 +139,6 @@ app.use("/admin", adminRoute);
 app.use("/delete", deleteBookings);
 app.use("/api", bookingsExport);
 app.use(textReminder);
+app.use(SoapNotes);
 // app.use('/api', paymentRoute);
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

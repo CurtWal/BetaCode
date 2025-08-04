@@ -313,7 +313,7 @@ window.onscroll = () => {
           <Route path="/forgot-password" element={<RequestReset />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/medical-form" element={<MedicalForm />} />
-          <Route path="/soapnotes" element={<SoapNotes />} />
+          <Route path="/soapnotes/:bookingId/:therapistId" element={<SoapNotes />} />
         </Routes>
       </div>
     </>

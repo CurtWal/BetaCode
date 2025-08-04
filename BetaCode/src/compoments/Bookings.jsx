@@ -43,7 +43,6 @@ function Bookings() {
   const [regularPrice, setRegularPrice] = useState(150);
   const [formRoles, setFormRoles] = useState([]);
 
-
   const animatedComponents = makeAnimated();
 
   const options = [
@@ -195,67 +194,43 @@ function Bookings() {
         return;
       }
 
-      //
-      // Fetch therapist's zip code
-      // const therapistResponse = await axios.get(
-      //   `${import.meta.env.VITE_VERCEL2}api/therapist/${userId}`,
-      //   {
-      //     headers: { Authorization: `Bearer ${token}` },
-      //   }
-      // );
-
-      // const therapistLocation = therapistResponse.data.location;
-      // //const bookingLocation = response.data.location;
-      // // Filter bookings based on distance
-      // const filteredBookings = await Promise.all(
-      //   formattedBookings.map(async (booking) => {
-      //     if (!booking.location || !therapistLocation) return null;
-      //     const isNearTherapist = checkLocationDistance(
-      //       booking.location.lat,
-      //       booking.location.lng,
-      //       therapistLocation.lat,
-      //       therapistLocation.lng,
-      //       92
-      //     );
-
-      //     const isTherapistAssigned = booking.assignedTherapists.some(
-      //       (t) => t._id === userId
-      //     );
-      //     const hasOpenSpots =
-      //       booking.assignedTherapists.length < booking.therapist;
-
-      //     if (isTherapistAssigned || (hasOpenSpots && isNearTherapist)) {
-      //       return booking;
-      //     }
-
-      //     return null;
-      //   })
-      // );
-      // }
       // For non-admin users, filter bookings by role match OR assignment availability
 
       const filtered = formattedBookings.filter((booking) => {
+        // Ensure bookingRoles is always an array
         const bookingRoles = Array.isArray(booking.formRoles)
           ? booking.formRoles
-          : ["therapist"];
+          : typeof booking.formRoles === "string"
+          ? [booking.formRoles]
+          : [];
+
+        // Ensure userRoles is always an array
+        const normalizedUserRoles = Array.isArray(userRoles)
+          ? userRoles
+          : typeof userRoles === "string"
+          ? [userRoles]
+          : [];
 
         const hasMatchingRole = bookingRoles.some((role) =>
-          userRoles.includes(role)
+          normalizedUserRoles.includes(role)
         );
-        
+
         const totalSlots = booking.therapist ?? 1;
 
         const isTherapistAssigned =
           Array.isArray(booking.assignedTherapists) &&
           booking.assignedTherapists.some((t) => t?._id === userId);
-        const isNotFull = booking.assignedTherapists?.length < totalSlots;
 
-        // User sees the booking if they have a matching role AND are either assigned or it's open
-        return hasMatchingRole && (isTherapistAssigned || isNotFull);
+        const isNotFull = booking.assignedTherapists.length < totalSlots;
+
+        // Show booking if user has matching role and it's not full,
+        // or if user is assigned even if full
+        return (hasMatchingRole && isNotFull) || isTherapistAssigned;
       });
+
       const sorted = sortBookings(filtered, sortOption);
       setBookings(sorted);
-
+      //console.log(filtered)
       return;
       //}
     } catch (error) {
@@ -347,7 +322,7 @@ function Bookings() {
       setBookings((prevBookings) =>
         prevBookings.map((booking) =>
           booking._id === bookingId &&
-          !booking.assignedTherapists.some((t) => t._id === therapistId) // prevent duplicate in UI
+          !booking.assignedTherapists?.some((t) => t._id === therapistId) // prevent duplicate in UI
             ? {
                 ...booking,
                 assignedTherapists: [
@@ -706,7 +681,12 @@ function Bookings() {
 
                       <div className="button-container">
                         <Button onClick={() => handleShow(booking._id)}>
-                          {booking.assignedTherapists.length < booking.therapist
+                          {booking.assignedTherapists.some(
+                            (t) => t._id === currentUserId
+                          )
+                            ? "You Joined"
+                            : booking.assignedTherapists.length <
+                              booking.therapist
                             ? "Assign Therapist"
                             : "Job Filled"}
                         </Button>
@@ -1123,7 +1103,7 @@ function Bookings() {
                                 onClick={() => joinBooking(booking._id)}
                                 disabled={
                                   currentUserId &&
-                                  booking.assignedTherapists.some(
+                                  booking.assignedTherapists?.some(
                                     (t) => t._id === currentUserId
                                   )
                                 }
@@ -1132,7 +1112,7 @@ function Bookings() {
                               </Button>
                             )}
                             {currentUserId &&
-                              booking.assignedTherapists.some(
+                              booking.assignedTherapists?.some(
                                 (t) => t._id === currentUserId
                               ) && (
                                 <Button

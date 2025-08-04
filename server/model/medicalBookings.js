@@ -25,6 +25,10 @@ const medicalBookingSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  therapist: {
+    type: Number,
+    default: 1,
+  },
   location: {
     lat: { type: Number },
     lng: { type: Number },
@@ -97,22 +101,32 @@ const medicalBookingSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  completedAt:{
+    type: Date
+  },
   confirmed: {
     type: Boolean,
     default: false,
   },
-  emailsSent: { 
-    type: Boolean, 
+  emailsSent: {
+    type: Boolean,
     default: false,
-   },
-  formType: 
-  {
+  },
+  formType: {
     type: String,
     required: true,
   },
-  formRoles:{
+  formRoles: {
     type: [String],
     require: true,
+  },
+  date: {
+    type: String,
+    required: true,
+  },
+  startTime: {
+    type: String,
+    required: true,
   },
 });
 

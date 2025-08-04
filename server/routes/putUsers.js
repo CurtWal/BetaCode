@@ -65,7 +65,7 @@ router.put(
 
 router.put("/account/:id", async (req, res) => {
   const { id } = req.params;
-  const { name, address, phone, zip, email } = req.body;
+  const { name, address, phone, zip, email, role } = req.body;
 
   try {
     const user = await User.findById(id);
@@ -79,7 +79,9 @@ router.put("/account/:id", async (req, res) => {
       const location = geoRes?.data?.results?.[0]?.location;
 
       if (!location) {
-        return res.status(400).json({ message: "Invalid ZIP code for geocoding" });
+        return res
+          .status(400)
+          .json({ message: "Invalid ZIP code for geocoding" });
       }
 
       user.location = {
@@ -93,7 +95,7 @@ router.put("/account/:id", async (req, res) => {
     user.address = address ?? user.address;
     user.phoneNumber = phone ?? user.phoneNumber;
     user.email = email ?? user.email;
-
+    user.role = role ?? user.role;
     await user.save();
 
     res.json({ message: "User updated successfully", user });

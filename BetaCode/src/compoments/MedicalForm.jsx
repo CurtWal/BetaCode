@@ -36,9 +36,11 @@ function MedicalForm() {
     signature: "",
     signatureDate: "",
     formType: "medical",
-    formRoles: worker
+    formRoles: worker,
+    date: "",
+    startTime: "",
   });
- const options = [
+  const options = [
     { value: "therapist", label: "Massage Therapist" },
     { value: "personal", label: "Personal Trainer" },
     { value: "yoga", label: "Yoga Instructor" },
@@ -63,7 +65,7 @@ function MedicalForm() {
     e.preventDefault();
     try {
       await axios.post(
-        `${import.meta.env.VITE_VERCEL2}new-medicalbooking`,
+        `${import.meta.env.VITE_VERCEL}new-medicalbooking`,
         formData
       );
       alert("Medical Booking email sent.");
@@ -418,14 +420,44 @@ function MedicalForm() {
                       closeMenuOnSelect={false}
                       components={animatedComponents}
                       isMulti
-                      name="roles"
+                      name="formRoles"
                       options={options}
                       onChange={(selectedOptions) => {
                         const values = selectedOptions.map(
                           (option) => option.value
                         );
-                        setWorker(values);
+                        setFormData((prev) => ({ ...prev, ["formRoles"]: values }))
                       }}
+                    />
+                  </Form.Group>
+                  <Form.Group
+                    as={Col}
+                    xs={12}
+                    md={4}
+                    controlId="validationCustom02"
+                  >
+                    <Form.Label>Date</Form.Label>
+                    <Form.Control
+                      required
+                      type="date"
+                      placeholder="Date"
+                      name="date"
+                      onChange={handleChange}
+                    />
+                  </Form.Group>
+                  <Form.Group
+                    as={Col}
+                    xs={12}
+                    md={4}
+                    controlId="validationCustom02"
+                  >
+                    <Form.Label>Start Time</Form.Label>
+                    <Form.Control
+                      required
+                      type="time"
+                      placeholder="Time"
+                      name="startTime"
+                      onChange={handleChange}
                     />
                   </Form.Group>
                 </Row>

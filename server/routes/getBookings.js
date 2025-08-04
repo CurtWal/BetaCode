@@ -47,7 +47,7 @@ router.get(
 
       // Fetch all bookings
       const myBookings = await booking.find({confirmed: true}).lean(); // Convert to plain objects
-
+      
       // Fetch therapist assignments and populate therapist details
       const therapistAssignments = await TherapistAssignment.find()
         .populate("therapistId", "username email role") // Only fetch therapist details
@@ -61,7 +61,7 @@ router.get(
               (assignment) =>
                 assignment.bookingId.toString() === booking._id.toString()
             )
-            .map((assignment) => assignment.therapistId); // Extract therapist details
+            .map((assignment) => assignment.therapistId).filter(Boolean);; // Extract therapist details
 
           // Check if the booking is within 1 hour of therapist's zip code
           const isWithinDistance = checkLocationDistance(
@@ -106,7 +106,7 @@ const populateAssignedTherapists = async (bookings) => {
         (assignment) =>
           assignment.bookingId.toString() === booking._id.toString()
       )
-      .map((assignment) => assignment.therapistId);
+      .map((assignment) => assignment.therapistId).filter(Boolean);;
     return { ...booking, assignedTherapists };
   });
 };
@@ -130,7 +130,7 @@ router.get("/bookings/:id", async (req, res) => {
     // Extract therapist details
     const assignedTherapists = therapistAssignments.map(
       (assign) => assign.therapistId
-    );
+    ).filter(Boolean);;
 
     res.json({ ...bookings, assignedTherapists });
   } catch (error) {
@@ -181,7 +181,7 @@ router.get(
               (assignment) =>
                 assignment.bookingId.toString() === booking._id.toString()
             )
-            .map((assignment) => assignment.therapistId); // Extract therapist details
+            .map((assignment) => assignment.therapistId).filter(Boolean);; // Extract therapist details
 
           // Check if the booking is within 1 hour of therapist's zip code
           const isWithinDistance = checkLocationDistance(
