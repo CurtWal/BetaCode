@@ -77,8 +77,8 @@ router.get("/reminder", async (req, res) => {
 
       const therapists = await User.find({
         $or: [
-          { role: { $in: bookings.formRoles } },
-          { role: { $in: bookings.formRoles.map((r) => r.toLowerCase()) } },
+          { role: { $in: booking.formRoles } },
+          { role: { $in: booking.formRoles.map((r) => r.toLowerCase()) } },
         ],
         phoneNumber: { $ne: "" },
         location: { $exists: true },
