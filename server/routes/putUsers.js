@@ -20,6 +20,7 @@ const allowedRoles = [
   "wellness",
   "ergonomics",
   "breathwork",
+  "medical",
 ];
 // PUT route to update user role
 router.put(

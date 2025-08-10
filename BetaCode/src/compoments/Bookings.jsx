@@ -28,6 +28,7 @@ function Bookings() {
   const [companyName, setCompanyName] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
   const [zipCode, setZipCode] = useState("");
   const [therapist, setTherapist] = useState(1);
@@ -558,6 +559,7 @@ function Bookings() {
       setPrice(data.price || 0);
       setFormType(data.formType || "");
       setFormRoles(data.formRoles || []);
+      setPhoneNumber(data.phoneNumber || "");
     } catch (err) {
       console.error("Failed to fetch booking", err);
     }
@@ -593,6 +595,7 @@ function Bookings() {
           price,
           formType,
           formRoles,
+          phoneNumber
         });
         alert("Booking updated!");
       } catch (err) {
@@ -656,6 +659,11 @@ function Bookings() {
                       <li>Company Name: {booking.companyName}</li>
                       <li>Name: {booking.name}</li>
                       <li>Email: {booking.email}</li>
+                      {booking.phoneNumber && (
+                        <li>
+                        Phone Number: {booking.phoneNumber}
+                        </li>
+                      )}
                       <li>Address: {booking.address}</li>
                       <li>ZipCode: {booking.zipCode}</li>
                       <li># of Therapist: {booking.therapist}</li>
@@ -666,7 +674,7 @@ function Bookings() {
                       <li>Available Date: {booking.date}</li>
                       <li>Start Time: {booking.startTime}</li>
                       <li>End Time: {booking.endTime}</li>
-                      {booking.documentUrl && (
+                      {/* {booking.documentUrl && (
                         <li>
                           <a
                             href={booking.documentUrl}
@@ -676,7 +684,7 @@ function Bookings() {
                             Medical Docs
                           </a>
                         </li>
-                      )}
+                      )} */}
                       <li>Extra Info: {booking.extra}</li>
 
                       <div className="button-container">
@@ -800,6 +808,29 @@ function Bookings() {
                                         md={4}
                                         controlId="validationCustom03"
                                       >
+                                        <Form.Label>Phone Number</Form.Label>
+                                        <Form.Control
+                                          required
+                                          type="number"
+                                          placeholder="Phone Number"
+                                          value={phoneNumber}
+                                          onChange={(e) =>
+                                            setPhoneNumber(e.target.value)
+                                          }
+                                        />
+                                        <Form.Control.Feedback type="invalid">
+                                          Please provide a valid Address.
+                                        </Form.Control.Feedback>
+                                        <Form.Control.Feedback>
+                                          Looks good!
+                                        </Form.Control.Feedback>
+                                      </Form.Group>
+                                      <Form.Group
+                                        as={Col}
+                                        xs={12}
+                                        md={4}
+                                        controlId="validationCustom03"
+                                      >
                                         <Form.Label>Address</Form.Label>
                                         <Form.Control
                                           required
@@ -838,6 +869,8 @@ function Bookings() {
                                           Please provide a valid ZipCode.
                                         </Form.Control.Feedback>
                                       </Form.Group>
+                                      </Row>
+                                      <Row className="mb-3">
                                       <Form.Group
                                         as={Col}
                                         xs={12}
@@ -860,8 +893,8 @@ function Bookings() {
                                           Number.
                                         </Form.Control.Feedback>
                                       </Form.Group>
-                                    </Row>
-                                    <Row className="mb-3">
+                                    
+                                    
                                       <Form.Group
                                         as={Col}
                                         xs={12}

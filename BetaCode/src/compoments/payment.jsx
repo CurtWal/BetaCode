@@ -19,7 +19,9 @@ const Payment = ({
   startTime,
   endTime,
   extra,
-  date
+  date,
+  formRoles,
+  phoneNumber
 }) => {
   const [paymentForm, setPaymentForm] = useState(null);
   const cardContainerRef = useRef(null);
@@ -131,7 +133,9 @@ const Payment = ({
           startTime,
           endTime,
           extra,
-          date
+          date,
+          formRoles,
+          phoneNumber
         };
 
         await axios.post(

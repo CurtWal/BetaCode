@@ -305,12 +305,11 @@ router.post("/send-email-on-spot-fill", async (req, res) => {
       const emailData = {
         from: process.env.EMAIL_USER, // Must be a verified Mailgun sender
         to: [
-          "hello@massageonthegomemphis.com",
-          "sam@massageonthegomemphis.com",
+          "hello@massageonthegomemphis.com", "sam@massageonthegomemphis.com"
         ], // Recipient email
-        subject: "All Therapist Spots Have Been Filled!",
-        html: `<h2>All Therapist Spots Have Been Filled!</h2>
-            <p>Good news! All therapist spots for the booking have been successfully filled.</p>
+        subject: "All Wellness Spots Have Been Filled!",
+        html: `<h2>All Wellness Spots Have Been Filled!</h2>
+            <p>Good news! All wellness spots for the booking have been successfully filled.</p>
             <p><strong>Booking Details:</strong></p>
             <p><strong>Company Name:</strong> ${booking.companyName}</p>
             <p><strong>Client Name:</strong> ${booking.name}</p>
@@ -536,9 +535,9 @@ router.post("/leave-booking", async (req, res) => {
                   mailgun.messages.create("motgpayment.com", {
                     from: process.env.EMAIL_USER,
                     to: email,
-                    subject: "A Therapist Spot Just Opened Up!",
-                    html: `<h2>A therapist has left a booking.</h2>
-            <p>A booking now has an available therapist spot.</p>
+                    subject: "A Wellness Spot Just Opened Up!",
+                    html: `<h2>A Wellness worker has left a booking.</h2>
+            <p>A booking now has an available wellness spot.</p>
              <p><strong>Company Name:</strong> ${booking.companyName}</p>
                 <p><strong>Client Name:</strong> ${booking.name}</p>
                 <p><strong>Location:</strong> ${booking.address}</p>
@@ -593,7 +592,7 @@ router.post("/leave-booking", async (req, res) => {
             "hello@massageonthegomemphis.com",
             "sam@massageonthegomemphis.com",
           ], // Recipient email
-          subject: "Therapist Has Left a Booking",
+          subject: "Wellness Worker Has Left a Booking",
           html: `<h4>Name: ${therapist.username}</h4>
           <h4>Email: ${therapist.email}</h4>
           <h4>Phone Number: ${therapist.phoneNumber}</h4>
@@ -758,12 +757,11 @@ router.post("/send-medical-email-on-spot-fill", async (req, res) => {
       const emailData = {
         from: process.env.EMAIL_USER, // Must be a verified Mailgun sender
         to: [
-          "hello@massageonthegomemphis.com",
-          "sam@massageonthegomemphis.com",
+          "hello@massageonthegomemphis.com", "sam@massageonthegomemphis.com"
         ], // Recipient email
-        subject: "All Therapist Spots Have Been Filled!",
-        html: `<h2>All Therapist Spots Have Been Filled!</h2>
-            <p>Good news! All therapist spots for the booking have been successfully filled.</p>
+        subject: "All Wellness Spots Have Been Filled!",
+        html: `<h2>All Wellness Spots Have Been Filled!</h2>
+            <p>Good news! All wellness spots for the booking have been successfully filled.</p>
             <p><strong>Medical Booking Details:</strong></p>
             <p><strong>Client Name:</strong> ${booking.fullName}</p>
             <p><strong>Location:</strong> ${booking.address}</p>
@@ -871,9 +869,9 @@ router.post("/leave-medical-booking", async (req, res) => {
                   mailgun.messages.create("motgpayment.com", {
                     from: process.env.EMAIL_USER,
                     to: email,
-                    subject: "A Therapist Spot Just Opened Up!",
-                    html: `<h2>A therapist has left a booking.</h2>
-            <p>A booking now has an available therapist spot.</p>
+                    subject: "A Wellness Spot Just Opened Up!",
+                    html: `<h2>A wellness worker has left a booking.</h2>
+            <p>A booking now has an available wellness spot.</p>
                 <p><strong>Client Name:</strong> ${booking.fullName}</p>
                 <p><strong>Location:</strong> ${booking.address}</p>
                 <p><strong>ZipCode:</strong> ${booking.zipCode}</p>
@@ -915,7 +913,7 @@ router.post("/leave-medical-booking", async (req, res) => {
             "hello@massageonthegomemphis.com",
             "sam@massageonthegomemphis.com",
           ], // Recipient email
-          subject: "Therapist Has Left a Booking",
+          subject: "Wellness Worker Has Left a Booking",
           html: `<h4>Name: ${therapist.username}</h4>
           <h4>Email: ${therapist.email}</h4>
           <h4>Phone Number: ${therapist.phoneNumber}</h4>

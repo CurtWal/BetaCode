@@ -79,6 +79,7 @@ router.post("/new-booking", async (req, res) => {
       extra,
       formType,
       formRoles,
+      phoneNumber,
       //documentUrl,
     } = req.body;
 
@@ -107,6 +108,7 @@ router.post("/new-booking", async (req, res) => {
       location,
       formType,
       formRoles,
+      phoneNumber,
       //documentUrl,
     });
     console.log(formRoles);
@@ -122,15 +124,15 @@ router.post("/new-booking", async (req, res) => {
       const emailData = {
         from: process.env.EMAIL_USER, // Must be a verified Mailgun sender
         to: [
-          "hello@massageonthegomemphis.com",
-          "sam@massageonthegomemphis.com",
+          "hello@massageonthegomemphis.com", "sam@massageonthegomemphis.com"
         ], // Recipient email
-        subject: "New Massage Booking Confirmation",
+        subject: "New Booking Confirmation",
         html: `<h2>New Booking Details</h2>
             <p><strong>Price:</strong> $${newBooking.price} ${payType}</p>
             <p><strong>Company Name:</strong> ${newBooking.companyName}</p>
             <p><strong>Name:</strong> ${newBooking.name}</p>
             <p><strong>Email:</strong> ${newBooking.email}</p>
+            <p><strong>Phone Number:</strong> ${newBooking.phoneNumber}</p>
             <p><strong>Address:</strong> ${newBooking.address}</p>
             <p><strong>ZipCode:</strong> ${newBooking.zipCode}</p>
             <p><strong>Therapist:</strong> ${newBooking.therapist}</p>
@@ -415,10 +417,9 @@ router.post("/new-medicalbooking", async (req, res) => {
       const emailData = {
         from: process.env.EMAIL_USER, // Must be a verified Mailgun sender
         to: [
-          "hello@massageonthegomemphis.com",
-          "sam@massageonthegomemphis.com",
+          "hello@massageonthegomemphis.com", "sam@massageonthegomemphis.com"
         ], // Recipient email
-        subject: "New Massage Booking Confirmation",
+        subject: "New Booking Confirmation",
         html: `<h2>New Booking Details</h2>
             <p><strong>Medical Booking</strong></p>
             <p><strong>Full Name:</strong> ${newBooking.fullName}</p>

@@ -24,7 +24,7 @@ const checkLocationDistance = (lat1, lon1, lat2, lon2, maxMiles) => {
 router.get(
   "/bookings",
   verifyToken,
-  checkRole(["admin", "therapist", "personal", "yoga", "group", "nutritionist", "pilates", "stretch", "cpr", "meditation", "zumba", "wellness", "ergonomics", "breathwork"]),
+  checkRole(["admin", "therapist", "personal", "yoga", "group", "nutritionist", "pilates", "stretch", "cpr", "meditation", "zumba", "wellness", "ergonomics", "breathwork","medical"]),
   async (req, res) => {
     try {
       const userId = req.user.id; // Assuming user ID is in the token
@@ -144,7 +144,7 @@ router.get("/bookings/:id", async (req, res) => {
 router.get(
   "/medical-bookings",
   verifyToken,
-  checkRole(["admin", "therapist", "personal", "yoga", "group", "nutritionist", "pilates", "stretch", "cpr", "meditation", "zumba", "wellness", "ergonomics", "breathwork"]),
+  checkRole(["admin", "therapist", "personal", "yoga", "group", "nutritionist", "pilates", "stretch", "cpr", "meditation", "zumba", "wellness", "ergonomics", "breathwork","medical"]),
   async (req, res) => {
     try {
       const userId = req.user.id; // Assuming user ID is in the token

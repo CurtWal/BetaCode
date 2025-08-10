@@ -54,6 +54,9 @@ window.onscroll = () => {
     "ergonomics",
     "breathwork",
   ];
+  const medicalRole = [
+    "medical"
+  ]
 
   const checkFreeHourStatus = async () => {
     try {
@@ -187,6 +190,10 @@ window.onscroll = () => {
               <Link to="/bookings" className="!text-black hover:!text-red-500">
                 Bookings
               </Link>
+                </>
+            )}
+            {hasRole(medicalRole) && (
+              <>
               <Link
                   to="/medical-bookings"
                   className="!text-black hover:!text-red-500"

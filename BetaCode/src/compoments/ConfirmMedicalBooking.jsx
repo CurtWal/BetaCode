@@ -42,19 +42,7 @@ const ConfirmMedicalBooking = () => {
   const animatedComponents = makeAnimated();
 
   const options = [
-    { value: "therapist", label: "Massage Therapist" },
-    { value: "personal", label: "Personal Trainer" },
-    { value: "yoga", label: "Yoga Instructor" },
-    { value: "group", label: "Group Fitness Instructor" },
-    { value: "nutritionist", label: "Nutritionist" },
-    { value: "pilates", label: "Pilates Instructor" },
-    { value: "stretch", label: "Stretch Therapist" },
-    { value: "cpr", label: "CPR Instructor" },
-    { value: "meditation", label: "Meditation Coach" },
-    { value: "zumba", label: "Zumba Instructor" },
-    { value: "wellness", label: "Wellness Coach" },
-    { value: "ergonomics", label: "Ergonomics Specialist" },
-    { value: "breathwork", label: "Breathwork Coach" },
+    { value: "medical", label: "Medical Therapist" },
   ];
 
   useEffect(() => {

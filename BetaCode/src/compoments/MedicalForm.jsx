@@ -36,12 +36,13 @@ function MedicalForm() {
     signature: "",
     signatureDate: "",
     formType: "medical",
-    formRoles: worker,
+    formRoles: ["medical"],
     date: "",
     startTime: "",
   });
   const options = [
     { value: "therapist", label: "Massage Therapist" },
+    { value: "medical", label: "Medical Therapist" },
     { value: "personal", label: "Personal Trainer" },
     { value: "yoga", label: "Yoga Instructor" },
     { value: "group", label: "Group Fitness Instructor" },
@@ -408,7 +409,7 @@ function MedicalForm() {
                       onChange={handleChange}
                     />
                   </Form.Group>
-                  <Form.Group
+                  {/* <Form.Group
                     as={Col}
                     xs={12}
                     md={4}
@@ -429,7 +430,7 @@ function MedicalForm() {
                         setFormData((prev) => ({ ...prev, ["formRoles"]: values }))
                       }}
                     />
-                  </Form.Group>
+                  </Form.Group> */}
                   <Form.Group
                     as={Col}
                     xs={12}

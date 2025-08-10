@@ -32,6 +32,7 @@ function UserProfiles() {
   ];
   const options = [
     { value: "therapist", label: "Massage Therapist" },
+    { value: "medical", label: "Medical Therapist" },
     { value: "personal", label: "Personal Trainer" },
     { value: "yoga", label: "Yoga Instructor" },
     { value: "group", label: "Group Fitness Instructor" },
@@ -44,6 +45,7 @@ function UserProfiles() {
     { value: "wellness", label: "Wellness Coach" },
     { value: "ergonomics", label: "Ergonomics Specialist" },
     { value: "breathwork", label: "Breathwork Coach" },
+    
   ];
   const hasRole = (targetRoles) => {
     try {

@@ -132,7 +132,7 @@ router.post("/therapistregister", async (req, res) => {
       const emailData = {
         from: process.env.EMAIL_USER, // Must be a verified Mailgun sender
         to: ["hello@massageonthegomemphis.com", "sam@massageonthegomemphis.com"], // Recipient email
-        subject: "New Therapist Registered",
+        subject: "New Wellness Worker Registered",
         html: `
             <h2>New Therapist Details</h2>
             <p><strong>Name:</strong> ${newUser.username}</p>

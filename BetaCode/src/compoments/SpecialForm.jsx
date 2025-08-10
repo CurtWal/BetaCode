@@ -9,10 +9,12 @@ import axios from "axios";
 import Modal from "react-bootstrap/Modal";
 import Payment from "./payment";
 import Logo from "../assets/MOTG_Revised_Logo.png";
-
+import Select from "react-select";
+import makeAnimated from "react-select/animated";
 function SpecialForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
   const [zipCode, setZipCode] = useState("");
   const [therapist, setTherapist] = useState(1);
@@ -27,12 +29,14 @@ function SpecialForm() {
   const [date, setDate] = useState("");
   const [validated, setValidated] = useState(false);
   const [formType, setFormType] = useState("special");
+  const [formRoles, setFormRoles] = useState([]);
   const [show, setShow] = useState(false);
   const [payModal, setPayModal] = useState(false);
   const [companyName, setCompanyName] = useState("");
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
   const payModalClose = () => setPayModal(false);
+  const animatedComponents = makeAnimated();
 
   const data = [
     {
@@ -65,6 +69,22 @@ function SpecialForm() {
       massages: "18 Clients",
       cost: `$${specialPrice * 3}`,
     },
+  ];
+
+  const options = [
+    { value: "therapist", label: "Massage Therapist" },
+    { value: "personal", label: "Personal Trainer" },
+    { value: "yoga", label: "Yoga Instructor" },
+    { value: "group", label: "Group Fitness Instructor" },
+    { value: "nutritionist", label: "Nutritionist" },
+    { value: "pilates", label: "Pilates Instructor" },
+    { value: "stretch", label: "Stretch Therapist" },
+    { value: "cpr", label: "CPR Instructor" },
+    { value: "meditation", label: "Meditation Coach" },
+    { value: "zumba", label: "Zumba Instructor" },
+    { value: "wellness", label: "Wellness Coach" },
+    { value: "ergonomics", label: "Ergonomics Specialist" },
+    { value: "breathwork", label: "Breathwork Coach" },
   ];
 
   const postBookings = async (e) => {
@@ -106,13 +126,12 @@ function SpecialForm() {
         endTime,
         extra,
         date,
-        formType
+        formType,
+        phoneNumber,
+        formRoles,
       };
 
-      await axios.post(
-        `${import.meta.env.VITE_VERCEL}new-booking`,
-        newBooking
-      );
+      await axios.post(`${import.meta.env.VITE_VERCEL}new-booking`, newBooking);
 
       alert("Payment successful! Booking email Sent.");
 
@@ -132,414 +151,486 @@ function SpecialForm() {
   useEffect(() => {
     getBookingPrices();
   }, []);
-   useEffect(() => {
+  useEffect(() => {
     if (eventHours) {
       const hours = parseFloat(eventHours); // Convert to a number
       const wholeHours = Math.floor(hours); // Full hours
       const isHalfHour = hours % 1 !== 0; // Check if there's a half-hour
-      
+
       const basePrice = therapist * specialPrice * wholeHours; // Price for full hours
       const halfHourPrice = isHalfHour ? therapist * (specialPrice * 0.5) : 0; // Half-hour price
-  
+
       setPrice(basePrice + halfHourPrice);
     }
   }, [therapist, eventHours, specialPrice]);
 
   return (
     <div class="Main-Content">
-    <div className="Grid-Container">
-      {/* <img src={Logo} alt="MOTG Logo" className="Main_Img" /> */}
-      <div className="Container">
-        <div className="Text-Info">
-          <h3>1 Therapist</h3>
-          <h4>${specialPrice}/hour</h4>
-          <hr></hr>
-          <ul class="list-none md:list-disc ...">
-            <li>Minimum 2 hour Booking</li>
-            <li>Can Serve 6 people in 1 hour</li>
-            <li>Availiable in 10, 15, and 20 minute increments</li>
-          </ul>
-          <h6>
-            Disclaimer: 6 people can only be served based on 10 minute
-            increments
-          </h6>
-          <p class="flex justify-end cursor-pointer" onClick={handleShow}>
-            <u class="hover:text-sky-700">Price List</u>
-          </p>
-        </div>
-        <div>
-          <Modal
-            show={show}
-            onHide={handleClose}
-            centered
-            size="xl"
-            dialogClassName="custom-modal"
-          >
-            <Modal.Header closeButton>
-              <div className="Modal-Text">
-                <Modal.Title>Pricing Structure</Modal.Title>
-              </div>
-            </Modal.Header>
-            <Modal.Body>
-              <div className="Modal_Container">
-                <div className="Text-Info">
-                  <h3>1 Therapist</h3>
-                  <h4>$90/hour</h4>
-                  <hr></hr>
-                  <ul class="list-none md:list-disc ...">
-                    <li>Minimum 2 hour Booking</li>
-                    <li>Can Serve 6 people in 1 hour</li>
-                    <li>Availiable in 10, 15, and 20 minute increments</li>
-                  </ul>
-                  <h6>
-                    Disclaimer: 6 people can only be served based on 10 minute
-                    increments
-                  </h6>
+      <div className="Grid-Container">
+        {/* <img src={Logo} alt="MOTG Logo" className="Main_Img" /> */}
+        <div className="Container">
+          <div className="Text-Info">
+            <h3>1 Therapist</h3>
+            <h4>${specialPrice}/hour</h4>
+            <hr></hr>
+            <ul class="list-none md:list-disc ...">
+              <li>Minimum 2 hour Booking</li>
+              <li>Can Serve 6 people in 1 hour</li>
+              <li>Availiable in 10, 15, and 20 minute increments</li>
+            </ul>
+            <h6>
+              Disclaimer: 6 people can only be served based on 10 minute
+              increments
+            </h6>
+            <p class="flex justify-end cursor-pointer" onClick={handleShow}>
+              <u class="hover:text-sky-700">Price List</u>
+            </p>
+          </div>
+          <div>
+            <Modal
+              show={show}
+              onHide={handleClose}
+              centered
+              size="xl"
+              dialogClassName="custom-modal"
+            >
+              <Modal.Header closeButton>
+                <div className="Modal-Text">
+                  <Modal.Title>Pricing Structure</Modal.Title>
                 </div>
-                <div className="Options">
-                  <h4>CUSTOMIZABLE OPTIONS </h4>
-                  <h5>
-                    THE NUMBER OF THERAPISTS AND DURATION CAN BE ADJUSTED BASED
-                    ON YOUR COMPANY SIZE AND NEEDS. PLEASE SEE BELOW FOR
-                    EXAMPLES OF PACKAGES AVAILABLE{" "}
-                  </h5>
-                  <h5>
-                    SUBSCRIPTION SERVICES: BOOK A BUNDLE CHAIR MASSAGE EVENT AND
-                    RECEIVE A DISCOUNT. BOOK THREE EVENTS AND GET 15% OFF THE
-                    TOTAL COST.
-                  </h5>
+              </Modal.Header>
+              <Modal.Body>
+                <div className="Modal_Container">
+                  <div className="Text-Info">
+                    <h3>1 Therapist</h3>
+                    <h4>$90/hour</h4>
+                    <hr></hr>
+                    <ul class="list-none md:list-disc ...">
+                      <li>Minimum 2 hour Booking</li>
+                      <li>Can Serve 6 people in 1 hour</li>
+                      <li>Availiable in 10, 15, and 20 minute increments</li>
+                    </ul>
+                    <h6>
+                      Disclaimer: 6 people can only be served based on 10 minute
+                      increments
+                    </h6>
+                  </div>
+                  <div className="Options">
+                    <h4>CUSTOMIZABLE OPTIONS </h4>
+                    <h5>
+                      THE NUMBER OF THERAPISTS AND DURATION CAN BE ADJUSTED
+                      BASED ON YOUR COMPANY SIZE AND NEEDS. PLEASE SEE BELOW FOR
+                      EXAMPLES OF PACKAGES AVAILABLE{" "}
+                    </h5>
+                    <h5>
+                      SUBSCRIPTION SERVICES: BOOK A BUNDLE CHAIR MASSAGE EVENT
+                      AND RECEIVE A DISCOUNT. BOOK THREE EVENTS AND GET 15% OFF
+                      THE TOTAL COST.
+                    </h5>
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <h2 class="flex justify-center">Package Examples</h2>
-                <div className="table-container">
-                  <table className="w-full border-collapse text-white mt-4">
-                    <thead>
-                      <tr className="text-lg font-bold">
-                        <th className="p-4 bg-indigo-700 rounded-tl-xl">
-                          NUMBER OF THERAPIST
-                        </th>
-                        <th className="p-4 bg-blue-700">DURATION</th>
-                        <th className="p-4 bg-blue-600">TOTAL MASSAGES</th>
-                        <th className="p-4 bg-cyan-400 rounded-tr-xl">
-                          Total Cost
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.map((row, index) => (
-                        <tr
-                          key={index}
-                          className={`text-center text-lg transition hover:bg-gray-700 ${
-                            index % 2 === 0 ? "bg-gray-600" : "bg-gray-700"
-                          }`}
-                        >
-                          <td className="p-4">{row.therapists}</td>
-                          <td className="p-4">{row.duration}</td>
-                          <td className="p-4">{row.massages}</td>
-                          <td className="p-4 font-semibold text-lg bg-cyan-500 ">
-                            {row.cost}
-                          </td>
+                <div>
+                  <h2 class="flex justify-center">Package Examples</h2>
+                  <div className="table-container">
+                    <table className="w-full border-collapse text-white mt-4">
+                      <thead>
+                        <tr className="text-lg font-bold">
+                          <th className="p-4 bg-indigo-700 rounded-tl-xl">
+                            NUMBER OF THERAPIST
+                          </th>
+                          <th className="p-4 bg-blue-700">DURATION</th>
+                          <th className="p-4 bg-blue-600">TOTAL MASSAGES</th>
+                          <th className="p-4 bg-cyan-400 rounded-tr-xl">
+                            Total Cost
+                          </th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {data.map((row, index) => (
+                          <tr
+                            key={index}
+                            className={`text-center text-lg transition hover:bg-gray-700 ${
+                              index % 2 === 0 ? "bg-gray-600" : "bg-gray-700"
+                            }`}
+                          >
+                            <td className="p-4">{row.therapists}</td>
+                            <td className="p-4">{row.duration}</td>
+                            <td className="p-4">{row.massages}</td>
+                            <td className="p-4 font-semibold text-lg bg-cyan-500 ">
+                              {row.cost}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
-            </Modal.Body>
-          </Modal>
-        </div>
-        <div className="FormInput">
-          <h2 style={{color:"black", textAlign:"center"}}>St. Jude Wellness</h2>
-          <Form noValidate validated={validated} onSubmit={postBookings}>
-            <Row className="mb-3">
-              <Form.Group
-                as={Col}
-                xs={12}
-                md={4}
-                controlId="validationCustom01"
-              >
-                <Form.Label>Company Name</Form.Label>
-                <Form.Control
-                  required
-                  type="text"
-                  placeholder="Company Name"
-                  onChange={(e) => setCompanyName(e.target.value)}
-                />
-                <Form.Control.Feedback type="invalid">
-                  Please provide a valid Name.
-                </Form.Control.Feedback>
-                <Form.Control.Feedback>Looks good!</Form.Control.Feedback>
-              </Form.Group>
-              <Form.Group
-                as={Col}
-                xs={12}
-                md={4}
-                controlId="validationCustom01"
-              >
-                <Form.Label>Name</Form.Label>
-                <Form.Control
-                  required
-                  type="text"
-                  placeholder="Name"
-                  onChange={(e) => setName(e.target.value)}
-                />
-                <Form.Control.Feedback type="invalid">
-                  Please provide a valid Name.
-                </Form.Control.Feedback>
-                <Form.Control.Feedback>Looks good!</Form.Control.Feedback>
-              </Form.Group>
-              <Form.Group
-                as={Col}
-                xs={12}
-                md={4}
-                controlId="validationCustom02"
-              >
-                <Form.Label>Email</Form.Label>
-                <Form.Control
-                  required
-                  type="text"
-                  placeholder="Email"
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-                <Form.Control.Feedback type="invalid">
-                  Please provide a valid Email.
-                </Form.Control.Feedback>
-                <Form.Control.Feedback>Looks good!</Form.Control.Feedback>
-              </Form.Group>
-            </Row>
-            <Row className="mb-3">
-              <Form.Group
-                as={Col}
-                xs={12}
-                md={4}
-                controlId="validationCustom03"
-              >
-                <Form.Label>Address</Form.Label>
-                <Form.Control
-                  required
-                  type="text"
-                  placeholder="Address"
-                  onChange={(e) => setAddress(e.target.value)}
-                />
-                <Form.Control.Feedback type="invalid">
-                  Please provide a valid Address.
-                </Form.Control.Feedback>
-                <Form.Control.Feedback>Looks good!</Form.Control.Feedback>
-              </Form.Group>
-
-              <Form.Group
-                as={Col}
-                xs={12}
-                md={4}
-                controlId="validationCustom04"
-              >
-                <Form.Label>ZipCode</Form.Label>
-                <Form.Control
-                  type="text"
-                  placeholder="ZipCode"
-                  onChange={(e) => setZipCode(e.target.value)}
-                  required
-                />
-                <Form.Control.Feedback type="invalid">
-                  Please provide a valid ZipCode.
-                </Form.Control.Feedback>
-              </Form.Group>
-              <Form.Group
-                as={Col}
-                xs={12}
-                md={4}
-                controlId="validationCustom05"
-              >
-                <Form.Label># of Therapist</Form.Label>
-                <Form.Control
-                  type="number"
-                  placeholder="Number of Therapist"
-                  onChange={(e) => setTherapist(e.target.value)}
-                  min="1"
-                  required
-                />
-                <Form.Control.Feedback type="invalid">
-                  Please provide a valid Therapist Number.
-                </Form.Control.Feedback>
-              </Form.Group>
-            </Row>
-            <Row className="mb-3">
-              <Form.Group
-                as={Col}
-                xs={12}
-                md={4}
-                controlId="validationCustom06"
-              >
-                <Form.Label>Event Hours</Form.Label>
-                <Form.Select
-                  onChange={(e) => setEventHours(e.target.value)}
-                  required
+              </Modal.Body>
+            </Modal>
+          </div>
+          <div className="FormInput">
+            <h2 style={{ color: "black", textAlign: "center" }}>
+              St. Jude Wellness
+            </h2>
+            <Form noValidate validated={validated} onSubmit={postBookings}>
+              <Row className="mb-3">
+                <Form.Group
+                  as={Col}
+                  xs={12}
+                  md={4}
+                  controlId="validationCustom01"
                 >
-                  <option value="2">2 Hours</option>
-                  <option value="2.5">2 Hours 30 Minutes</option>
-                  <option value="3">3 Hours</option>
-                  <option value="3.5">3 Hours 30 Minutes</option>
-                  <option value="4">4 Hours</option>
-                  <option value="4.5">4 Hours 30 Minutes</option>
-                  <option value="5">5 Hours</option>
-                  <option value="5.5">5 Hours 30 Minutes</option>
-                  <option value="6">6 Hours</option>
-                  <option value="6.5">6 Hours 30 Minutes</option>
-                  <option value="7">7 Hours 30 Minutes</option>
-                  <option value="7.5">7 Hours 30 Minutes</option>
-                  <option value="8">8 Hours</option>
-                  <option value="8.5">8 Hours 30 Minutes</option>
-                  <option value="9">9 Hours</option>
-                  <option value="9.5">9 Hours</option>
-                  <option value="10">10 Hours</option>
-                  <option value="10.5">10 Hours 30 Minutes</option>
-                  <option value="11">11 Hours</option>
-                  <option value="11.5">11 Hours 30 Minutes</option>
-                  <option value="12">12 Hours</option>
-                  <option value="12.5">12 Hours 30 Minutes</option>
-                </Form.Select>
-              </Form.Group>
-
-              <Form.Group
-                xs={12}
-                md={4}
-                as={Col}
-                controlId="validationCustom07"
-              >
-                <Form.Label>Massage Increments</Form.Label>
-                <Form.Select
-                  onChange={(e) => setEventIncrement(e.target.value)}
-                  required
+                  <Form.Label>Company Name</Form.Label>
+                  <Form.Control
+                    required
+                    type="text"
+                    placeholder="Company Name"
+                    onChange={(e) => setCompanyName(e.target.value)}
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    Please provide a valid Company Name.
+                  </Form.Control.Feedback>
+                  <Form.Control.Feedback>Looks good!</Form.Control.Feedback>
+                </Form.Group>
+                <Form.Group
+                  as={Col}
+                  xs={12}
+                  md={4}
+                  controlId="validationCustom01"
                 >
-                  <option value="10">10 Minutes</option>
-                  <option value="15">15 Minutes</option>
-                  <option value="20">20 Minutes</option>
-                </Form.Select>
-              </Form.Group>
-              <Form.Group
-                as={Col}
-                xs={12}
-                md={4}
-                controlId="validationCustom05"
-              >
-                <Form.Label>Availiable Date</Form.Label>
-                <Form.Control
-                  type="Date"
-                  placeholder="Date"
-                  onChange={(e) => setDate(e.target.value)}
-                  min="1"
-                  required
-                />
-                <Form.Control.Feedback type="invalid">
-                  Please provide a valid Date.
-                </Form.Control.Feedback>
-              </Form.Group>
-              <Form.Group
-                as={Col}
-                xs={12}
-                md={4}
-                controlId="validationCustom05"
-              >
-                <Form.Label>Start Time</Form.Label>
-                <Form.Control
-                  type="time"
-                  placeholder="Time"
-                  onChange={(e) => setStartTime(e.target.value)}
-                  min="1"
-                  required
-                />
-                <Form.Control.Feedback type="invalid">
-                  Please provide a valid Start Time.
-                </Form.Control.Feedback>
-              </Form.Group>
-              <Form.Group
-                as={Col}
-                xs={12}
-                md={4}
-                controlId="validationCustom05"
-              >
-                <Form.Label>End Time</Form.Label>
-                <Form.Control
-                  type="time"
-                  placeholder="Time"
-                  onChange={(e) => setEndTime(e.target.value)}
-                  min="1"
-                  required
-                />
-                <Form.Control.Feedback type="invalid">
-                  Please provide a valid End Time.
-                </Form.Control.Feedback>
-              </Form.Group>
-              <InputGroup>
-                <InputGroup.Text>Anything else?</InputGroup.Text>
-                <Form.Control as="textarea" aria-label="With textarea" onChange={(e) => {setExtra(e.target.value);}} />
-              </InputGroup>
-              <Form.Group
+                  <Form.Label>Name</Form.Label>
+                  <Form.Control
+                    required
+                    type="text"
+                    placeholder="Name"
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    Please provide a valid Name.
+                  </Form.Control.Feedback>
+                  <Form.Control.Feedback>Looks good!</Form.Control.Feedback>
+                </Form.Group>
+                <Form.Group
+                  as={Col}
+                  xs={12}
+                  md={4}
+                  controlId="validationCustom02"
+                >
+                  <Form.Label>Email</Form.Label>
+                  <Form.Control
+                    required
+                    type="text"
+                    placeholder="Email"
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    Please provide a valid Email.
+                  </Form.Control.Feedback>
+                  <Form.Control.Feedback>Looks good!</Form.Control.Feedback>
+                </Form.Group>
+              </Row>
+              <Row className="mb-3">
+                <Form.Group
+                  as={Col}
+                  xs={12}
+                  md={4}
+                  controlId="validationCustom02"
+                >
+                  <Form.Label>Phone Number</Form.Label>
+                  <Form.Control
+                    required
+                    type="number"
+                    placeholder="Phone Number"
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    Please provide a valid Phone Number.
+                  </Form.Control.Feedback>
+                  <Form.Control.Feedback>Looks good!</Form.Control.Feedback>
+                </Form.Group>
+
+                <Form.Group
+                  as={Col}
+                  xs={12}
+                  md={4}
+                  controlId="validationCustom03"
+                >
+                  <Form.Label>Address</Form.Label>
+                  <Form.Control
+                    required
+                    type="text"
+                    placeholder="Address"
+                    onChange={(e) => setAddress(e.target.value)}
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    Please provide a valid Address.
+                  </Form.Control.Feedback>
+                  <Form.Control.Feedback>Looks good!</Form.Control.Feedback>
+                </Form.Group>
+
+                <Form.Group
+                  as={Col}
+                  xs={12}
+                  md={4}
+                  controlId="validationCustom04"
+                >
+                  <Form.Label>ZipCode</Form.Label>
+                  <Form.Control
+                    type="text"
+                    placeholder="ZipCode"
+                    onChange={(e) => setZipCode(e.target.value)}
+                    required
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    Please provide a valid ZipCode.
+                  </Form.Control.Feedback>
+                </Form.Group>
+              </Row>
+              <Row className="mb-3">
+                <Form.Group
+                  as={Col}
+                  xs={12}
+                  md={4}
+                  controlId="validationCustom05"
+                >
+                  <Form.Label>Wellness Field</Form.Label>
+                  <Select
+                    className="roleSelect"
+                    closeMenuOnSelect={false}
+                    components={animatedComponents}
+                    isMulti
+                    name="roles"
+                    options={options}
+                    onChange={(selectedOptions) => {
+                      const values = selectedOptions.map(
+                        (option) => option.value
+                      );
+                      setFormRoles(values);
+                    }}
+                  />
+                </Form.Group>
+
+                <Form.Group
+                  as={Col}
+                  xs={12}
+                  md={4}
+                  controlId="validationCustom05"
+                >
+                  <Form.Label># of Workers</Form.Label>
+                  <Form.Control
+                    type="number"
+                    placeholder="Number of Workers"
+                    onChange={(e) => setTherapist(e.target.value)}
+                    min="1"
+                    required
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    Please provide a valid Worker Number.
+                  </Form.Control.Feedback>
+                </Form.Group>
+                <Form.Group
+                  as={Col}
+                  xs={12}
+                  md={4}
+                  controlId="validationCustom06"
+                >
+                  <Form.Label>Event Hours</Form.Label>
+                  <Form.Select
+                    onChange={(e) => setEventHours(e.target.value)}
+                    required
+                  >
+                    <option value="2">2 Hours</option>
+                    <option value="2.5">2 Hours 30 Minutes</option>
+                    <option value="3">3 Hours</option>
+                    <option value="3.5">3 Hours 30 Minutes</option>
+                    <option value="4">4 Hours</option>
+                    <option value="4.5">4 Hours 30 Minutes</option>
+                    <option value="5">5 Hours</option>
+                    <option value="5.5">5 Hours 30 Minutes</option>
+                    <option value="6">6 Hours</option>
+                    <option value="6.5">6 Hours 30 Minutes</option>
+                    <option value="7">7 Hours 30 Minutes</option>
+                    <option value="7.5">7 Hours 30 Minutes</option>
+                    <option value="8">8 Hours</option>
+                    <option value="8.5">8 Hours 30 Minutes</option>
+                    <option value="9">9 Hours</option>
+                    <option value="9.5">9 Hours</option>
+                    <option value="10">10 Hours</option>
+                    <option value="10.5">10 Hours 30 Minutes</option>
+                    <option value="11">11 Hours</option>
+                    <option value="11.5">11 Hours 30 Minutes</option>
+                    <option value="12">12 Hours</option>
+                    <option value="12.5">12 Hours 30 Minutes</option>
+                  </Form.Select>
+                </Form.Group>
+                <Form.Group
+                  xs={12}
+                  md={4}
+                  as={Col}
+                  controlId="validationCustom07"
+                >
+                  <Form.Label>Events Increments</Form.Label>
+                  <Form.Select
+                    onChange={(e) => setEventIncrement(e.target.value)}
+                    required
+                  >
+                    <option value="10">10 Minutes</option>
+                    <option value="15">15 Minutes</option>
+                    <option value="20">20 Minutes</option>
+                  </Form.Select>
+                </Form.Group>
+                <Form.Group
+                  as={Col}
+                  xs={12}
+                  md={4}
+                  controlId="validationCustom05"
+                >
+                  <Form.Label>Availiable Date</Form.Label>
+                  <Form.Control
+                    type="Date"
+                    placeholder="Date"
+                    onChange={(e) => setDate(e.target.value)}
+                    min="1"
+                    required
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    Please provide a valid date.
+                  </Form.Control.Feedback>
+                </Form.Group>
+                <Form.Group
+                  as={Col}
+                  xs={12}
+                  md={4}
+                  controlId="validationCustom05"
+                >
+                  <Form.Label>Start Time</Form.Label>
+                  <Form.Control
+                    type="time"
+                    placeholder="Time"
+                    onChange={(e) => setStartTime(e.target.value)}
+                    min="1"
+                    required
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    Please provide a valid Start Time.
+                  </Form.Control.Feedback>
+                </Form.Group>
+                <Form.Group
+                  as={Col}
+                  xs={12}
+                  md={4}
+                  controlId="validationCustom05"
+                >
+                  <Form.Label>End Time</Form.Label>
+                  <Form.Control
+                    type="time"
+                    placeholder="Time"
+                    onChange={(e) => setEndTime(e.target.value)}
+                    min="1"
+                    required
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    Please provide a valid End Time.
+                  </Form.Control.Feedback>
+                </Form.Group>
+                {/* <Form.Group
                 as={Col}
                 controlId="validationCustom07"
                 style={{ marginTop: "6%" }}
               >
-                <p>Total: ${price}</p>
+                <p>Medical Docs</p>
               </Form.Group>
-            </Row>
-            <Row>
-              <Form.Group
-                as={Col}
-                controlId="validationCustom07"
-                style={{ marginTop: "4%" }}
-              >
-                <Button type="submit">Book & Pay by Card</Button>
-              </Form.Group>
-              <Form.Group
-                as={Col}
-                controlId="validationCustom07"
-                style={{ marginTop: "4%" }}
-              >
-                <Button onClick={postBookingsbyCheck} style={{ backgroundColor: 'red' }}>
-                  Book & Pay by Check
-                </Button>
-              </Form.Group>
-            </Row>
-          </Form>
-        </div>
-        <div>
-          <Modal
-            show={payModal}
-            onHide={payModalClose}
-            centered
-            dialogClassName="custom-modal"
+              <input
+                type="file"
+                onChange={(e) => setSelectedFile(e.target.files[0])}
+              /> */}
+                <InputGroup>
+                  <InputGroup.Text>Anything else?</InputGroup.Text>
+                  <Form.Control
+                    as="textarea"
+                    aria-label="With textarea"
+                    placeholder="Amount of each wellness field needed?"
+                    onChange={(e) => {
+                      setExtra(e.target.value);
+                    }}
+                  />
+                </InputGroup>
+                <Form.Group
+                  as={Col}
+                  controlId="validationCustom07"
+                  style={{ marginTop: "6%" }}
+                >
+                  <p>Total: ${price}</p>
+                </Form.Group>
+              </Row>
+              <Row>
+                <Form.Group
+                  as={Col}
+                  controlId="validationCustom07"
+                  style={{ marginTop: "4%" }}
+                >
+                  <Button type="submit">Book & Pay by Card</Button>
+                </Form.Group>
+                <Form.Group
+                  as={Col}
+                  controlId="validationCustom07"
+                  style={{ marginTop: "4%" }}
+                >
+                  <Button
+                    onClick={postBookingsbyCheck}
+                    style={{ backgroundColor: "red" }}
+                  >
+                    Book & Pay by Check
+                  </Button>
+                </Form.Group>
+              </Row>
+            </Form>
+          </div>
+          <div>
+            <Modal
+              show={payModal}
+              onHide={payModalClose}
+              centered
+              dialogClassName="custom-modal"
+            >
+              <Modal.Body style={{ background: "rgb(0 0 0 / 40%)" }}>
+                <Payment
+                  price={price}
+                  payModalClose={payModalClose}
+                  name={name}
+                  email={email}
+                  address={address}
+                  zipCode={zipCode}
+                  therapist={therapist}
+                  eventHours={eventHours}
+                  eventIncrement={eventIncrement}
+                  formType={formType}
+                  companyName={companyName}
+                  startTime={startTime}
+                  endTime={endTime}
+                  date={date}
+                  extra={extra}
+                  formRoles={formRoles}
+                  phoneNumber={phoneNumber}
+                />
+              </Modal.Body>
+            </Modal>
+          </div>
+          <div
+            className="Text-Info"
+            style={{ backgroundColor: "red", color: "white" }}
           >
-            <Modal.Body style={{ background: "rgb(0 0 0 / 40%)" }}>
-              <Payment
-                price={price}
-                payModalClose={payModalClose}
-                name={name}
-                email={email}
-                address={address}
-                zipCode={zipCode}
-                therapist={therapist}
-                eventHours={eventHours}
-                eventIncrement={eventIncrement}
-                formType={formType}
-                companyName={companyName}
-                startTime={startTime}
-                endTime={endTime}
-                date={date}
-                extra={extra}
-              />
-            </Modal.Body>
-          </Modal>
-        </div>
-        <div className="Text-Info" style={{backgroundColor:"red", color:"white"}}>
-          <h3>Disclaimer:</h3>
-          <p>All massages should be booked one week ahead</p>
-          <p >If you would like for a booking to be made within less than a week email </p>
-          <p style={{textAlign:"left"}}>sam@massageonthegomemphis.com</p>
+            <h3>Disclaimer:</h3>
+            <p>All massages should be booked one week ahead</p>
+            <p>
+              If you would like for a booking to be made within less than a week
+              email{" "}
+            </p>
+            <p style={{ textAlign: "left" }}>sam@massageonthegomemphis.com</p>
+          </div>
         </div>
       </div>
-    </div>
     </div>
   );
 }

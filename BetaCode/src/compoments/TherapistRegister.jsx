@@ -76,9 +76,9 @@ function TherapistRegister() {
       <div className="form-section">
         <div>
           <img src={Logo} />
-          <p>Looking to sign up as a Therapist. Fill out the form below</p>
+          <p>Looking to sign up as a Wellness Worker. Fill out the form below</p>
         </div>
-        <h2>Therapist Register</h2>
+        <h2>Wellness Worker Register</h2>
         <input
           type="text"
           placeholder="Name"
@@ -99,6 +99,28 @@ function TherapistRegister() {
           }}
           placeholder="What wellness field(s) are you certified in?"
         />
+        <input
+          type="checkbox"
+          id="option1"
+          name="options"
+          value="medical"
+          style={{height:"15px", margin:"0"}}
+          onChange={(e) => {
+            const { value, checked } = e.target;
+            setRole((prev) => {
+              if (checked) {
+                // add the role if it's not already included
+                return [...prev, value];
+              } else {
+                // remove the role if unchecked
+                return prev.filter((role) => role !== value);
+              }
+            });
+          }}
+        />
+        <label htmlFor="option1" >
+          Are you able to be Available for Medical Massages?
+        </label>
         <input
           type="text"
           placeholder="License ID"

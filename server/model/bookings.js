@@ -78,6 +78,10 @@ const bookingSchema = new mongoose.Schema({
     type: [String],
     require: true,
   },
+  phoneNumber:{
+    type: String,
+    require: true,
+  },
   // documentUrl: { 
   //   type: String,
   //   default: "",
