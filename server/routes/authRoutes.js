@@ -9,6 +9,61 @@ const axios = require("axios");
 
 const formData = require("form-data");
 const Mailgun = require("mailgun.js");
+const { google } = require("googleapis");
+
+const oauth2Client = new google.auth.OAuth2(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  process.env.GOOGLE_REDIRECT_URI // e.g. http://localhost:3001/google/callback
+);
+
+// Step 1: Redirect worker to Google
+router.get("/google", (req, res) => {
+  const { token } = req.query;
+  const url = oauth2Client.generateAuthUrl({
+    access_type: "offline", // ensures refresh_token
+    prompt: "consent",
+    scope: ["https://www.googleapis.com/auth/calendar"],
+    state:token,
+  });
+  res.redirect(url);
+});
+
+// Step 2: Handle callback from Google
+router.get("/google/callback", async (req, res) => {
+  const { code, state} = req.query;
+
+  try {
+    const { tokens } = await oauth2Client.getToken(code);
+
+    // attach user ID from session or JWT
+    const decoded = jwt.verify(state, process.env.JWT_SECRET);
+    const userId = decoded.id;
+
+    
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    user.googleTokens = tokens;
+    await user.save();
+
+    res.redirect("https://motgpayment.com/account?googleLinked=true");
+  } catch (error) {
+    console.error("Google OAuth Error:", error);
+    res.status(500).json({ error: "Failed to link Google account" });
+  }
+});
+router.get("/google/status", async (req, res) => {
+  try {
+    const decoded = jwt.verify(req.headers.authorization.split(" ")[1], process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id);
+
+    res.json({ connected: !!user.googleTokens });
+  } catch (error) {
+    res.status(401).json({ connected: false });
+  }
+});
 
 //Register User
 router.post("/register", async (req, res) => {

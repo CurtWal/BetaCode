@@ -47,6 +47,13 @@ const UserSchema = new mongoose.Schema({
     type: Number,
     default: 1,
   },
+  googleTokens: {
+  access_token: {type: String},
+  refresh_token: {type: String},
+  scope: {type: String},
+  token_type: {type: String},
+  expiry_date: {type: Number},
+},
 });
 
 module.exports = mongoose.model("Users", UserSchema);

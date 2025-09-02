@@ -6,23 +6,48 @@ const Users = require("../model/user");
 const router = express.Router();
 const formData = require("form-data");
 const Mailgun = require("mailgun.js");
+const axios = require("axios");
 
 router.put("/bookings/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body; // Get updated value from request
 
-    const updatedBooking = await bookings.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true } // Return updated document
-    );
-
-    if (!updatedBooking) {
+    const booking = await bookings.findById(id);
+    if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    res.json(updatedBooking);
+    // If ZIP code is provided and changed, update location
+    if (updateData.zipCode && updateData.zipCode !== booking.zipCode) {
+      const geoRes = await axios.get(
+        `https://api.geocod.io/v1.7/geocode?q=${updateData.zipCode}&api_key=${process.env.GEO_CODIO_API}`
+      );
+      const location = geoRes?.data?.results?.[0]?.location;
+
+      if (!location) {
+        return res
+          .status(400)
+          .json({ message: "Invalid ZIP code for geocoding" });
+      }
+
+      booking.location = {
+        lat: location.lat,
+        lng: location.lng,
+      };
+      booking.zipCode = updateData.zipCode;
+    }
+
+    // Update other fields safely
+    Object.keys(updateData).forEach((key) => {
+      if (key !== "zipCode") {
+        booking[key] = updateData[key];
+      }
+    });
+
+    await booking.save();
+
+    res.json({ message: "Booking updated successfully", booking });
   } catch (error) {
     console.error("Error updating booking:", error);
     res.status(500).json({ message: "Server error" });
@@ -35,17 +60,41 @@ router.put("/medical-bookings/:id", async (req, res) => {
     const { id } = req.params;
     const updateData = req.body; // Get updated value from request
 
-    const updatedBooking = await Medicalbookings.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true } // Return updated document
-    );
-
-    if (!updatedBooking) {
+    const booking = await Medicalbookings.findById(id);
+    if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    res.json(updatedBooking);
+    // If ZIP code is provided and changed, update location
+    if (updateData.zipCode && updateData.zipCode !== booking.zipCode) {
+      const geoRes = await axios.get(
+        `https://api.geocod.io/v1.7/geocode?q=${updateData.zipCode}&api_key=${process.env.GEO_CODIO_API}`
+      );
+      const location = geoRes?.data?.results?.[0]?.location;
+
+      if (!location) {
+        return res
+          .status(400)
+          .json({ message: "Invalid ZIP code for geocoding" });
+      }
+
+      booking.location = {
+        lat: location.lat,
+        lng: location.lng,
+      };
+      booking.zipCode = updateData.zipCode;
+    }
+
+    // Update other fields safely
+    Object.keys(updateData).forEach((key) => {
+      if (key !== "zipCode") {
+        booking[key] = updateData[key];
+      }
+    });
+
+    await booking.save();
+
+    res.json({ message: "Booking updated successfully", booking });
   } catch (error) {
     console.error("Error updating booking:", error);
     res.status(500).json({ message: "Server error" });

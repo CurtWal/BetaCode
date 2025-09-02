@@ -37,13 +37,13 @@ const ConfirmMedicalBooking = () => {
   const [formRoles, setFormRoles] = useState([]);
   const [date, setDate] = useState("");
   const [startTime, setStartTime] = useState("");
+  const [documentUrl, setDocumentUrl] = useState("");
+  const [visit, setVisit] = useState("");
   const [regularPrice, setRegularPrice] = useState(150);
   const [specialPrice, setSpecialPrice] = useState(90);
   const animatedComponents = makeAnimated();
 
-  const options = [
-    { value: "medical", label: "Medical Therapist" },
-  ];
+  const options = [{ value: "medical", label: "Medical Therapist" }];
 
   useEffect(() => {
     const fetchBooking = async () => {
@@ -52,7 +52,7 @@ const ConfirmMedicalBooking = () => {
           `${import.meta.env.VITE_VERCEL}medical-bookings/${id}`
         );
         const data = res.data;
-        //console.log(data);
+        console.log(data);
         setFullName(data.fullName || "");
         setDob(data.dob || "");
         setEmail(data.email || "");
@@ -77,6 +77,8 @@ const ConfirmMedicalBooking = () => {
         setFormRoles(data.formRoles);
         setDate(data.date || "");
         setStartTime(data.startTime || "");
+        setDocumentUrl(data.documentUrl || "");
+        setVisit(data.visit || "");
       } catch (err) {
         console.error("Failed to fetch booking", err);
       }
@@ -112,6 +114,7 @@ const ConfirmMedicalBooking = () => {
         formRoles,
         date,
         startTime,
+        visit,
       });
       alert("Booking updated!");
     } catch (err) {
@@ -562,6 +565,24 @@ const ConfirmMedicalBooking = () => {
                 as={Col}
                 xs={12}
                 md={4}
+                controlId="validationCustom18"
+              >
+                <Form.Label>Preferred Visit</Form.Label>
+                <Form.Select
+                  required
+                  name="visit"
+                  value={visit}
+                  onChange={(e) => setVisit(e.target.value)}
+                >
+                  <option value="">Select Preferred Visit</option>
+                  <option value="Office-Visit">Office</option>
+                  <option value="Home-Visit">Home Visit</option>
+                </Form.Select>
+              </Form.Group>
+              <Form.Group
+                as={Col}
+                xs={12}
+                md={4}
                 controlId="validationCustom02"
               >
                 <Form.Label>Date</Form.Label>
@@ -571,7 +592,7 @@ const ConfirmMedicalBooking = () => {
                   placeholder="Date"
                   name="date"
                   value={date}
-                  onChange={(e)=> setDate(e.target.value)}
+                  onChange={(e) => setDate(e.target.value)}
                 />
               </Form.Group>
               <Form.Group
@@ -587,8 +608,19 @@ const ConfirmMedicalBooking = () => {
                   placeholder="Time"
                   name="startTime"
                   value={startTime}
-                  onChange={(e)=> setStartTime(e.target.value)}
+                  onChange={(e) => setStartTime(e.target.value)}
                 />
+              </Form.Group>
+              <Form.Group
+                as={Col}
+                xs={12}
+                md={4}
+                controlId="validationCustom02"
+              >
+                <Form.Label>Prescription Link: </Form.Label>
+                <a href={documentUrl} target="_blank" rel="noopener noreferrer">
+                  Image
+                </a>
               </Form.Group>
             </Row>
             <Row>

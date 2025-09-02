@@ -19,6 +19,10 @@ const AssignTherapist = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  googleEventId: {
+    type: String,
+    default: null,
+  },
 });
 
 //  Add unique index to prevent duplicate assignments

@@ -3,10 +3,11 @@ import axios from "axios";
 import { Row, Col, Form, Button, InputGroup } from "react-bootstrap";
 import makeAnimated from "react-select/animated";
 import Select from "react-select";
-
+import { useLocation } from "react-router-dom";
 function UserProfiles() {
   const animatedComponents = makeAnimated();
   const [formRoles, setFormRoles] = useState([]);
+  const [connected, setConnected] = useState(false);
   const [form, setForm] = useState({
     name: "",
     address: "",
@@ -15,7 +16,7 @@ function UserProfiles() {
     email: "",
     role: formRoles,
   });
-
+  const location = useLocation();
   const userRoles = [
     "therapist",
     "group",
@@ -45,7 +46,6 @@ function UserProfiles() {
     { value: "wellness", label: "Wellness Coach" },
     { value: "ergonomics", label: "Ergonomics Specialist" },
     { value: "breathwork", label: "Breathwork Coach" },
-    
   ];
   const hasRole = (targetRoles) => {
     try {
@@ -107,6 +107,36 @@ function UserProfiles() {
   };
   const getSelectedOptions = (selectedValues) => {
     return options.filter((opt) => selectedValues.includes(opt.value));
+  };
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      fetch(`${import.meta.env.VITE_VERCEL}google/status`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => res.json())
+        .then((data) => setConnected(data.connected));
+    }
+  }, []);
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("googleLinked") === "true") {
+      setConnected(true);
+      alert("Google Calendar connected successfully!");
+    }
+  }, [location]);
+  const handleConnect = () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("You must log in first!");
+      return;
+    }
+    window.location.href = `${
+      import.meta.env.VITE_VERCEL
+    }google?token=${token}`;
+  };
+  const alrConnected = () => {
+    alert("You are already connected.");
   };
   return (
     <div class="Main-Content">
@@ -231,6 +261,19 @@ function UserProfiles() {
                 <Button variant="primary" type="submit" className="mt-4">
                   Update Account
                 </Button>
+                <button
+                  type="button"
+                  onClick={!connected ? handleConnect : alrConnected}
+                  className={`!text-white font-semibold ${
+                    connected
+                      ? "bg-green-500 hover:bg-green-600 cursor-default"
+                      : "hover:!text-red-500"
+                  }`}
+                >
+                  {connected
+                    ? "Connected to Calendar ✅"
+                    : "Connect Google Calendar"}
+                </button>
               </Form>
             )}
           </div>

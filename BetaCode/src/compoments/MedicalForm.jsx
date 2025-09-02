@@ -12,6 +12,8 @@ import makeAnimated from "react-select/animated";
 function MedicalForm() {
   const animatedComponents = makeAnimated();
   const [worker, setWorker] = useState([]);
+  const [selectedFile, setSelectedFile] = useState(null);
+  //const [documentUrl, setDocumentUrl] = useState("");
   const [formData, setFormData] = useState({
     fullName: "",
     dob: "",
@@ -39,7 +41,10 @@ function MedicalForm() {
     formRoles: ["medical"],
     date: "",
     startTime: "",
+    visit: "",
   });
+  const prescriptionOnFileIsTrue = formData.prescriptionOnFile;
+
   const options = [
     { value: "therapist", label: "Massage Therapist" },
     { value: "medical", label: "Medical Therapist" },
@@ -60,14 +65,41 @@ function MedicalForm() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    console.log(formData)
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      let documentUrl = "";
+      if (selectedFile) {
+        const formDatas = new FormData();
+        formDatas.append("file", selectedFile);
+        formDatas.append("upload_preset", "Testing"); // Your Cloudinary preset
+        formDatas.append("folder", "motg_documents");
+
+        try {
+         
+          const response = await axios.post(
+            "https://api.cloudinary.com/v1_1/doaympsks/auto/upload",
+            formDatas
+          );
+          documentUrl = response.data.secure_url;
+          
+          console.log("Cloudinary URL:", documentUrl);
+        } catch (err) {
+          console.error("Cloudinary upload failed:", err);
+          alert("Upload failed. Try again.");
+          return;
+        }
+      } 
+      const finalData = {
+      ...formData,
+      documentUrl, // add new field
+    };
       await axios.post(
         `${import.meta.env.VITE_VERCEL}new-medicalbooking`,
-        formData
+        finalData
       );
       alert("Medical Booking email sent.");
     } catch (err) {
@@ -435,7 +467,24 @@ function MedicalForm() {
                     as={Col}
                     xs={12}
                     md={4}
-                    controlId="validationCustom02"
+                    controlId="validationCustom18"
+                  >
+                    <Form.Label>Preferred Visit</Form.Label>
+                    <Form.Select
+                      required
+                      name="visit"
+                      onChange={handleChange}
+                    >
+                      <option value="">Select Preferred Visit</option>
+                      <option value="Office-Visit">Office</option>
+                      <option value="Home-Visit">Home Visit</option>
+                    </Form.Select>
+                  </Form.Group>
+                  <Form.Group
+                    as={Col}
+                    xs={12}
+                    md={4}
+                    controlId="validationCustom21"
                   >
                     <Form.Label>Date</Form.Label>
                     <Form.Control
@@ -450,7 +499,7 @@ function MedicalForm() {
                     as={Col}
                     xs={12}
                     md={4}
-                    controlId="validationCustom02"
+                    controlId="validationCustom22"
                   >
                     <Form.Label>Start Time</Form.Label>
                     <Form.Control
@@ -460,7 +509,24 @@ function MedicalForm() {
                       name="startTime"
                       onChange={handleChange}
                     />
-                  </Form.Group>
+                  </Form.Group> 
+                   
+                  {prescriptionOnFileIsTrue == "Yes" ?(
+                    <>
+                    <Form.Group
+                as={Col}
+                controlId="validationCustom23"
+                style={{ marginTop: "6%" }}
+              >
+                <p>Prescription Information</p>
+              </Form.Group>
+              <input
+                type="file"
+                onChange={(e) => setSelectedFile(e.target.files[0])}
+              />
+              </>
+                  ) : null}
+                  
                 </Row>
 
                 <Row className="mb-3">
@@ -468,7 +534,7 @@ function MedicalForm() {
                     as={Col}
                     xs={12}
                     md={4}
-                    controlId="validationCustom21"
+                    controlId="validationCustom24"
                   >
                     <Form.Label>Signature</Form.Label>
                     <Form.Control
@@ -479,11 +545,12 @@ function MedicalForm() {
                       onChange={handleChange}
                     />
                   </Form.Group>
+                  
                   <Form.Group
                     as={Col}
                     xs={12}
                     md={4}
-                    controlId="validationCustom22"
+                    controlId="validationCustom25"
                   >
                     <Form.Label>Date</Form.Label>
                     <Form.Control

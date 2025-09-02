@@ -30,11 +30,10 @@ import ConfirmMedicalBooking from "./compoments/confirmMedicalBooking";
 import { jwtDecode } from "jwt-decode";
 import axios from "axios";
 function Layout() {
-window.onscroll = () => {
+  window.onscroll = () => {
     let header = document.querySelector(".header");
     header.classList.toggle("sticky", window.scrollY > 100);
   };
-
 
   const location = useLocation();
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
@@ -54,9 +53,7 @@ window.onscroll = () => {
     "ergonomics",
     "breathwork",
   ];
-  const medicalRole = [
-    "medical"
-  ]
+  const medicalRole = ["medical"];
 
   const checkFreeHourStatus = async () => {
     try {
@@ -152,7 +149,6 @@ window.onscroll = () => {
     <>
       <div>
         <header class="header">
-          
           <nav class="navbar">
             <h4>MOTG Wellbeing</h4>
             <Link to="/" className="!text-black hover:!text-red-500">
@@ -187,20 +183,23 @@ window.onscroll = () => {
             )}
             {hasRole(userRoles) && (
               <>
-              <Link to="/bookings" className="!text-black hover:!text-red-500">
-                Bookings
-              </Link>
-                </>
+                <Link
+                  to="/bookings"
+                  className="!text-black hover:!text-red-500"
+                >
+                  Bookings
+                </Link>
+              </>
             )}
             {hasRole(medicalRole) && (
               <>
-              <Link
+                <Link
                   to="/medical-bookings"
                   className="!text-black hover:!text-red-500"
                 >
                   Medical Bookings
                 </Link>
-                </>
+              </>
             )}
 
             {!isLoggedIn && (
@@ -235,17 +234,16 @@ window.onscroll = () => {
               </>
             )}
             {isLoggedIn && (
-              <div style={{display:"inline-flex"}}>
+              <div style={{ display: "inline-flex" }}>
                 <Link to="/account" className="!text-black hover:!text-red-500">
-                Account
-              </Link>
-              <p
-                onClick={logout}
-                className="!text-black hover:!text-red-500 cursor-pointer font-semibold w-15"
-              >
-                Logout
-              </p>
-              
+                  Account
+                </Link>
+                <p
+                  onClick={logout}
+                  className="!text-black hover:!text-red-500 cursor-pointer font-semibold w-15"
+                >
+                  Logout
+                </p>
               </div>
             )}
           </nav>
@@ -265,10 +263,7 @@ window.onscroll = () => {
             path="/login"
             element={<Login onLogin={() => setIsLoggedIn(true)} />}
           />
-          <Route
-            path="/account"
-            element={<UserProfiles />}
-          />
+          <Route path="/account" element={<UserProfiles />} />
           <Route
             path="/bookings"
             element={
@@ -316,11 +311,17 @@ window.onscroll = () => {
           <Route path="/special-form" element={<SpecialForm />} />
           <Route path="/therapistregister" element={<TherapistRegister />} />
           <Route path="/confirm-booking/:id" element={<ConfirmBooking />} />
-          <Route path="/confirm-medicalbooking/:id" element={<ConfirmMedicalBooking />} />
+          <Route
+            path="/confirm-medicalbooking/:id"
+            element={<ConfirmMedicalBooking />}
+          />
           <Route path="/forgot-password" element={<RequestReset />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/medical-form" element={<MedicalForm />} />
-          <Route path="/soapnotes/:bookingId/:therapistId" element={<SoapNotes />} />
+          <Route
+            path="/soapnotes/:bookingId/:therapistId"
+            element={<SoapNotes />}
+          />
         </Routes>
       </div>
     </>

@@ -39,7 +39,7 @@ function MedicalBookings() {
   const [specialPrice, setSpecialPrice] = useState(90);
   const [regularPrice, setRegularPrice] = useState(150);
   const [formRoles, setFormRoles] = useState([]);
-const [eventHours, setEventHours] = useState("")
+  const [eventHours, setEventHours] = useState("");
   const [fullName, setFullName] = useState("");
   const [dob, setDob] = useState("");
   const [phone, setPhone] = useState("");
@@ -56,24 +56,12 @@ const [eventHours, setEventHours] = useState("")
   const [medications, setMedications] = useState("");
   const [pressurePreference, setPressurePreference] = useState("");
   const [sensitiveAreas, setSensitiveAreas] = useState("");
+  const [visit, setVisit] = useState("");
+  const [documentUrl, setDocumentUrl] = useState("");
   const [allergies, setAllergies] = useState("");
   const animatedComponents = makeAnimated();
 
-  const options = [
-    { value: "therapist", label: "Massage Therapist" },
-    { value: "personal", label: "Personal Trainer" },
-    { value: "yoga", label: "Yoga Instructor" },
-    { value: "group", label: "Group Fitness Instructor" },
-    { value: "nutritionist", label: "Nutritionist" },
-    { value: "pilates", label: "Pilates Instructor" },
-    { value: "stretch", label: "Stretch Therapist" },
-    { value: "cpr", label: "CPR Instructor" },
-    { value: "meditation", label: "Meditation Coach" },
-    { value: "zumba", label: "Zumba Instructor" },
-    { value: "wellness", label: "Wellness Coach" },
-    { value: "ergonomics", label: "Ergonomics Specialist" },
-    { value: "breathwork", label: "Breathwork Coach" },
-  ];
+  const options = [{ value: "medical", label: "Medical Therapist" }];
 
   const checkLocationDistance = (lat1, lon1, lat2, lon2, maxMiles) => {
     const toRad = (deg) => (deg * Math.PI) / 180;
@@ -514,6 +502,7 @@ const [eventHours, setEventHours] = useState("")
         `${import.meta.env.VITE_VERCEL}medical-bookings/${id}`
       );
       const data = res.data;
+      console.log(data);
       setFullName(data.fullName || "");
       setDob(data.dob || "");
       setEmail(data.email || "");
@@ -537,7 +526,8 @@ const [eventHours, setEventHours] = useState("")
       setFormType(data.formType || "");
       setFormRoles(data.formRoles || []);
       setDate(data.date || "");
-      setStartTime(data.startTime || "")
+      setStartTime(data.startTime || "");
+      setVisit(data.visit || "");
     } catch (err) {
       console.error("Failed to fetch booking", err);
     }
@@ -663,9 +653,7 @@ const [eventHours, setEventHours] = useState("")
                       <li>Pressure Preference: {booking.pressurePreference}</li>
                       <li>Sensitive Areas: {booking.sensitiveAreas}</li>
                       <li>Allergies: {booking.allergies}</li>
-                      <li>Date: {booking.date}</li>
-                      <li>Start Time: {booking.startTime}</li>
-
+                      <li>Visit Type: {booking.visit}</li>
                       {booking.documentUrl && (
                         <li>
                           <a
@@ -677,6 +665,8 @@ const [eventHours, setEventHours] = useState("")
                           </a>
                         </li>
                       )}
+                      <li>Date: {booking.date}</li>
+                      <li>Start Time: {booking.startTime}</li>
 
                       <div className="button-container">
                         <Button onClick={() => handleShow(booking._id)}>
@@ -1112,6 +1102,32 @@ const [eventHours, setEventHours] = useState("")
                                             setFormRoles(values);
                                           }}
                                         />
+                                      </Form.Group>
+                                      <Form.Group
+                                        as={Col}
+                                        xs={12}
+                                        md={4}
+                                        controlId="validationCustom18"
+                                      >
+                                        <Form.Label>Preferred Visit</Form.Label>
+                                        <Form.Select
+                                          required
+                                          name="visit"
+                                          value={visit}
+                                          onChange={(e) =>
+                                            setVisit(e.target.value)
+                                          }
+                                        >
+                                          <option value="">
+                                            Select Preferred Visit
+                                          </option>
+                                          <option value="Office-Visit">
+                                            Office
+                                          </option>
+                                          <option value="Home-Visit">
+                                            Home Visit
+                                          </option>
+                                        </Form.Select>
                                       </Form.Group>
                                       <Form.Group
                                         as={Col}

@@ -365,7 +365,8 @@ router.post("/new-medicalbooking", async (req, res) => {
       formRoles,
       date,
       startTime,
-      //documentUrl,
+      documentUrl,
+      visit
     } = req.body;
 
     const geoRes = await axios.get(
@@ -403,7 +404,8 @@ router.post("/new-medicalbooking", async (req, res) => {
       therapist: 1,
       date,
       startTime,
-      //documentUrl,
+      documentUrl,
+      visit
     });
     const confirmationLink = `https://motgpayment.com/confirm-medicalbooking/${newBooking._id}`;
 
@@ -428,21 +430,23 @@ router.post("/new-medicalbooking", async (req, res) => {
             <p><strong>Address:</strong> ${newBooking.address}</p>
             <p><strong>ZipCode:</strong> ${newBooking.zipCode}</p>
             <p><strong>Phone Number:</strong> ${newBooking.phone}</p>
-            <p><strong>EmergencyContact:</strong> ${newBooking.emergencyContact}</p>
-            <p><strong>InsuranceProvider:</strong> ${newBooking.insuranceProvider}</p>
-            <p><strong>MemberId:</strong> ${newBooking.memberId}</p>
+            <p><strong>Emergency Contact:</strong> ${newBooking.emergencyContact}</p>
+            <p><strong>Insurance Provider:</strong> ${newBooking.insuranceProvider}</p>
+            <p><strong>Member Id:</strong> ${newBooking.memberId}</p>
             <p><strong>FSAProvider:</strong> ${newBooking.fsaProvider}</p>
-            <p><strong>PhysicianContact:</strong> ${newBooking.physicianContact}</p>
-            <p><strong>PrescriptionOnFile:</strong> ${newBooking.prescriptionOnFile}</p>
-            <p><strong>TreatmentGoal:</strong> ${newBooking.treatmentGoal}</p>
-            <p><strong>UnderPhysicianCare:</strong> ${newBooking.underPhysicianCare}</p>
+            <p><strong>Physician Contact:</strong> ${newBooking.physicianContact}</p>
+            <p><strong>Prescription On File:</strong> ${newBooking.prescriptionOnFile}</p>
+            <p><strong>Prescription Image Link:</strong> ${newBooking.documentUrl}</p>
+            <p><strong>Treatment Goal:</strong> ${newBooking.treatmentGoal}</p>
+            <p><strong>Under Physician Care:</strong> ${newBooking.underPhysicianCare}</p>
             <p><strong>Surgeries:</strong> ${newBooking.surgeries}</p>
             <p><strong>Medications:</strong> ${newBooking.medications}</p>
-            <p><strong>PressurePreference:</strong> ${newBooking.pressurePreference}</p>
-            <p><strong>SensitiveAreas:</strong> ${newBooking.sensitiveAreas}</p>
+            <p><strong>Pressure Preference:</strong> ${newBooking.pressurePreference}</p>
+            <p><strong>Sensitive Areas:</strong> ${newBooking.sensitiveAreas}</p>
             <p><strong>Allergies:</strong> ${newBooking.allergies}</p>
+            <p><strong>Visit Type:</strong> ${newBooking.visit}</p>
             <p><strong>Signature:</strong> ${newBooking.signature}</p>
-            <p><strong>SignatureDate:</strong> ${newBooking.signatureDate}</p>
+            <p><strong>Signature Date:</strong> ${newBooking.signatureDate}</p>
             <br />
             <a href="${confirmationLink}" style="display: inline-block; padding: 10px 20px; font-size: 16px; color: white; background: #007bff; text-decoration: none; border-radius: 5px;">Mark Booking as Ready / Update</a>
           `,

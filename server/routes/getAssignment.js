@@ -8,7 +8,7 @@ const User = require("../model/user"); // Assuming User model contains therapist
 const nodemailer = require("nodemailer");
 const axios = require("axios");
 const sgMail = require("@sendgrid/mail");
-
+const { google } = require("googleapis");
 const formData = require("form-data");
 const Mailgun = require("mailgun.js");
 
@@ -252,10 +252,61 @@ router.post("/assign-therapist", async (req, res) => {
     //   }
     // }
 
+    const user = await User.findById(therapistId);
+    // 📅 Add to Google Calendar for therapist
+    console.log(user?.googleTokens?.refresh_token)
+    if (user?.googleTokens?.refresh_token) {
+      const oauth2Client = new google.auth.OAuth2(
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET,
+        process.env.GOOGLE_REDIRECT_URI // e.g. http://localhost:5000/google/callback
+      );
+
+      oauth2Client.setCredentials({
+        refresh_token: user.googleTokens.refresh_token,
+      });
+
+      const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+
+      const event = {
+        summary: `Massage Booking - ${booking.companyName}`,
+        location: booking.address,
+        description: booking.extra || "Massage booking",
+        start: {
+          dateTime: new Date(
+            `${booking.date}T${booking.startTime}:00`
+          ).toISOString(),
+          timeZone: "America/Chicago", // adjust timezone
+        },
+        end: {
+          dateTime: new Date(
+            `${booking.date}T${booking.endTime}:00`
+          ).toISOString(),
+          timeZone: "America/Chicago",
+        },
+      };
+
+      try {
+        const createdEvent = await calendar.events.insert({
+          calendarId: "primary",
+          resource: event,
+        });
+
+        // ✅ Save eventId in assignment
+        assignment.googleEventId = createdEvent.data.id;
+        await assignment.save();
+        console.log(`✅ Event created for therapist ${therapistId}`);
+      } catch (err) {
+        console.error(
+          "❌ Failed to create Google Calendar event:",
+          err.message
+        );
+      }
+    }
     res.json({
       message: "Therapist assigned successfully",
       assignment,
-      remainingSpots: booking.therapist - (assignedCount + 1),
+      // remainingSpots: booking.therapist - (assignedCount + 1),
     });
   } catch (error) {
     console.error("Error assigning therapist:", error);
@@ -304,9 +355,7 @@ router.post("/send-email-on-spot-fill", async (req, res) => {
     try {
       const emailData = {
         from: process.env.EMAIL_USER, // Must be a verified Mailgun sender
-        to: [
-          "hello@massageonthegomemphis.com", "sam@massageonthegomemphis.com"
-        ], // Recipient email
+        to: ["hello@massageonthegomemphis.com", "sam@massageonthegomemphis.com"], // Recipient email
         subject: "All Wellness Spots Have Been Filled!",
         html: `<h2>All Wellness Spots Have Been Filled!</h2>
             <p>Good news! All wellness spots for the booking have been successfully filled.</p>
@@ -395,6 +444,28 @@ router.post("/leave-booking", async (req, res) => {
         .json({ message: "Therapist not assigned to this booking" });
     }
 
+    const user = await User.findById(therapistId);
+    if (assignment?.googleEventId && user?.googleTokens?.refresh_token) {
+      const oauth2Client = new google.auth.OAuth2(
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET,
+        process.env.GOOGLE_REDIRECT_URI // e.g. http://localhost:5000/google/callback
+      );
+      oauth2Client.setCredentials({
+        refresh_token: user.googleTokens.refresh_token,
+      });
+
+      const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+      await calendar.events.delete({
+        calendarId: "primary",
+        eventId: assignment.googleEventId,
+      });
+
+      console.log(
+        `🗑️ Deleted event ${assignment.googleEventId} for therapist ${therapistId}`
+      );
+    }
+    
     // Fetch the booking details
     const booking = await Booking.findById(bookingId);
     if (!booking) {
@@ -588,10 +659,7 @@ router.post("/leave-booking", async (req, res) => {
       try {
         const emailData = {
           from: process.env.EMAIL_USER, // Must be a verified Mailgun sender
-          to: [
-            "hello@massageonthegomemphis.com",
-            "sam@massageonthegomemphis.com",
-          ], // Recipient email
+          to: ["hello@massageonthegomemphis.com", "sam@massageonthegomemphis.com"], // Recipient email
           subject: "Wellness Worker Has Left a Booking",
           html: `<h4>Name: ${therapist.username}</h4>
           <h4>Email: ${therapist.email}</h4>
@@ -657,6 +725,30 @@ router.post("/admin-remove-therapist", async (req, res) => {
     const remainingAssignments = await TherapistAssignment.find({ bookingId });
     const remainingCount = remainingAssignments.length;
 
+    const user = await User.findById(therapistId);
+    console.log(" EventId: ", assignment?.googleEventId)
+    console.log("Token: ",user?.googleTokens?.refresh_token)
+
+    if (assignment?.googleEventId && user?.googleTokens?.refresh_token) {
+      const oauth2Client = new google.auth.OAuth2(
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET,
+        process.env.GOOGLE_REDIRECT_URI // e.g. http://localhost:5000/google/callback
+      );
+      oauth2Client.setCredentials({
+        refresh_token: user.googleTokens.refresh_token,
+      });
+
+      const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+      await calendar.events.delete({
+        calendarId: "primary",
+        eventId: assignment.googleEventId,
+      });
+
+      console.log(
+        `🗑️ Deleted event ${assignment.googleEventId} for therapist ${therapistId}`
+      );
+    }
     res.json({
       message: "Therapist successfully removed from the booking.",
       remainingSpots: remainingCount,
@@ -704,6 +796,57 @@ router.post("/assign-medical-therapist", async (req, res) => {
     const assignment = new MedicalAssignment({ bookingId, therapistId });
     await assignment.save();
 
+    const user = await User.findById(therapistId);
+    // 📅 Add to Google Calendar for therapist
+    console.log(user?.googleTokens?.refresh_token)
+    if (user?.googleTokens?.refresh_token) {
+      const oauth2Client = new google.auth.OAuth2(
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET,
+        process.env.GOOGLE_REDIRECT_URI // e.g. http://localhost:5000/google/callback
+      );
+
+      oauth2Client.setCredentials({
+        refresh_token: user.googleTokens.refresh_token,
+      });
+
+      const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+
+      const event = {
+        summary: `Massage Booking - ${booking.companyName}`,
+        location: booking.address,
+        description: booking.extra || "Massage booking",
+        start: {
+          dateTime: new Date(
+            `${booking.date}T${booking.startTime}:00`
+          ).toISOString(),
+          timeZone: "America/Chicago", // adjust timezone
+        },
+        end: {
+          dateTime: new Date(
+            `${booking.date}T${booking.endTime}:00`
+          ).toISOString(),
+          timeZone: "America/Chicago",
+        },
+      };
+
+      try {
+        const createdEvent = await calendar.events.insert({
+          calendarId: "primary",
+          resource: event,
+        });
+
+        // ✅ Save eventId in assignment
+        assignment.googleEventId = createdEvent.data.id;
+        await assignment.save();
+        console.log(`✅ Event created for therapist ${therapistId}`);
+      } catch (err) {
+        console.error(
+          "❌ Failed to create Google Calendar event:",
+          err.message
+        );
+      }
+    }
     res.json({
       message: "Therapist assigned successfully",
       assignment,
@@ -757,7 +900,8 @@ router.post("/send-medical-email-on-spot-fill", async (req, res) => {
       const emailData = {
         from: process.env.EMAIL_USER, // Must be a verified Mailgun sender
         to: [
-          "hello@massageonthegomemphis.com", "sam@massageonthegomemphis.com"
+          "hello@massageonthegomemphis.com",
+          "sam@massageonthegomemphis.com",
         ], // Recipient email
         subject: "All Wellness Spots Have Been Filled!",
         html: `<h2>All Wellness Spots Have Been Filled!</h2>
@@ -804,7 +948,27 @@ router.post("/leave-medical-booking", async (req, res) => {
         .status(404)
         .json({ message: "Therapist not assigned to this booking" });
     }
+    const user = await User.findById(therapistId);
+    if (assignment?.googleEventId && user?.googleTokens?.refresh_token) {
+      const oauth2Client = new google.auth.OAuth2(
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET,
+        process.env.GOOGLE_REDIRECT_URI // e.g. http://localhost:5000/google/callback
+      );
+      oauth2Client.setCredentials({
+        refresh_token: user.googleTokens.refresh_token,
+      });
 
+      const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+      await calendar.events.delete({
+        calendarId: "primary",
+        eventId: assignment.googleEventId,
+      });
+
+      console.log(
+        `🗑️ Deleted event ${assignment.googleEventId} for therapist ${therapistId}`
+      );
+    }
     // Fetch the booking details
     const booking = await MedicalBooking.findById(bookingId);
     if (!booking) {
@@ -968,6 +1132,27 @@ router.post("/admin-remove-medical-therapist", async (req, res) => {
     const remainingAssignments = await MedicalAssignment.find({ bookingId });
     const remainingCount = remainingAssignments.length;
 
+    const user = await User.findById(therapistId);
+    if (assignment?.googleEventId && user?.googleTokens?.refresh_token) {
+      const oauth2Client = new google.auth.OAuth2(
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET,
+        process.env.GOOGLE_REDIRECT_URI // e.g. http://localhost:5000/google/callback
+      );
+      oauth2Client.setCredentials({
+        refresh_token: user.googleTokens.refresh_token,
+      });
+
+      const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+      await calendar.events.delete({
+        calendarId: "primary",
+        eventId: assignment.googleEventId,
+      });
+
+      console.log(
+        `🗑️ Deleted event ${assignment.googleEventId} for therapist ${therapistId}`
+      );
+    }
     res.json({
       message: "Therapist successfully removed from the booking.",
       remainingSpots: remainingCount,

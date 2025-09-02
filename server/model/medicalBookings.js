@@ -128,6 +128,14 @@ const medicalBookingSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  visit:{
+    type: String,
+    required: true,
+  },
+    documentUrl: { 
+    type: String,
+    default: "",
+   },
 });
 
 const medicalModel = mongoose.model("MedicalBookings", medicalBookingSchema);
