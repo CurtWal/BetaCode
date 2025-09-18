@@ -52,6 +52,8 @@ function Layout() {
     "wellness",
     "ergonomics",
     "breathwork",
+    "yoga",
+    "personal",
   ];
   const medicalRole = ["medical"];
 
@@ -282,6 +284,8 @@ function Layout() {
                   "wellness",
                   "ergonomics",
                   "breathwork",
+                  "yoga",
+                  "personal",
                 ]}
               />
             }
@@ -304,6 +308,7 @@ function Layout() {
                   "wellness",
                   "ergonomics",
                   "breathwork",
+                  "medical",
                 ]}
               />
             }

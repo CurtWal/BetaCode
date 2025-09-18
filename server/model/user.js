@@ -16,7 +16,24 @@ const UserSchema = new mongoose.Schema({
   },
   role: {
     type: [String],
-    enum: ["admin", "user", "therapist", "personal", "yoga", "group", "nutritionist", "pilates", "stretch", "cpr", "meditation", "zumba", "wellness", "ergonomics", "breathwork","medical"], 
+    enum: [
+      "admin",
+      "user",
+      "therapist",
+      "personal",
+      "yoga",
+      "group",
+      "nutritionist",
+      "pilates",
+      "stretch",
+      "cpr",
+      "meditation",
+      "zumba",
+      "wellness",
+      "ergonomics",
+      "breathwork",
+      "medical",
+    ],
     default: "user",
   },
   licenseId: {
@@ -35,7 +52,7 @@ const UserSchema = new mongoose.Schema({
     lat: { type: Number },
     lng: { type: Number },
   },
-  address:{
+  address: {
     type: String,
     default: "",
   },
@@ -48,12 +65,12 @@ const UserSchema = new mongoose.Schema({
     default: 1,
   },
   googleTokens: {
-  access_token: {type: String},
-  refresh_token: {type: String},
-  scope: {type: String},
-  token_type: {type: String},
-  expiry_date: {type: Number},
-},
+    access_token: { type: String },
+    refresh_token: { type: String },
+    scope: { type: String },
+    token_type: { type: String },
+    expiry_date: { type: Number },
+  },
 });
 
 module.exports = mongoose.model("Users", UserSchema);
