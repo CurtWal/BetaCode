@@ -30,6 +30,7 @@ const ConfirmBooking = () => {
   const [specialPrice, setSpecialPrice] = useState(90);
   const [formRoles, setFormRoles] = useState([]);
   const animatedComponents = makeAnimated();
+  const [services, setServices] = useState([]);
 
   const options = [
     { value: "therapist", label: "Massage Therapist" },
@@ -59,23 +60,70 @@ const ConfirmBooking = () => {
         setEmail(data.email || "");
         setAddress(data.address || "");
         setZipCode(data.zipCode || "");
-        setTherapist(data.therapist || 1);
-        setEventHours(data.eventHours || "2");
-        setEventIncrement(data.eventIncrement || "10");
         setDate(data.date?.split("T")[0] || "");
         setStartTime(data.startTime || "");
         setEndTime(data.endTime || "");
         setExtra(data.extra || "");
-        setPrice(data.price || 0);
+        setPrice(data.totalPrice || 0);
         setFormType(data.formType || "");
         setFormRoles(data.formRoles || []);
         setPhoneNumber(data.phoneNumber || "");
+        setServices(data.services || []);
       } catch (err) {
         console.error("Failed to fetch booking", err);
       }
     };
     fetchBooking();
   }, [id]);
+
+  const updateService = (index, field, value) => {
+    const updated = [...services];
+    updated[index][field] = value;
+
+    // Recalculate each service's price (same logic as booking form)
+    const recalculated = updated.map((s) => {
+      const workers = Number(s.workers || 0);
+      const hours = Number(s.hours || 0);
+
+      const unitPrice =
+        formType === "special" ? Number(specialPrice) : Number(regularPrice);
+
+      const wholeHours = Math.floor(hours);
+      const isHalfHour = hours % 1 !== 0;
+
+      const basePrice = workers * unitPrice * wholeHours;
+      const halfHourPrice = isHalfHour ? workers * unitPrice * 0.5 : 0;
+
+      return {
+        ...s,
+        price: basePrice + halfHourPrice,
+      };
+    });
+
+    setServices(recalculated);
+
+    // Total = sum of all service prices
+    const newTotal = recalculated.reduce((sum, s) => sum + (s.price || 0), 0);
+    setPrice(newTotal);
+  };
+
+  const addService = () => {
+    setServices([
+      ...services,
+      { role: "", workers: 1, hours: 1, increment: 10, price: 0 },
+    ]);
+  };
+
+  const removeService = (index) => {
+    const updated = services.filter((_, i) => i !== index);
+    setServices(updated);
+
+    const newTotal = updated.reduce(
+      (sum, s) => sum + (parseFloat(s.price) || 0),
+      0
+    );
+    setPrice(newTotal);
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -87,16 +135,13 @@ const ConfirmBooking = () => {
         email,
         address,
         zipCode,
-        therapist,
-        eventHours,
-        eventIncrement,
         date,
         startTime,
         endTime,
         extra,
-        price,
+        services,
+        totalPrice: price,
         formType,
-        formRoles,
         phoneNumber,
       });
       alert("Booking updated!");
@@ -124,6 +169,7 @@ const ConfirmBooking = () => {
         `${import.meta.env.VITE_VERCEL}admin/booking-prices`
       );
       setRegularPrice(response.data.regularBooking);
+      //console.log("Regular Price:", response.data.regularBooking);
       setSpecialPrice(response.data.specialBooking);
     } catch (error) {
       console.error("Error fetching booking prices:", error);
@@ -132,31 +178,64 @@ const ConfirmBooking = () => {
   useEffect(() => {
     getBookingPrices();
   }, []);
-  useEffect(() => {
-    if (formType == "regular" && eventHours) {
-      const hours = parseFloat(eventHours); // Convert to a number
-      const wholeHours = Math.floor(hours); // Full hours
-      const isHalfHour = hours % 1 !== 0; // Check if there's a half-hour
+  // useEffect(() => {
+  //   // if no formType or no services, show 0 (or you can fallback to previous saved price)
+  //   if (!formType || services.length === 0) {
+  //     setPrice(0);
+  //     return;
+  //   }
 
-      const basePrice = therapist * regularPrice * wholeHours; // Price for full hours
-      const halfHourPrice = isHalfHour ? therapist * (regularPrice * 0.5) : 0; // Half-hour price
+  //   const newTotal = services.reduce((sum, s) => {
+  //     const hours = parseFloat(s.hours) || 0;
+  //     const workers = parseFloat(s.workers) || 1;
 
-      setPrice(basePrice + halfHourPrice);
-    } else if (formType == "special" && eventHours) {
-      const hours = parseFloat(eventHours); // Convert to a number
-      const wholeHours = Math.floor(hours); // Full hours
-      const isHalfHour = hours % 1 !== 0; // Check if there's a half-hour
+  //     // per-service stored unitPrice takes precedence
+  //     const unitPrice =
+  //       s.unitPrice != null
+  //         ? parseFloat(s.unitPrice)
+  //         : formType === "special"
+  //         ? specialPrice
+  //         : regularPrice;
 
-      const basePrice = therapist * specialPrice * wholeHours; // Price for full hours
-      const halfHourPrice = isHalfHour ? therapist * (specialPrice * 0.5) : 0; // Half-hour price
+  //     // if the service has a stored subtotal `s.price`, it likely reflects the original saved amount.
+  //     // Use it if present and the admin hasn't changed fields; otherwise compute from hours * workers * unitPrice.
+  //     const svcSubtotal =
+  //       s.price != null ? parseFloat(s.price) : hours * unitPrice * workers;
 
-      setPrice(basePrice + halfHourPrice);
-    }
-  }, [therapist, eventHours, regularPrice, specialPrice]);
+  //     return sum + svcSubtotal;
+  //   }, 0);
+
+  //   // round to 2 decimals
+  //   setPrice(Math.round(newTotal * 100) / 100);
+  // }, [services, formType, regularPrice, specialPrice]);
 
   const getSelectedOptions = (selectedValues) => {
     return options.filter((opt) => selectedValues.includes(opt.value));
   };
+
+  // useEffect(() => {
+  //   if (formType === "regular" && eventHours) {
+
+  //     const hours = parseFloat(eventHours); // Convert to a number
+  //     const wholeHours = Math.floor(hours); // Full hours
+  //     const isHalfHour = hours % 1 !== 0; // Check if there's a half-hour
+
+  //     const basePrice = therapist * regularPrice * wholeHours; // Price for full hours
+  //     const halfHourPrice = isHalfHour ? therapist * (regularPrice * 0.5) : 0; // Half-hour price
+
+  //     setPrice(basePrice + halfHourPrice);
+  //   } else if (formType === "special" && eventHours) {
+
+  //     const hours = parseFloat(eventHours); // Convert to a number
+  //     const wholeHours = Math.floor(hours); // Full hours
+  //     const isHalfHour = hours % 1 !== 0; // Check if there's a half-hour
+
+  //     const basePrice = therapist * specialPrice * wholeHours; // Price for full hours
+  //     const halfHourPrice = isHalfHour ? therapist * (specialPrice * 0.5) : 0; // Half-hour price
+
+  //     setPrice(basePrice + halfHourPrice);
+  //   }
+  // }, [therapist, eventHours, regularPrice, specialPrice]);
   return (
     <div class="Main-Content">
       <div className="Grid-Container">
@@ -296,89 +375,28 @@ const ConfirmBooking = () => {
                   name="roles"
                   options={options}
                   onChange={(selectedOptions) => {
-                    const values = selectedOptions.map(
-                      (option) => option.value
-                    );
-                    setFormRoles(values);
-                    //console.log(formRoles);
+                    const roles = selectedOptions.map((o) => o.value);
+
+                    // build services array directly
+                    const updatedServices = roles.map((role) => {
+                      const existing = services.find((s) => s.role === role);
+                      return (
+                        existing || {
+                          role,
+                          workers: 1,
+                          hours: 1,
+                          increment: 10,
+                          price: 0,
+                        }
+                      );
+                    });
+
+                    setServices(updatedServices);
                   }}
-                  value={getSelectedOptions(formRoles)}
+                  value={getSelectedOptions(services.map((s) => s.role))}
                 />
               </Form.Group>
-              <Form.Group
-                as={Col}
-                xs={12}
-                md={4}
-                controlId="validationCustom05"
-              >
-                <Form.Label># of Workers</Form.Label>
-                <Form.Control
-                  type="number"
-                  placeholder="Number of Workers"
-                  value={therapist}
-                  onChange={(e) => setTherapist(e.target.value)}
-                  min="1"
-                  required
-                />
-                <Form.Control.Feedback type="invalid">
-                  Please provide a valid Worker Number.
-                </Form.Control.Feedback>
-              </Form.Group>
 
-              <Form.Group
-                as={Col}
-                xs={12}
-                md={4}
-                controlId="validationCustom06"
-              >
-                <Form.Label>Event Hours</Form.Label>
-                <Form.Select
-                  value={eventHours}
-                  onChange={(e) => setEventHours(e.target.value)}
-                  required
-                >
-                  <option value="2">2 Hours</option>
-                  <option value="2.5">2 Hours 30 Minutes</option>
-                  <option value="3">3 Hours</option>
-                  <option value="3.5">3 Hours 30 Minutes</option>
-                  <option value="4">4 Hours</option>
-                  <option value="4.5">4 Hours 30 Minutes</option>
-                  <option value="5">5 Hours</option>
-                  <option value="5.5">5 Hours 30 Minutes</option>
-                  <option value="6">6 Hours</option>
-                  <option value="6.5">6 Hours 30 Minutes</option>
-                  <option value="7">7 Hours 30 Minutes</option>
-                  <option value="7.5">7 Hours 30 Minutes</option>
-                  <option value="8">8 Hours</option>
-                  <option value="8.5">8 Hours 30 Minutes</option>
-                  <option value="9">9 Hours</option>
-                  <option value="9.5">9 Hours</option>
-                  <option value="10">10 Hours</option>
-                  <option value="10.5">10 Hours 30 Minutes</option>
-                  <option value="11">11 Hours</option>
-                  <option value="11.5">11 Hours 30 Minutes</option>
-                  <option value="12">12 Hours</option>
-                  <option value="12.5">12 Hours 30 Minutes</option>
-                </Form.Select>
-              </Form.Group>
-
-              <Form.Group
-                xs={12}
-                md={4}
-                as={Col}
-                controlId="validationCustom07"
-              >
-                <Form.Label>Event Increments</Form.Label>
-                <Form.Select
-                  value={eventIncrement}
-                  onChange={(e) => setEventIncrement(e.target.value)}
-                  required
-                >
-                  <option value="10">10 Minutes</option>
-                  <option value="15">15 Minutes</option>
-                  <option value="20">20 Minutes</option>
-                </Form.Select>
-              </Form.Group>
               <Form.Group
                 as={Col}
                 xs={12}
@@ -448,12 +466,88 @@ const ConfirmBooking = () => {
                   }}
                 />
               </InputGroup>
+              <Form.Group as={Col} xs={12}>
+                <Form.Label>Services</Form.Label>
+                {services.map((service, index) => (
+                  <div key={service.role}>
+                    <Row className="mb-2">
+                      <Col md={3}>
+                        <Form.Label>Role</Form.Label>
+                        <Form.Control
+                          type="text"
+                          value={service.role}
+                          disabled
+                        />
+                      </Col>
+                      <Col md={2}>
+                        <Form.Label>Workers</Form.Label>
+                        <Form.Control
+                          type="number"
+                          value={service.workers}
+                          min="1"
+                          onChange={(e) =>
+                            updateService(index, "workers", e.target.value)
+                          }
+                        />
+                      </Col>
+                      <Col md={4}>
+                        <Form.Group>
+                          <Form.Label>Hours</Form.Label>
+                          <Form.Select
+                            value={service.hours}
+                            onChange={(e) =>
+                              updateService(index, "hours", e.target.value)
+                            }
+                          >
+                            <option value="2">2 Hours</option>
+                            <option value="2.5">2 Hours 30 Minutes</option>
+                            <option value="3">3 Hours</option>
+                            <option value="3.5">3 Hours 30 Minutes</option>
+                            <option value="4">4 Hours</option>
+                            <option value="4.5">4 Hours 30 Minutes</option>
+                            <option value="5">5 Hours</option>
+                            <option value="5.5">5 Hours 30 Minutes</option>
+                            <option value="6">6 Hours</option>
+                            <option value="6.5">6 Hours 30 Minutes</option>
+                            <option value="7">7 Hours</option>
+                            <option value="7.5">7 Hours 30 Minutes</option>
+                            <option value="8">8 Hours</option>
+                            <option value="8.5">8 Hours 30 Minutes</option>
+                            <option value="9">9 Hours</option>
+                            <option value="9.5">9 Hours 30 Minutes</option>
+                            <option value="10">10 Hours</option>
+                            <option value="10.5">10 Hours 30 Minutes</option>
+                            <option value="11">11 Hours</option>
+                            <option value="11.5">11 Hours 30 Minutes</option>
+                            <option value="12">12 Hours</option>
+                            <option value="12.5">12 Hours 30 Minutes</option>
+                          </Form.Select>
+                        </Form.Group>
+                      </Col>
+                      <Col md={2}>
+                        <Form.Label>Increment</Form.Label>
+                        <Form.Select
+                          value={service.increment}
+                          onChange={(e) =>
+                            updateService(index, "increment", e.target.value)
+                          }
+                        >
+                          <option value="10">10 min</option>
+                          <option value="15">15 min</option>
+                          <option value="20">20 min</option>
+                        </Form.Select>
+                      </Col>
+                    </Row>
+                  </div>
+                ))}
+              </Form.Group>
+
               <Form.Group
                 as={Col}
                 controlId="validationCustom07"
                 style={{ marginTop: "6%" }}
               >
-                <p>Total: ${price}</p>
+                <p className="fw-bold">Total: ${price.toFixed(2)}</p>
               </Form.Group>
             </Row>
             <Row>

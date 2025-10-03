@@ -30,63 +30,132 @@ router.get(
       const userId = req.user.id; // Assuming user ID is in the token
       const userRole = req.user.role; // Assuming user role is in the token
 
-      // If the user is an admin, fetch all bookings
-      if (userRole.includes("admin")) {
-        const allBookings = await booking.find({ confirmed: true }).lean(); // Get all bookings
-        const updatedBookings = await populateAssignedTherapists(allBookings);
-        return res.json(updatedBookings); // Return all bookings for admin
-      }
-
-      // If the user is a therapist, filter bookings based on proximity
-      const therapist = await User.findById(userId).lean();
-      if (!therapist) {
-        return res.status(404).json({ error: "Therapist not found" });
-      }
-
-      const therapistZip = therapist.zipCode; // Get therapist's zip code
 
       // Fetch all bookings
-      const myBookings = await booking.find({confirmed: true}).lean(); // Convert to plain objects
-      
+      const allBookings = await booking.find({ confirmed: true }).lean();
       // Fetch therapist assignments and populate therapist details
       const therapistAssignments = await TherapistAssignment.find()
-        .populate("therapistId", "username email role") // Only fetch therapist details
+        .populate("therapistId", "username email role")
         .lean();
 
-      // Attach assigned therapists to their respective bookings
+      // Attach assigned therapists to their respective bookings, grouped by role
       const updatedBookings = await Promise.all(
-        myBookings.map(async (booking) => {
-          const assignedTherapists = therapistAssignments
-            .filter(
-              (assignment) =>
-                assignment.bookingId.toString() === booking._id.toString()
-            )
-            .map((assignment) => assignment.therapistId).filter(Boolean);; // Extract therapist details
+        allBookings.map(async (booking) => {
+          // Get all assignments for this booking
+          const assignments = therapistAssignments.filter(
+            (assignment) => assignment.bookingId.toString() === booking._id.toString()
+          );
 
-          // Check if the booking is within 1 hour of therapist's zip code
-          const isWithinDistance = checkLocationDistance(
-            booking.location.lat,
-            booking.location.lng,
-            therapist.location.lat,
-            therapist.location.lng,
-            92
-          ); // 60 miles = 1 hour
+          // Group assigned therapists by role
+          const rolesInfo = (booking.services || []).map((srv) => {
+            const assigned = assignments
+              .filter((a) => a.role === srv.role && a.therapistId)
+              .map((a) => a.therapistId);
+            return {
+              role: srv.role,
+              needed: srv.workers,
+              assigned,
+              spotsLeft: srv.workers - assigned.length,
+            };
+          });
 
-          return { ...booking, assignedTherapists, isWithinDistance };
+          // For legacy bookings (no services or rolesInfo), always include assignedTherapists: [] if none found
+          let assignedTherapists = undefined;
+          if (!booking.services || booking.services.length === 0) {
+            assignedTherapists = assignments.map(a => a.therapistId).filter(Boolean);
+            if (!assignedTherapists || assignedTherapists.length === 0) {
+              assignedTherapists = [];
+            }
+          }
+
+          // Check if the booking is within 1 hour of therapist's zip code (if therapist context)
+          let isWithinDistance = true;
+          if (!userRole.includes("admin")) {
+            const therapist = await User.findById(userId).lean();
+            if (therapist && booking.location && therapist.location) {
+              isWithinDistance = checkLocationDistance(
+                booking.location.lat,
+                booking.location.lng,
+                therapist.location.lat,
+                therapist.location.lng,
+                92
+              );
+            }
+          }
+
+          // Attach assignedTherapists only for legacy bookings
+          if (assignedTherapists !== undefined) {
+            return { ...booking, assignedTherapists, rolesInfo, isWithinDistance };
+          } else {
+            return { ...booking, rolesInfo, isWithinDistance };
+          }
         })
       );
 
-      // Filter out bookings that are not within 1 hour distance from the therapist
-      const filteredBookings = updatedBookings.filter(
-        (booking) => booking.isWithinDistance
-      );
+      // For non-admins, filter out bookings that are not within 1 hour distance
+      const filteredBookings = userRole.includes("admin")
+        ? updatedBookings
+        : updatedBookings.filter((booking) => booking.isWithinDistance);
 
-      // console.log(
-      //   "Filtered Bookings:",
-      //   JSON.stringify(filteredBookings, null, 2)
-      // ); // Debugging log
+      res.json(filteredBookings);
+      return;
 
-      res.json(filteredBookings); // Return filtered bookings for therapist
+      // // If the user is a therapist, filter bookings based on proximity
+      // const therapist = await User.findById(userId).lean();
+      // if (!therapist) {
+      //   return res.status(404).json({ error: "Therapist not found" });
+      // }
+
+      // const therapistZip = therapist.zipCode; // Get therapist's zip code
+
+      // // Fetch all bookings
+      // const myBookings = await booking.find({confirmed: true}).lean(); // Convert to plain objects
+      
+      // // Fetch therapist assignments and populate therapist details
+      // const therapistAssignments = await TherapistAssignment.find()
+      //   .populate("therapistId", "username email role") // Only fetch therapist details
+      //   .lean();
+
+      // // Attach assigned therapists to their respective bookings, grouped by role
+      // const updatedBookings = await Promise.all(
+      //   myBookings.map(async (booking) => {
+      //     // Get all assignments for this booking
+      //     const assignments = therapistAssignments.filter(
+      //       (assignment) => assignment.bookingId.toString() === booking._id.toString()
+      //     );
+
+      //     // Group assigned therapists by role
+      //     const rolesInfo = (booking.services || []).map((srv) => {
+      //       const assigned = assignments
+      //         .filter((a) => a.role === srv.role && a.therapistId)
+      //         .map((a) => a.therapistId);
+      //       return {
+      //         role: srv.role,
+      //         needed: srv.workers,
+      //         assigned,
+      //         spotsLeft: srv.workers - assigned.length,
+      //       };
+      //     });
+
+      //     // Check if the booking is within 1 hour of therapist's zip code
+      //     const isWithinDistance = checkLocationDistance(
+      //       booking.location.lat,
+      //       booking.location.lng,
+      //       therapist.location.lat,
+      //       therapist.location.lng,
+      //       92
+      //     );
+
+      //     return { ...booking, rolesInfo, isWithinDistance };
+      //   })
+      // );
+
+      // // Filter out bookings that are not within 1 hour distance from the therapist
+      // const filteredBookings = updatedBookings.filter(
+      //   (booking) => booking.isWithinDistance
+      // );
+
+      // res.json(filteredBookings); // Return filtered bookings for therapist
     } catch (error) {
       console.error("Error fetching bookings:", error);
       res.status(500).json({ error: "Server error" });

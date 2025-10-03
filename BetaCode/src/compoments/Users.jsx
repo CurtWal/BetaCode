@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "../updatepromo.css";
@@ -121,6 +122,26 @@ function Users() {
     }
   };
 
+  // Delete user and remove from all bookings (backend handles removal from assignments)
+  const deleteUser = async (userId) => {
+    if (!window.confirm("Are you sure you want to delete this user? This cannot be undone.")) return;
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("No token found, user is not authenticated.");
+        return;
+      }
+      await axios.delete(`${import.meta.env.VITE_VERCEL}users/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      getUsers(); // Refresh users list
+      alert("User deleted successfully.");
+    } catch (error) {
+      console.error("Error deleting user:", error.response?.data || error);
+      alert("Error deleting user.");
+    }
+  };
+
   const updateBookingPrices = async () => {
     try {
       await axios.post(`${import.meta.env.VITE_VERCEL}admin/update-prices`, {
@@ -212,6 +233,9 @@ function Users() {
                 </p>
                 <p>Points: {user.points}</p>
                 <p>FreeHour: {user.freehour}</p>
+                <button className="delete-button" onClick={() => deleteUser(user._id)} style={{ background: '#d9534f', color: 'white', marginTop: 8 }}>
+                  Delete User
+                </button>
               </div>
             </li>
           ))}
@@ -251,6 +275,9 @@ function Users() {
                 </p>
                 <p>Points: {user.points}</p>
                 <p>FreeHour: {user.freehour}</p>
+                <button className="delete-button" onClick={() => deleteUser(user._id)} style={{ background: '#d9534f', color: 'white', marginTop: 8 }}>
+                  Delete User
+                </button>
               </div>
             </li>
           ))}
@@ -283,6 +310,9 @@ function Users() {
                 </p>
                 <p>Points: {user.points}</p>
                 <p>FreeHour: {user.freehour}</p>
+                <button className="delete-button" onClick={() => deleteUser(user._id)} style={{ background: '#d9534f', color: 'white', marginTop: 8 }}>
+                  Delete User
+                </button>
               </div>
             </li>
           ))}
