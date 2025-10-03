@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Button from "react-bootstrap/Button";
@@ -43,6 +44,7 @@ function Bookings() {
   const [specialPrice, setSpecialPrice] = useState(90);
   const [regularPrice, setRegularPrice] = useState(150);
   const [formRoles, setFormRoles] = useState([]);
+  const [services, setServices] = useState([]);
 
   const animatedComponents = makeAnimated();
 
@@ -62,16 +64,14 @@ function Bookings() {
     { value: "breathwork", label: "Breathwork Coach" },
   ];
 
-  const checkLocationDistance = (lat1, lon1, lat2, lon2, maxMiles) => {
-    const toRad = (deg) => (deg * Math.PI) / 180;
-    const R = 3958.8; // Earth radius in miles
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
-    const a =
-      Math.sin(dLat / 2) ** 2 +
-      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c <= maxMiles;
+  // Helper to format hours as 'X hours Y minutes'
+  const formatServiceHours = (hours) => {
+    const num = parseFloat(hours);
+    const wholeHours = Math.floor(num);
+    const minutes = num % 1 !== 0 ? 30 : 0;
+    return `${wholeHours} hour${wholeHours !== 1 ? "s" : ""}${
+      minutes ? ` ${minutes} mins` : ""
+    }`;
   };
 
   const convertTo12Hour = (time) => {
@@ -80,6 +80,76 @@ function Bookings() {
     const period = hour >= 12 ? "PM" : "AM";
     const formattedHour = hour % 12 || 12; // Convert 0 to 12 for 12AM
     return `${formattedHour}:${minute.toString().padStart(2, "0")} ${period}`;
+  };
+
+  // Handler to join a booking for a specific role
+  const joinRole = async (bookingId, role) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("No token found, user is not authenticated.");
+        return;
+      }
+      const therapistId = localStorage.getItem("userId");
+      const therapistName = localStorage.getItem("username");
+
+      // Assign therapist to role
+      await axios.post(
+        `${import.meta.env.VITE_VERCEL}assign-therapist`,
+        { bookingId, therapistId, role },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Check if booking is now full (using new schema: services)
+      const bookingResponse = await axios.get(
+        `${import.meta.env.VITE_VERCEL}bookings/${bookingId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const booking = bookingResponse.data;
+      // Calculate total needed and assigned for all roles
+      const totalNeeded = Array.isArray(booking.services)
+        ? booking.services.reduce((sum, srv) => sum + (srv.workers || 0), 0)
+        : 0;
+      const assignedCount = Array.isArray(booking.assignedTherapists)
+        ? booking.assignedTherapists.length
+        : 0;
+      if (assignedCount === totalNeeded && totalNeeded > 0) {
+        await axios.post(
+          `${import.meta.env.VITE_VERCEL}send-email-on-spot-fill`,
+          { bookingId },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setIsFull(true);
+      }
+
+      getBookings();
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to join role");
+    }
+  };
+
+// Helper to get full role label from value
+  const getRoleLabel = (roleValue) => {
+    const found = options.find((opt) => opt.value === roleValue);
+    return found ? found.label : roleValue;
+  };
+
+  // Handler to leave a booking for a specific role
+  const leaveRole = async (bookingId, role) => {
+    try {
+      await axios.post(`${import.meta.env.VITE_VERCEL}leave-booking`, {
+        bookingId,
+        therapistId: currentUserId,
+        role,
+      });
+      getBookings();
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to leave role");
+    }
+  };
+
+  const getSelectedOptions = (selectedValues) => {
+    return options.filter((opt) => selectedValues.includes(opt.value));
   };
 
   const getBookingPrices = async () => {
@@ -119,6 +189,7 @@ function Bookings() {
       setPrice(basePrice + halfHourPrice);
     }
   }, [therapist, eventHours, regularPrice, specialPrice]);
+
   const sortBookings = (bookingsList, option) => {
     const sorted = [...bookingsList];
     switch (option) {
@@ -192,41 +263,42 @@ function Bookings() {
       if (userRole.includes("admin")) {
         // Admin sees all bookings
         setBookings(formattedBookings);
+
         return;
       }
 
       // For non-admin users, filter bookings by role match OR assignment availability
 
       const filtered = formattedBookings.filter((booking) => {
-        // Ensure bookingRoles is always an array
-        const bookingRoles = Array.isArray(booking.formRoles)
-          ? booking.formRoles
-          : typeof booking.formRoles === "string"
-          ? [booking.formRoles]
-          : [];
+        // Make sure the booking even has services
+        if (!Array.isArray(booking.services) || booking.services.length === 0)
+          return false;
 
-        // Ensure userRoles is always an array
-        const normalizedUserRoles = Array.isArray(userRoles)
-          ? userRoles
-          : typeof userRoles === "string"
-          ? [userRoles]
-          : [];
+        // Does this worker have a role that matches a service in this booking?
+        const hasMatchingService = booking.services?.some((srv) =>
+          userRoles.includes(srv.role)
+        );
+        if (!hasMatchingService) return false;
 
-        const hasMatchingRole = bookingRoles.some((role) =>
-          normalizedUserRoles.includes(role)
+        // Role-based slot availability
+        let roleAvailable = false;
+        booking.services.forEach((srv) => {
+          if (userRoles.includes(srv.role)) {
+            const assignedCount =
+              booking.assignedTherapists?.filter((t) => t.role === srv.role)
+                .length || 0;
+
+            if (assignedCount < srv.workers) {
+              roleAvailable = true;
+            }
+          }
+        });
+
+        const isAlreadyAssigned = booking.assignedTherapists?.some(
+          (t) => t._id === userId
         );
 
-        const totalSlots = booking.therapist ?? 1;
-
-        const isTherapistAssigned =
-          Array.isArray(booking.assignedTherapists) &&
-          booking.assignedTherapists.some((t) => t?._id === userId);
-
-        const isNotFull = booking.assignedTherapists.length < totalSlots;
-
-        // Show booking if user has matching role and it's not full,
-        // or if user is assigned even if full
-        return (hasMatchingRole && isNotFull) || isTherapistAssigned;
+        return roleAvailable || isAlreadyAssigned;
       });
 
       const sorted = sortBookings(filtered, sortOption);
@@ -412,6 +484,15 @@ function Bookings() {
       ...prev,
       [bookingId]: prev[bookingId] || { input1: "", input2: "", input3: "" },
     }));
+    // Debug: Log assignedTherapists and booking for legacy bookings
+    const booking = bookings.find((b) => b._id === bookingId);
+    if (booking && (!booking.rolesInfo || booking.rolesInfo.length === 0)) {
+      console.log("Legacy Booking Debug:", {
+        bookingId,
+        assignedTherapists: booking.assignedTherapists,
+        booking,
+      });
+    }
   };
 
   const handleClose = () => {
@@ -468,18 +549,22 @@ function Bookings() {
         return;
       }
 
-      // Update UI immediately
+      // Update UI immediately (defensive: ensure assignedTherapists is always an array)
       setBookings((prevBookings) =>
-        prevBookings.map((booking) =>
-          booking._id === bookingId
-            ? {
-                ...booking,
-                assignedTherapists: booking.assignedTherapists.filter(
-                  (therapist) => therapist._id !== therapistIdToRemove
-                ),
-              }
-            : booking
-        )
+        prevBookings.map((booking) => {
+          if (booking._id === bookingId) {
+            const therapistsArr = Array.isArray(booking.assignedTherapists)
+              ? booking.assignedTherapists
+              : [];
+            return {
+              ...booking,
+              assignedTherapists: therapistsArr.filter(
+                (therapist) => therapist._id !== therapistIdToRemove
+              ),
+            };
+          }
+          return booking;
+        })
       );
 
       // Backend call to remove the therapist
@@ -511,6 +596,37 @@ function Bookings() {
     } catch (error) {
       console.error("Error deleting booking:", error);
     }
+  };
+
+  const updateService = (index, field, value) => {
+    const updated = [...services];
+    updated[index][field] = value;
+
+    // Recalculate each service's price (same logic as booking form)
+    const recalculated = updated.map((s) => {
+      const workers = Number(s.workers || 0);
+      const hours = Number(s.hours || 0);
+
+      const unitPrice =
+        formType === "special" ? Number(specialPrice) : Number(regularPrice);
+
+      const wholeHours = Math.floor(hours);
+      const isHalfHour = hours % 1 !== 0;
+
+      const basePrice = workers * unitPrice * wholeHours;
+      const halfHourPrice = isHalfHour ? workers * unitPrice * 0.5 : 0;
+
+      return {
+        ...s,
+        price: basePrice + halfHourPrice,
+      };
+    });
+
+    setServices(recalculated);
+
+    // Total = sum of all service prices
+    const newTotal = recalculated.reduce((sum, s) => sum + (s.price || 0), 0);
+    setPrice(newTotal);
   };
 
   const exportToGoogleSheet = async () => {
@@ -560,6 +676,9 @@ function Bookings() {
       setFormType(data.formType || "");
       setFormRoles(data.formRoles || []);
       setPhoneNumber(data.phoneNumber || "");
+      setPhoneNumber(data.phoneNumber || "");
+      setServices(data.services || []);
+      setPrice(data.price || 0);
     } catch (err) {
       console.error("Failed to fetch booking", err);
     }
@@ -585,9 +704,7 @@ function Bookings() {
           email,
           address,
           zipCode,
-          therapist,
-          eventHours,
-          eventIncrement,
+          services,
           date,
           startTime,
           endTime,
@@ -595,7 +712,7 @@ function Bookings() {
           price,
           formType,
           formRoles,
-          phoneNumber
+          phoneNumber,
         });
         alert("Booking updated!");
       } catch (err) {
@@ -660,43 +777,42 @@ function Bookings() {
                       <li>Name: {booking.name}</li>
                       <li>Email: {booking.email}</li>
                       {booking.phoneNumber && (
-                        <li>
-                        Phone Number: {booking.phoneNumber}
-                        </li>
+                        <li>Phone Number: {booking.phoneNumber}</li>
                       )}
                       <li>Address: {booking.address}</li>
                       <li>ZipCode: {booking.zipCode}</li>
-                      <li># of Therapist: {booking.therapist}</li>
-                      <li>
-                        EventHours: {formatEventHours(booking.eventHours)}
-                      </li>
-                      <li>EventIncrements: {booking.eventIncrement} Minutes</li>
+                      <ul>
+                        {booking.services?.map((srv, idx) => (
+                          <li key={idx}>
+                            <strong>{getRoleLabel(srv.role)}</strong>:{" "}
+                            {srv.workers} worker(s),{" "}
+                            {formatServiceHours(srv.hours)}, increments{" "}
+                            {srv.increment} min,
+                          </li>
+                        ))}
+                      </ul>
                       <li>Available Date: {booking.date}</li>
                       <li>Start Time: {booking.startTime}</li>
                       <li>End Time: {booking.endTime}</li>
-                      {/* {booking.documentUrl && (
-                        <li>
-                          <a
-                            href={booking.documentUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            Medical Docs
-                          </a>
-                        </li>
-                      )} */}
                       <li>Extra Info: {booking.extra}</li>
 
                       <div className="button-container">
                         <Button onClick={() => handleShow(booking._id)}>
-                          {booking.assignedTherapists.some(
-                            (t) => t._id === currentUserId
+                          {Array.isArray(booking.rolesInfo) &&
+                          booking.rolesInfo.some(
+                            (role) =>
+                              Array.isArray(role.assigned) &&
+                              role.assigned.some(
+                                (t) => t && t._id === currentUserId
+                              )
                           )
                             ? "You Joined"
-                            : booking.assignedTherapists.length <
-                              booking.therapist
+                            : Array.isArray(booking.rolesInfo) &&
+                              booking.rolesInfo.some(
+                                (role) => role.spotsLeft > 0
+                              )
                             ? "Assign Therapist"
-                            : "Job Filled"}
+                            : "Filled"}
                         </Button>
 
                         {/* {!booking.isComplete && (
@@ -869,113 +985,191 @@ function Bookings() {
                                           Please provide a valid ZipCode.
                                         </Form.Control.Feedback>
                                       </Form.Group>
-                                      </Row>
-                                      <Row className="mb-3">
+                                    </Row>
+                                    <Row className="mb-3">
                                       <Form.Group
                                         as={Col}
                                         xs={12}
                                         md={4}
                                         controlId="validationCustom05"
                                       >
-                                        <Form.Label># of Therapist</Form.Label>
-                                        <Form.Control
-                                          type="number"
-                                          placeholder="Number of Therapist"
-                                          value={therapist}
-                                          onChange={(e) =>
-                                            setTherapist(e.target.value)
-                                          }
-                                          min="1"
-                                          required
+                                        <Form.Label>Wellness Field</Form.Label>
+                                        <Select
+                                          className="roleSelect"
+                                          closeMenuOnSelect={false}
+                                          components={animatedComponents}
+                                          isMulti
+                                          name="roles"
+                                          options={options}
+                                          onChange={(selectedOptions) => {
+                                            const roles = selectedOptions.map(
+                                              (o) => o.value
+                                            );
+
+                                            // build services array directly
+                                            const updatedServices = roles.map(
+                                              (role) => {
+                                                const existing = services.find(
+                                                  (s) => s.role === role
+                                                );
+                                                return (
+                                                  existing || {
+                                                    role,
+                                                    workers: 1,
+                                                    hours: 2,
+                                                    increment: 10,
+                                                    price: 0,
+                                                  }
+                                                );
+                                              }
+                                            );
+
+                                            setServices(updatedServices);
+                                          }}
+                                          value={getSelectedOptions(
+                                            services.map((s) => s.role)
+                                          )}
                                         />
-                                        <Form.Control.Feedback type="invalid">
-                                          Please provide a valid Therapist
-                                          Number.
-                                        </Form.Control.Feedback>
-                                      </Form.Group>
-                                    
-                                    
-                                      <Form.Group
-                                        as={Col}
-                                        xs={12}
-                                        md={4}
-                                        controlId="validationCustom06"
-                                      >
-                                        <Form.Label>Event Hours</Form.Label>
-                                        <Form.Select
-                                          value={eventHours}
-                                          onChange={(e) =>
-                                            setEventHours(e.target.value)
-                                          }
-                                          required
-                                        >
-                                          <option value="2">2 Hours</option>
-                                          <option value="2.5">
-                                            2 Hours 30 Minutes
-                                          </option>
-                                          <option value="3">3 Hours</option>
-                                          <option value="3.5">
-                                            3 Hours 30 Minutes
-                                          </option>
-                                          <option value="4">4 Hours</option>
-                                          <option value="4.5">
-                                            4 Hours 30 Minutes
-                                          </option>
-                                          <option value="5">5 Hours</option>
-                                          <option value="5.5">
-                                            5 Hours 30 Minutes
-                                          </option>
-                                          <option value="6">6 Hours</option>
-                                          <option value="6.5">
-                                            6 Hours 30 Minutes
-                                          </option>
-                                          <option value="7">
-                                            7 Hours 30 Minutes
-                                          </option>
-                                          <option value="7.5">
-                                            7 Hours 30 Minutes
-                                          </option>
-                                          <option value="8">8 Hours</option>
-                                          <option value="8.5">
-                                            8 Hours 30 Minutes
-                                          </option>
-                                          <option value="9">9 Hours</option>
-                                          <option value="9.5">9 Hours</option>
-                                          <option value="10">10 Hours</option>
-                                          <option value="10.5">
-                                            10 Hours 30 Minutes
-                                          </option>
-                                          <option value="11">11 Hours</option>
-                                          <option value="11.5">
-                                            11 Hours 30 Minutes
-                                          </option>
-                                          <option value="12">12 Hours</option>
-                                          <option value="12.5">
-                                            12 Hours 30 Minutes
-                                          </option>
-                                        </Form.Select>
                                       </Form.Group>
 
-                                      <Form.Group
-                                        xs={12}
-                                        md={4}
-                                        as={Col}
-                                        controlId="validationCustom07"
-                                      >
-                                        <Form.Label>
-                                          Massage Increments
-                                        </Form.Label>
-                                        <Form.Select
-                                          value={eventIncrement}
-                                          onChange={(e) =>
-                                            setEventIncrement(e.target.value)
-                                          }
-                                          required
-                                        >
-                                          <option value="10">10 Minutes</option>
-                                          <option value="15">15 Minutes</option>
-                                          <option value="20">20 Minutes</option>
-                                        </Form.Select>
+                                      <Form.Group as={Col} xs={12}>
+                                        <Form.Label>Services</Form.Label>
+                                        {services.map((service, index) => (
+                                          <div key={service.role}>
+                                            <Row className="mb-2">
+                                              <Col md={3}>
+                                                <Form.Label>Role</Form.Label>
+                                                <Form.Control
+                                                  type="text"
+                                                  value={service.role}
+                                                  disabled
+                                                />
+                                              </Col>
+                                              <Col md={2}>
+                                                <Form.Label>Workers</Form.Label>
+                                                <Form.Control
+                                                  type="number"
+                                                  value={service.workers}
+                                                  min="1"
+                                                  onChange={(e) =>
+                                                    updateService(
+                                                      index,
+                                                      "workers",
+                                                      e.target.value
+                                                    )
+                                                  }
+                                                />
+                                              </Col>
+                                              <Col md={4}>
+                                                <Form.Group>
+                                                  <Form.Label>Hours</Form.Label>
+                                                  <Form.Select
+                                                    value={service.hours}
+                                                    onChange={(e) =>
+                                                      updateService(
+                                                        index,
+                                                        "hours",
+                                                        e.target.value
+                                                      )
+                                                    }
+                                                  >
+                                                    <option value="2">
+                                                      2 Hours
+                                                    </option>
+                                                    <option value="2.5">
+                                                      2 Hours 30 Minutes
+                                                    </option>
+                                                    <option value="3">
+                                                      3 Hours
+                                                    </option>
+                                                    <option value="3.5">
+                                                      3 Hours 30 Minutes
+                                                    </option>
+                                                    <option value="4">
+                                                      4 Hours
+                                                    </option>
+                                                    <option value="4.5">
+                                                      4 Hours 30 Minutes
+                                                    </option>
+                                                    <option value="5">
+                                                      5 Hours
+                                                    </option>
+                                                    <option value="5.5">
+                                                      5 Hours 30 Minutes
+                                                    </option>
+                                                    <option value="6">
+                                                      6 Hours
+                                                    </option>
+                                                    <option value="6.5">
+                                                      6 Hours 30 Minutes
+                                                    </option>
+                                                    <option value="7">
+                                                      7 Hours
+                                                    </option>
+                                                    <option value="7.5">
+                                                      7 Hours 30 Minutes
+                                                    </option>
+                                                    <option value="8">
+                                                      8 Hours
+                                                    </option>
+                                                    <option value="8.5">
+                                                      8 Hours 30 Minutes
+                                                    </option>
+                                                    <option value="9">
+                                                      9 Hours
+                                                    </option>
+                                                    <option value="9.5">
+                                                      9 Hours 30 Minutes
+                                                    </option>
+                                                    <option value="10">
+                                                      10 Hours
+                                                    </option>
+                                                    <option value="10.5">
+                                                      10 Hours 30 Minutes
+                                                    </option>
+                                                    <option value="11">
+                                                      11 Hours
+                                                    </option>
+                                                    <option value="11.5">
+                                                      11 Hours 30 Minutes
+                                                    </option>
+                                                    <option value="12">
+                                                      12 Hours
+                                                    </option>
+                                                    <option value="12.5">
+                                                      12 Hours 30 Minutes
+                                                    </option>
+                                                  </Form.Select>
+                                                </Form.Group>
+                                              </Col>
+                                              <Col md={2}>
+                                                <Form.Label>
+                                                  Increment
+                                                </Form.Label>
+                                                <Form.Select
+                                                  value={service.increment}
+                                                  onChange={(e) =>
+                                                    updateService(
+                                                      index,
+                                                      "increment",
+                                                      e.target.value
+                                                    )
+                                                  }
+                                                >
+                                                  <option value="10">
+                                                    10 min
+                                                  </option>
+                                                  <option value="15">
+                                                    15 min
+                                                  </option>
+                                                  <option value="20">
+                                                    20 min
+                                                  </option>
+                                                </Form.Select>
+                                              </Col>
+                                            </Row>
+                                          </div>
+                                        ))}
                                       </Form.Group>
                                       <Form.Group
                                         as={Col}
@@ -1098,53 +1292,209 @@ function Bookings() {
                           </Modal.Header>
                           <Modal.Body>
                             <div className="input-container">
-                              <ul style={{ textAlign: "center" }}>
-                                Assigned Therapists:{" "}
-                                {booking.assignedTherapists &&
-                                booking.assignedTherapists.length > 0 ? (
-                                  booking.assignedTherapists.map(
-                                    (therapist) => (
-                                      <li key={therapist._id}>
-                                        {therapist.username
-                                          ? therapist.username
-                                          : "Unknown"}
-                                        {hasRole("admin") && (
-                                          <button
-                                            onClick={() =>
-                                              removeTherapistFromBooking(
-                                                booking._id,
-                                                therapist._id
-                                              )
-                                            }
+                              {/* Debug: Show assignedTherapists raw data for legacy bookings */}
+                              {(!booking.rolesInfo ||
+                                booking.rolesInfo.length === 0) && (
+                                <>
+                                  <ul style={{ textAlign: "center" }}>
+                                    Assigned Therapists:{" "}
+                                    {Array.isArray(
+                                      booking.assignedTherapists
+                                    ) &&
+                                    booking.assignedTherapists.length > 0 ? (
+                                      booking.assignedTherapists.map(
+                                        (therapist) => (
+                                          <li key={therapist._id}>
+                                            {therapist.username
+                                              ? therapist.username
+                                              : "Unknown"}
+                                            {hasRole("admin") && (
+                                              <button
+                                                onClick={() =>
+                                                  removeTherapistFromBooking(
+                                                    booking._id,
+                                                    therapist._id
+                                                  )
+                                                }
+                                              >
+                                                Remove
+                                              </button>
+                                            )}
+                                          </li>
+                                        )
+                                      )
+                                    ) : (
+                                      <span>No therapists assigned yet</span>
+                                    )}
+                                  </ul>
+                                </>
+                              )}
+                              {/* Show role-based assignment UI if rolesInfo is present (new schema) */}
+                              {booking.rolesInfo && (
+                                <div
+                                  style={{
+                                    margin: "10px 0",
+                                    padding: "10px",
+                                    border: "1px solid #ccc",
+                                    borderRadius: "8px",
+                                  }}
+                                >
+                                  <h5>Roles Needed</h5>
+                                  {Array.isArray(booking.rolesInfo) &&
+                                  booking.rolesInfo.length > 0 ? (
+                                    <ul>
+                                      {booking.rolesInfo.map((roleInfo) => {
+                                        const assignedList = Array.isArray(
+                                          roleInfo && roleInfo.assigned
+                                        )
+                                          ? roleInfo.assigned
+                                          : [];
+                                        const userHasRole = hasRole(
+                                          roleInfo && roleInfo.role
+                                        );
+                                        const userAssigned = assignedList.some(
+                                          (t) => t && t._id === currentUserId
+                                        );
+                                        return (
+                                          <li
+                                            key={roleInfo && roleInfo.role}
+                                            style={{ marginBottom: 8 }}
                                           >
-                                            Remove
-                                          </button>
-                                        )}
-                                      </li>
-                                    )
-                                  )
-                                ) : (
-                                  <span>No therapists assigned yet</span>
-                                )}
-                              </ul>
+                                            <strong>
+                                              {getRoleLabel(
+                                                roleInfo && roleInfo.role
+                                              )}
+                                            </strong>
+                                            : Needed{" "}
+                                            {roleInfo && roleInfo.needed},
+                                            Assigned {assignedList.length},
+                                            Spots Left{" "}
+                                            {roleInfo && roleInfo.spotsLeft}
+                                            <ul style={{ marginLeft: 16 }}>
+                                              {assignedList.length > 0 ? (
+                                                assignedList.map((t) => (
+                                                  <li
+                                                    key={t && t._id}
+                                                    style={{
+                                                      display: "flex",
+                                                      alignItems: "center",
+                                                    }}
+                                                  >
+                                                    {(t &&
+                                                      (t.username ||
+                                                        t.email ||
+                                                        t._id)) ||
+                                                      ""}
+                                                    {hasRole("admin") &&
+                                                      t &&
+                                                      t._id && (
+                                                        <Button
+                                                          size="sm"
+                                                          variant="outline-danger"
+                                                          style={{
+                                                            marginLeft: 8,
+                                                            padding: "2px 8px",
+                                                            fontSize: 12,
+                                                          }}
+                                                          onClick={() =>
+                                                            removeTherapistFromBooking(
+                                                              booking._id,
+                                                              t._id
+                                                            )
+                                                          }
+                                                        >
+                                                          Remove
+                                                        </Button>
+                                                      )}
+                                                  </li>
+                                                ))
+                                              ) : (
+                                                <li style={{ color: "#888" }}>
+                                                  No therapists assigned yet
+                                                </li>
+                                              )}
+                                            </ul>
+                                            {userHasRole &&
+                                              !userAssigned &&
+                                              roleInfo &&
+                                              roleInfo.spotsLeft > 0 && (
+                                                <Button
+                                                  size="sm"
+                                                  onClick={() =>
+                                                    joinRole(
+                                                      booking._id,
+                                                      roleInfo.role
+                                                    )
+                                                  }
+                                                  style={{ marginRight: 8 }}
+                                                >
+                                                  Join as {roleInfo.role}
+                                                </Button>
+                                              )}
+                                            {userHasRole && userAssigned && (
+                                              <Button
+                                                size="sm"
+                                                variant="danger"
+                                                onClick={() =>
+                                                  leaveRole(
+                                                    booking._id,
+                                                    roleInfo.role
+                                                  )
+                                                }
+                                              >
+                                                Leave {roleInfo.role}
+                                              </Button>
+                                            )}
+                                            {!userHasRole && (
+                                              <span
+                                                style={{
+                                                  marginLeft: 8,
+                                                  color: "#888",
+                                                }}
+                                              >
+                                                (You do not have this role)
+                                              </span>
+                                            )}
+                                          </li>
+                                        );
+                                      })}
+                                    </ul>
+                                  ) : (
+                                    <div
+                                      style={{
+                                        color: "#888",
+                                        textAlign: "center",
+                                      }}
+                                    >
+                                      No roles or therapists assigned yet
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </Modal.Body>
                           <Modal.Footer>
-                            {booking.assignedTherapists.length <
-                              booking.therapist && (
-                              <Button
-                                onClick={() => joinBooking(booking._id)}
-                                disabled={
-                                  currentUserId &&
-                                  booking.assignedTherapists?.some(
-                                    (t) => t._id === currentUserId
-                                  )
-                                }
-                              >
-                                Join Booking
-                              </Button>
-                            )}
-                            {currentUserId &&
+                            {/* Optionally keep legacy join/leave for non-role-based bookings */}
+                            {(!booking.rolesInfo ||
+                              booking.rolesInfo.length === 0) &&
+                              Array.isArray(booking.assignedTherapists) &&
+                              booking.assignedTherapists.length <
+                                booking.therapist && (
+                                <Button
+                                  onClick={() => joinBooking(booking._id)}
+                                  disabled={
+                                    currentUserId &&
+                                    booking.assignedTherapists?.some(
+                                      (t) => t._id === currentUserId
+                                    )
+                                  }
+                                >
+                                  Join Booking
+                                </Button>
+                              )}
+                            {(!booking.rolesInfo ||
+                              booking.rolesInfo.length === 0) &&
+                              currentUserId &&
                               booking.assignedTherapists?.some(
                                 (t) => t._id === currentUserId
                               ) && (

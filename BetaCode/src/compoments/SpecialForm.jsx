@@ -36,6 +36,8 @@ function SpecialForm() {
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
   const payModalClose = () => setPayModal(false);
+  const [services, setServices] = useState([]);
+  
   const animatedComponents = makeAnimated();
 
   const data = [
@@ -101,7 +103,8 @@ function SpecialForm() {
       setFormType("special");
     }
   };
-  const postBookingsbyCheck = async (e) => {
+
+const postBookingsbyCheck = async (e) => {
     const form = e.currentTarget;
     if (form.checkValidity() === false) {
       e.preventDefault();
@@ -111,16 +114,15 @@ function SpecialForm() {
     setValidated(true);
     e.preventDefault();
     if (form.checkValidity() === true) {
+
       const newBooking = {
         companyName,
         name,
         email,
         address,
         zipCode,
-        therapist,
-        eventHours,
-        eventIncrement,
-        price,
+        services,
+        totalPrice: price,
         payType,
         startTime,
         endTime,
@@ -128,14 +130,20 @@ function SpecialForm() {
         date,
         formType,
         phoneNumber,
-        formRoles,
+        formRoles
       };
 
-      await axios.post(`${import.meta.env.VITE_VERCEL}new-booking`, newBooking);
-
-      alert("Payment successful! Booking email Sent.");
-
-      //console.log("Booking successful");
+      try {
+        await axios.post(
+          `${import.meta.env.VITE_VERCEL}new-booking`,
+          newBooking
+        );
+        alert("Payment successful! Booking email sent.");
+        //console.log("Booking successful");
+      } catch (err) {
+        console.error("Error posting booking:", err);
+        alert("Booking failed.");
+      }
     }
   };
   const getBookingPrices = async () => {
@@ -148,21 +156,54 @@ function SpecialForm() {
       console.error("Error fetching booking prices:", error);
     }
   };
+
   useEffect(() => {
     getBookingPrices();
   }, []);
-  useEffect(() => {
-    if (eventHours) {
-      const hours = parseFloat(eventHours); // Convert to a number
-      const wholeHours = Math.floor(hours); // Full hours
-      const isHalfHour = hours % 1 !== 0; // Check if there's a half-hour
+    useEffect(() => {
+    const roleServices = formRoles.map((role) => {
+      const existing = services.find((srv) => srv.role === role);
+      return (
+        existing || {
+          role,
+          workers: 1,
+          hours: 2,
+          increment: 10,
+          price: 0,
+        }
+      );
+    });
+    setServices(roleServices);
+  }, [formRoles]);
 
-      const basePrice = therapist * specialPrice * wholeHours; // Price for full hours
-      const halfHourPrice = isHalfHour ? therapist * (specialPrice * 0.5) : 0; // Half-hour price
+   useEffect(() => {
+    const updated = services.map((srv) => {
+      const baseRate = specialPrice; // $150/hr baseline
+      const wholeHours = Math.floor(srv.hours);
+      const isHalfHour = srv.hours % 1 !== 0;
 
-      setPrice(basePrice + halfHourPrice);
-    }
-  }, [therapist, eventHours, specialPrice]);
+      const basePrice = srv.workers * baseRate * wholeHours;
+      const halfHourPrice = isHalfHour ? srv.workers * baseRate * 0.5 : 0;
+
+      return { ...srv, price: basePrice + halfHourPrice };
+    });
+
+    const total = updated.reduce((sum, srv) => sum + srv.price, 0);
+    setPrice(total);
+  }, [services, specialPrice]);
+
+  // useEffect(() => {
+  //   if (eventHours) {
+  //     const hours = parseFloat(eventHours); // Convert to a number
+  //     const wholeHours = Math.floor(hours); // Full hours
+  //     const isHalfHour = hours % 1 !== 0; // Check if there's a half-hour
+
+  //     const basePrice = therapist * specialPrice * wholeHours; // Price for full hours
+  //     const halfHourPrice = isHalfHour ? therapist * (specialPrice * 0.5) : 0; // Half-hour price
+
+  //     setPrice(basePrice + halfHourPrice);
+  //   }
+  // }, [therapist, eventHours, specialPrice]);
 
   return (
     <div class="Main-Content">
@@ -270,9 +311,7 @@ function SpecialForm() {
             </Modal>
           </div>
           <div className="FormInput">
-            <h2 style={{ color: "black", textAlign: "center" }}>
-              St. Jude Wellness
-            </h2>
+            <h2 style={{ textAlign: "center" }}>St. Jude</h2>
             <Form noValidate validated={validated} onSubmit={postBookings}>
               <Row className="mb-3">
                 <Form.Group
@@ -403,82 +442,10 @@ function SpecialForm() {
                     name="roles"
                     options={options}
                     onChange={(selectedOptions) => {
-                      const values = selectedOptions.map(
-                        (option) => option.value
-                      );
+                      const values = selectedOptions.map((opt) => opt.value);
                       setFormRoles(values);
                     }}
                   />
-                </Form.Group>
-
-                <Form.Group
-                  as={Col}
-                  xs={12}
-                  md={4}
-                  controlId="validationCustom05"
-                >
-                  <Form.Label># of Workers</Form.Label>
-                  <Form.Control
-                    type="number"
-                    placeholder="Number of Workers"
-                    onChange={(e) => setTherapist(e.target.value)}
-                    min="1"
-                    required
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    Please provide a valid Worker Number.
-                  </Form.Control.Feedback>
-                </Form.Group>
-                <Form.Group
-                  as={Col}
-                  xs={12}
-                  md={4}
-                  controlId="validationCustom06"
-                >
-                  <Form.Label>Event Hours</Form.Label>
-                  <Form.Select
-                    onChange={(e) => setEventHours(e.target.value)}
-                    required
-                  >
-                    <option value="2">2 Hours</option>
-                    <option value="2.5">2 Hours 30 Minutes</option>
-                    <option value="3">3 Hours</option>
-                    <option value="3.5">3 Hours 30 Minutes</option>
-                    <option value="4">4 Hours</option>
-                    <option value="4.5">4 Hours 30 Minutes</option>
-                    <option value="5">5 Hours</option>
-                    <option value="5.5">5 Hours 30 Minutes</option>
-                    <option value="6">6 Hours</option>
-                    <option value="6.5">6 Hours 30 Minutes</option>
-                    <option value="7">7 Hours 30 Minutes</option>
-                    <option value="7.5">7 Hours 30 Minutes</option>
-                    <option value="8">8 Hours</option>
-                    <option value="8.5">8 Hours 30 Minutes</option>
-                    <option value="9">9 Hours</option>
-                    <option value="9.5">9 Hours</option>
-                    <option value="10">10 Hours</option>
-                    <option value="10.5">10 Hours 30 Minutes</option>
-                    <option value="11">11 Hours</option>
-                    <option value="11.5">11 Hours 30 Minutes</option>
-                    <option value="12">12 Hours</option>
-                    <option value="12.5">12 Hours 30 Minutes</option>
-                  </Form.Select>
-                </Form.Group>
-                <Form.Group
-                  xs={12}
-                  md={4}
-                  as={Col}
-                  controlId="validationCustom07"
-                >
-                  <Form.Label>Events Increments</Form.Label>
-                  <Form.Select
-                    onChange={(e) => setEventIncrement(e.target.value)}
-                    required
-                  >
-                    <option value="10">10 Minutes</option>
-                    <option value="15">15 Minutes</option>
-                    <option value="20">20 Minutes</option>
-                  </Form.Select>
                 </Form.Group>
                 <Form.Group
                   as={Col}
@@ -534,6 +501,102 @@ function SpecialForm() {
                     Please provide a valid End Time.
                   </Form.Control.Feedback>
                 </Form.Group>
+                
+                {services.map((srv, idx) => (
+                  <div key={idx}>
+                    <h5>{srv.role}</h5>
+                    <Row className="align-items-center">
+                    <Col md={4}>
+                    <Form.Group>
+                      <Form.Label># of {srv.role}</Form.Label>
+                      <Form.Control
+                        type="number"
+                        min="1"
+                        value={srv.workers}
+                        onChange={(e) => {
+                          const updated = [...services];
+                          updated[idx].workers = parseInt(e.target.value);
+                          setServices(updated);
+                        }}
+                      />
+                    </Form.Group>
+                    </Col>
+                    <Col md={4}>
+                    <Form.Group>
+                      <Form.Label>Hours</Form.Label>
+                      <Form.Select
+                        value={srv.hours}
+                        onChange={(e) => {
+                          const updated = [...services];
+                          updated[idx].hours = parseFloat(e.target.value);
+                          setServices(updated);
+                        }}
+                      >
+                        <option value="2">2 Hours</option>
+                        <option value="2.5">2 Hours 30 Minutes</option>
+                        <option value="3">3 Hours</option>
+                        <option value="3.5">3 Hours 30 Minutes</option>
+                        <option value="4">4 Hours</option>
+                        <option value="4.5">4 Hours 30 Minutes</option>
+                        <option value="5">5 Hours</option>
+                        <option value="5.5">5 Hours 30 Minutes</option>
+                        <option value="6">6 Hours</option>
+                        <option value="6.5">6 Hours 30 Minutes</option>
+                        <option value="7">7 Hours 30 Minutes</option>
+                        <option value="7.5">7 Hours 30 Minutes</option>
+                        <option value="8">8 Hours</option>
+                        <option value="8.5">8 Hours 30 Minutes</option>
+                        <option value="9">9 Hours</option>
+                        <option value="9.5">9 Hours</option>
+                        <option value="10">10 Hours</option>
+                        <option value="10.5">10 Hours 30 Minutes</option>
+                        <option value="11">11 Hours</option>
+                        <option value="11.5">11 Hours 30 Minutes</option>
+                        <option value="12">12 Hours</option>
+                        <option value="12.5">12 Hours 30 Minutes</option>
+                      </Form.Select>
+                    </Form.Group>
+                    </Col>
+                    <Col md={4}>
+                    <Form.Group>
+                      <Form.Label>Increment</Form.Label>
+                      <Form.Select
+                        value={srv.increment}
+                        onChange={(e) => {
+                          const updated = [...services];
+                          updated[idx].increment = parseFloat(e.target.value);
+                          setServices(updated);
+                        }}
+                      >
+                        <option value="10">10 Minutes</option>
+                        <option value="15">15 Minutes</option>
+                        <option value="20">20 Minutes</option>
+                      </Form.Select>
+                    </Form.Group>
+                    </Col>
+                    </Row>
+                  </div>
+                  
+                ))}
+                {/* <Form.Group
+                  as={Col}
+                  xs={12}
+                  md={4}
+                  controlId="validationCustom05"
+                >
+                  <Form.Label># of Workers</Form.Label>
+                  <Form.Control
+                    type="number"
+                    placeholder="Number of Workers"
+                    onChange={(e) => setTherapist(e.target.value)}
+                    min="1"
+                    required
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    Please provide a valid Worker Number.
+                  </Form.Control.Feedback>
+                </Form.Group> */}
+                
                 {/* <Form.Group
                 as={Col}
                 controlId="validationCustom07"
@@ -602,9 +665,7 @@ function SpecialForm() {
                   email={email}
                   address={address}
                   zipCode={zipCode}
-                  therapist={therapist}
-                  eventHours={eventHours}
-                  eventIncrement={eventIncrement}
+                  services={services}
                   formType={formType}
                   companyName={companyName}
                   startTime={startTime}

@@ -75,10 +75,12 @@ router.get("/reminder", async (req, res) => {
       if (!booking.location?.lat || !booking.location?.lng) continue;
       if (booking.isComplete) continue;
 
+      const serviceRoles = booking.services.map((s) => s.role);
+
       const therapists = await User.find({
         $or: [
-          { role: { $in: booking.formRoles } },
-          { role: { $in: booking.formRoles.map((r) => r.toLowerCase()) } },
+          { role: { $in: serviceRoles } },
+          { role: { $in: serviceRoles.map((r) => r.toLowerCase()) } },
         ],
         phoneNumber: { $ne: "" },
         location: { $exists: true },

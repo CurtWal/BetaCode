@@ -5,7 +5,7 @@ const medicalBooking = require("../model/medicalBookings");
 const AssignTherapist = require("../model/AssignTherapist");
 const AssignMedical = require("../model/AssignMedical");
 const twilio = require("twilio");
-
+const User = require("../model/user");
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const client = twilio(accountSid, authToken);
@@ -45,6 +45,34 @@ router.delete("/bookings/:id", async (req, res) => {
       }
     }
     
+    // Remove Google Calendar events for each assigned therapist (if any)
+    const assignedTherapistRecords = await AssignTherapist.find({ bookingId: id });
+    for (const assignment of assignedTherapistRecords) {
+      if (assignment.googleEventId) {
+        const user = await User.findById(assignment.therapistId);
+        if (user?.googleTokens?.refresh_token) {
+          const { google } = require("googleapis");
+          const oauth2Client = new google.auth.OAuth2(
+            process.env.GOOGLE_CLIENT_ID,
+            process.env.GOOGLE_CLIENT_SECRET,
+            process.env.GOOGLE_REDIRECT_URI
+          );
+          oauth2Client.setCredentials({
+            refresh_token: user.googleTokens.refresh_token,
+          });
+          const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+          try {
+            await calendar.events.delete({
+              calendarId: "primary",
+              eventId: assignment.googleEventId,
+            });
+            console.log(`🗑️ Deleted event ${assignment.googleEventId} for therapist ${assignment.therapistId}`);
+          } catch (err) {
+            console.error("❌ Failed to delete Google Calendar event:", err.message);
+          }
+        }
+      }
+    }
     // Delete assigned therapist records for this booking
     await AssignTherapist.deleteMany({ bookingId: id });
 
@@ -93,6 +121,34 @@ router.delete("/medical-bookings/:id", async (req, res) => {
       }
     }
     
+    // Remove Google Calendar events for each assigned therapist (if any)
+    const assignedMedicalRecords = await AssignMedical.find({ bookingId: id });
+    for (const assignment of assignedMedicalRecords) {
+      if (assignment.googleEventId) {
+        const user = await User.findById(assignment.therapistId);
+        if (user?.googleTokens?.refresh_token) {
+          const { google } = require("googleapis");
+          const oauth2Client = new google.auth.OAuth2(
+            process.env.GOOGLE_CLIENT_ID,
+            process.env.GOOGLE_CLIENT_SECRET,
+            process.env.GOOGLE_REDIRECT_URI
+          );
+          oauth2Client.setCredentials({
+            refresh_token: user.googleTokens.refresh_token,
+          });
+          const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+          try {
+            await calendar.events.delete({
+              calendarId: "primary",
+              eventId: assignment.googleEventId,
+            });
+            console.log(`🗑️ Deleted event ${assignment.googleEventId} for therapist ${assignment.therapistId}`);
+          } catch (err) {
+            console.error("❌ Failed to delete Google Calendar event:", err.message);
+          }
+        }
+      }
+    }
     // Delete assigned therapist records for this booking
     await AssignMedical.deleteMany({ bookingId: id });
 

@@ -11,6 +11,10 @@ const AssignTherapist = new mongoose.Schema({
     ref: "Users",
     required: true,
   },
+  role: {
+    type: String,
+    required: true,
+  },
   assignedAt: {
     type: Date,
     default: Date.now,

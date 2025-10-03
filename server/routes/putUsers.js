@@ -1,3 +1,4 @@
+
 const express = require("express");
 const User = require("../model/user");
 const { verifyToken, checkRole } = require("../middleware/authMiddleware");
@@ -106,4 +107,33 @@ router.put("/account/:id", async (req, res) => {
   }
 });
 
+// DELETE user and remove from all non-completed bookings (including medical bookings)
+router.delete("/users/:id", verifyToken, checkRole(["admin"]), async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Remove user from AssignTherapist (non-completed bookings)
+    const AssignTherapist = require("../model/AssignTherapist");
+    const Booking = require("../model/bookings");
+    const incompleteBookings = await Booking.find({ confirmed: true, completed: { $ne: true } }).lean();
+    const incompleteBookingIds = incompleteBookings.map(b => b._id);
+    await AssignTherapist.deleteMany({ therapistId: id, bookingId: { $in: incompleteBookingIds } });
+
+    // Remove user from AssignMedical (non-completed medical bookings)
+    const AssignMedical = require("../model/AssignMedical");
+    const MedicalBooking = require("../model/medicalBookings");
+    const incompleteMedicalBookings = await MedicalBooking.find({ confirmed: true, completed: { $ne: true } }).lean();
+    const incompleteMedicalBookingIds = incompleteMedicalBookings.map(b => b._id);
+    await AssignMedical.deleteMany({ therapistId: id, bookingId: { $in: incompleteMedicalBookingIds } });
+
+    // Delete the user
+    const deletedUser = await User.findByIdAndDelete(id);
+    if (!deletedUser) {
+      return res.status(404).json({ message: "User not found." });
+    }
+    res.json({ message: "User and assignments deleted successfully." });
+  } catch (error) {
+    console.error("Error deleting user and assignments:", error);
+    res.status(500).json({ message: "Server error while deleting user." });
+  }
+});
 module.exports = router;

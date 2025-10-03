@@ -34,7 +34,16 @@ const convertTo12Hour = (time) => {
   const formattedHour = hour % 12 || 12; // Convert 0 to 12 for 12AM
   return `${formattedHour}:${minute.toString().padStart(2, "0")} ${period}`;
 };
-
+  // Helper to format hours as 'X hours Y minutes'
+  const formatServiceHours = (hours) => {
+    const num = parseFloat(hours);
+    const wholeHours = Math.floor(num);
+    const minutes = num % 1 !== 0 ? 30 : 0;
+    return `${wholeHours} hour${wholeHours !== 1 ? "s" : ""}${
+      minutes ? ` ${minutes} mins` : ""
+    }`;
+  };
+  
 // const sendEmailsInBatches = async (recipients, subject, htmlContent, batchSize = 10, delayMs = 5000) => {
 //   for (let i = 0; i < recipients.length; i += batchSize) {
 //     const batch = recipients.slice(i, i + batchSize);
@@ -68,19 +77,15 @@ router.post("/new-booking", async (req, res) => {
       email,
       address,
       zipCode,
-      therapist,
-      eventHours,
-      eventIncrement,
-      price,
+      services, // <-- array from frontend
+      totalPrice,
       payType,
       startTime,
       endTime,
       date,
       extra,
       formType,
-      formRoles,
       phoneNumber,
-      //documentUrl,
     } = req.body;
 
     const geoRes = await axios.get(
@@ -95,10 +100,8 @@ router.post("/new-booking", async (req, res) => {
       email,
       address,
       zipCode,
-      therapist,
-      eventHours,
-      eventIncrement,
-      price, // Use the price passed from frontend (final price after discounts)
+      services,
+      totalPrice,
       payType,
       startTime,
       endTime,
@@ -107,11 +110,9 @@ router.post("/new-booking", async (req, res) => {
       confirmed: false,
       location,
       formType,
-      formRoles,
       phoneNumber,
-      //documentUrl,
     });
-    console.log(formRoles);
+    //console.log(formRoles);
     const confirmationLink = `https://motgpayment.com/confirm-booking/${newBooking._id}`;
 
     // Set up email transporter
@@ -123,23 +124,30 @@ router.post("/new-booking", async (req, res) => {
     try {
       const emailData = {
         from: process.env.EMAIL_USER, // Must be a verified Mailgun sender
-        to: [
-          "hello@massageonthegomemphis.com", "sam@massageonthegomemphis.com"
-        ], // Recipient email
+        to: ["curtrickwalton@gmail.com"], // Recipient email
         subject: "New Booking Confirmation",
         html: `<h2>New Booking Details</h2>
-            <p><strong>Price:</strong> $${newBooking.price} ${payType}</p>
+            <p><strong>Price:</strong> $${newBooking.totalPrice} ${payType}</p>
             <p><strong>Company Name:</strong> ${newBooking.companyName}</p>
             <p><strong>Name:</strong> ${newBooking.name}</p>
             <p><strong>Email:</strong> ${newBooking.email}</p>
             <p><strong>Phone Number:</strong> ${newBooking.phoneNumber}</p>
             <p><strong>Address:</strong> ${newBooking.address}</p>
             <p><strong>ZipCode:</strong> ${newBooking.zipCode}</p>
-            <p><strong>Therapist:</strong> ${newBooking.therapist}</p>
-            <p><strong>Hours:</strong> ${newBooking.eventHours} hour(s)</p>
-            <p><strong>Increment:</strong> ${
-              newBooking.eventIncrement
-            } minutes</p>
+            <h3>Services</h3>
+            <ul>
+              ${newBooking.services
+                .map(
+                  (service) => `<li>
+          <strong>${service.role}</strong><br/>
+          # of Providers: ${service.workers}<br/>
+          Hours: ${formatServiceHours(service.hours)}<br/>
+          Increment: ${service.increment} minutes
+        </li>
+      `
+                )
+                .join("")}
+            </ul>
             <p><strong>Available Date:</strong> ${newBooking.date}</p>
             <p><strong>Start Time:</strong> ${convertTo12Hour(
               newBooking.startTime
@@ -220,37 +228,52 @@ router.get("/confirm-booking/:id", async (req, res) => {
     booking.confirmed = true;
     await booking.save();
 
+    const serviceRoles = booking.services.map((s) => s.role);
+
     const therapists = await User.find(
       {
         $or: [
-          { role: { $in: booking.formRoles } }, // for array-based roles
-          { role: { $in: booking.formRoles.map((r) => r.toLowerCase()) } }, // handle lowercase if needed
+          { role: { $in: serviceRoles } },
+          { role: { $in: serviceRoles.map((r) => r.toLowerCase()) } },
         ],
       },
       "email phoneNumber zipCode location"
     );
 
-    if (!therapists.length) {
+    if (!Array.isArray(therapists) || therapists.length === 0) {
       return res.status(404).send("No therapists found");
     }
 
-    const maxDistance = 92;
-    const eligibleTherapists = [];
-    //console.log("Therapists:", therapists);
-    for (const therapist of therapists) {
-      //console.log("Booking Location:", booking.location);
-      //console.log("Therapist Location:", therapist.location);
-      const inRange = checkLocationDistance(
+    // If booking location is missing, do not notify any therapists
+    if (
+      !booking.location ||
+      booking.location.lat == null ||
+      booking.location.lng == null
+    ) {
+      return res
+        .status(400)
+        .send("Booking location missing, cannot notify therapists");
+    }
+
+    const eligibleTherapists = therapists.filter((therapist) => {
+      if (
+        !therapist.location ||
+        therapist.location.lat == null ||
+        therapist.location.lng == null
+      ) {
+        // If therapist location is missing, skip this therapist
+        return false;
+      }
+      return checkLocationDistance(
         booking.location.lat,
         booking.location.lng,
         therapist.location.lat,
         therapist.location.lng,
         92
       );
-      if (inRange) eligibleTherapists.push(therapist);
-    }
-    //console.log("Therapist", eligibleTherapists)
-    if (!eligibleTherapists.length) {
+    });
+
+    if (!Array.isArray(eligibleTherapists) || eligibleTherapists.length === 0) {
       return res.status(404).send("No therapists in range");
     }
 
@@ -366,7 +389,7 @@ router.post("/new-medicalbooking", async (req, res) => {
       date,
       startTime,
       documentUrl,
-      visit
+      visit,
     } = req.body;
 
     const geoRes = await axios.get(
@@ -405,7 +428,7 @@ router.post("/new-medicalbooking", async (req, res) => {
       date,
       startTime,
       documentUrl,
-      visit
+      visit,
     });
     const confirmationLink = `https://motgpayment.com/confirm-medicalbooking/${newBooking._id}`;
 
@@ -419,7 +442,8 @@ router.post("/new-medicalbooking", async (req, res) => {
       const emailData = {
         from: process.env.EMAIL_USER, // Must be a verified Mailgun sender
         to: [
-          "hello@massageonthegomemphis.com", "sam@massageonthegomemphis.com"
+          "hello@massageonthegomemphis.com",
+          "sam@massageonthegomemphis.com",
         ], // Recipient email
         subject: "New Booking Confirmation",
         html: `<h2>New Booking Details</h2>
