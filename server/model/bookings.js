@@ -19,7 +19,7 @@ const bookingSchema = new mongoose.Schema({
       price: { type: Number, required: true },      // role-level subtotal
     },
   ],
-  totalPrice: { type: Number, required: true },
+  totalPrice: { type: Number, required: false },
   date: { type: String, required: true },
   startTime: { type: String, required: true },
   endTime: { type: String, required: true },

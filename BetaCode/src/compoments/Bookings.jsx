@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Button from "react-bootstrap/Button";
@@ -128,7 +127,7 @@ function Bookings() {
     }
   };
 
-// Helper to get full role label from value
+  // Helper to get full role label from value
   const getRoleLabel = (roleValue) => {
     const found = options.find((opt) => opt.value === roleValue);
     return found ? found.label : roleValue;
@@ -270,35 +269,53 @@ function Bookings() {
       // For non-admin users, filter bookings by role match OR assignment availability
 
       const filtered = formattedBookings.filter((booking) => {
-        // Make sure the booking even has services
-        if (!Array.isArray(booking.services) || booking.services.length === 0)
-          return false;
+        // New schema: role-based
+        if (Array.isArray(booking.services) && booking.services.length > 0) {
+          // Does this worker have a role that matches a service in this booking?
+          const hasMatchingService = booking.services?.some((srv) =>
+            userRoles.includes(srv.role)
+          );
+          if (!hasMatchingService) return false;
 
-        // Does this worker have a role that matches a service in this booking?
-        const hasMatchingService = booking.services?.some((srv) =>
-          userRoles.includes(srv.role)
-        );
-        if (!hasMatchingService) return false;
+          // Role-based slot availability
+          let roleAvailable = false;
+          booking.services.forEach((srv) => {
+            if (userRoles.includes(srv.role)) {
+              const assignedCount =
+                booking.assignedTherapists?.filter((t) => t.role === srv.role)
+                  .length || 0;
 
-        // Role-based slot availability
-        let roleAvailable = false;
-        booking.services.forEach((srv) => {
-          if (userRoles.includes(srv.role)) {
-            const assignedCount =
-              booking.assignedTherapists?.filter((t) => t.role === srv.role)
-                .length || 0;
-
-            if (assignedCount < srv.workers) {
-              roleAvailable = true;
+              if (assignedCount < srv.workers) {
+                roleAvailable = true;
+              }
             }
-          }
-        });
+          });
 
-        const isAlreadyAssigned = booking.assignedTherapists?.some(
-          (t) => t._id === userId
-        );
+          const isAlreadyAssigned = booking.assignedTherapists?.some(
+            (t) => t._id === userId
+          );
 
-        return roleAvailable || isAlreadyAssigned;
+          return roleAvailable || isAlreadyAssigned;
+        }
+
+        // Legacy schema: no services array
+        if (
+          typeof booking.therapist === "number" &&
+          booking.therapist > 0 &&
+          Array.isArray(booking.assignedTherapists)
+        ) {
+          // Show if not filled or if user is already assigned
+          const isAlreadyAssigned = booking.assignedTherapists.some(
+            (t) => t._id === userId
+          );
+          return (
+            booking.assignedTherapists.length < booking.therapist ||
+            isAlreadyAssigned
+          );
+        }
+
+        // Otherwise, don't show
+        return false;
       });
 
       const sorted = sortBookings(filtered, sortOption);
@@ -485,14 +502,14 @@ function Bookings() {
       [bookingId]: prev[bookingId] || { input1: "", input2: "", input3: "" },
     }));
     // Debug: Log assignedTherapists and booking for legacy bookings
-    const booking = bookings.find((b) => b._id === bookingId);
-    if (booking && (!booking.rolesInfo || booking.rolesInfo.length === 0)) {
-      console.log("Legacy Booking Debug:", {
-        bookingId,
-        assignedTherapists: booking.assignedTherapists,
-        booking,
-      });
-    }
+    // const booking = bookings.find((b) => b._id === bookingId);
+    // if (booking && (!booking.rolesInfo || booking.rolesInfo.length === 0)) {
+    //   console.log("Legacy Booking Debug:", {
+    //     bookingId,
+    //     assignedTherapists: booking.assignedTherapists,
+    //     booking,
+    //   });
+    // }
   };
 
   const handleClose = () => {
@@ -799,20 +816,30 @@ function Bookings() {
                       <div className="button-container">
                         <Button onClick={() => handleShow(booking._id)}>
                           {Array.isArray(booking.rolesInfo) &&
-                          booking.rolesInfo.some(
-                            (role) =>
-                              Array.isArray(role.assigned) &&
-                              role.assigned.some(
-                                (t) => t && t._id === currentUserId
-                              )
-                          )
-                            ? "You Joined"
-                            : Array.isArray(booking.rolesInfo) &&
+                          booking.rolesInfo.length > 0
+                            ? // New schema: role-based logic
                               booking.rolesInfo.some(
-                                (role) => role.spotsLeft > 0
+                                (role) =>
+                                  Array.isArray(role.assigned) &&
+                                  role.assigned.some(
+                                    (t) => t && t._id === currentUserId
+                                  )
                               )
-                            ? "Assign Therapist"
-                            : "Filled"}
+                              ? "You Joined"
+                              : booking.rolesInfo.some(
+                                  (role) => role.spotsLeft > 0
+                                )
+                              ? "Assign Therapist"
+                              : "Filled"
+                            : typeof booking.therapist === "number" &&
+                              booking.therapist > 0
+                            ? // Legacy schema: use therapist count
+                              (booking.assignedTherapists?.length || 0) <
+                              booking.therapist
+                              ? "Assign Therapist"
+                              : "Filled"
+                            : // Fallback for legacy bookings with missing therapist field
+                              "Assign Therapist"}
                         </Button>
 
                         {/* {!booking.isComplete && (

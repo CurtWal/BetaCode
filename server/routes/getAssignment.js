@@ -72,6 +72,85 @@ router.post("/assign-therapist", async (req, res) => {
       return res.status(404).json({ message: "Booking not found" });
     }
 
+    // --- Legacy schema support ---
+    if (!Array.isArray(booking.services) || booking.services.length === 0) {
+      // Count assigned therapists
+      const assignedCount = await TherapistAssignment.countDocuments({
+        bookingId,
+      });
+      if (assignedCount >= booking.therapist) {
+        return res
+          .status(400)
+          .json({ message: "All therapist spots are filled" });
+      }
+      // Prevent duplicate assignment
+      const existingAssignment = await TherapistAssignment.findOne({
+        bookingId,
+        therapistId,
+      });
+      if (existingAssignment) {
+        return res
+          .status(400)
+          .json({ message: "You have already joined this booking" });
+      }
+      // Assign therapist (no role)
+      const assignment = new TherapistAssignment({
+        bookingId,
+        therapistId,
+      });
+      await assignment.save();
+
+      // Google Calendar logic (unchanged)
+      const user = await User.findById(therapistId);
+      if (user?.googleTokens?.refresh_token) {
+        const oauth2Client = new google.auth.OAuth2(
+          process.env.GOOGLE_CLIENT_ID,
+          process.env.GOOGLE_CLIENT_SECRET,
+          process.env.GOOGLE_REDIRECT_URI
+        );
+        oauth2Client.setCredentials({
+          refresh_token: user.googleTokens.refresh_token,
+        });
+        const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+        const event = {
+          summary: `Massage Booking - ${booking.companyName}`,
+          location: booking.address,
+          description: booking.extra || "Massage booking",
+          start: {
+            dateTime: new Date(
+              `${booking.date}T${booking.startTime}:00`
+            ).toISOString(),
+            timeZone: "America/Chicago",
+          },
+          end: {
+            dateTime: new Date(
+              `${booking.date}T${booking.endTime}:00`
+            ).toISOString(),
+            timeZone: "America/Chicago",
+          },
+        };
+        try {
+          const createdEvent = await calendar.events.insert({
+            calendarId: "primary",
+            resource: event,
+          });
+          assignment.googleEventId = createdEvent.data.id;
+          await assignment.save();
+        } catch (err) {
+          console.error(
+            "❌ Failed to create Google Calendar event:",
+            err.message
+          );
+        }
+      }
+      return res.json({
+        message: "You have successfully joined this booking",
+        assignment,
+        spotsLeft: booking.therapist - (assignedCount + 1),
+      });
+    }
+
+    // --- New schema: role-based logic ---
     // Check if the role is valid for this booking
     const roleObj = booking.services.find((srv) => srv.role === role);
     if (!roleObj) {
@@ -165,6 +244,7 @@ router.post("/assign-therapist", async (req, res) => {
     res.status(500).json({ message: "Error assigning therapist", error });
   }
 });
+
 
 router.post("/send-email-on-spot-fill", async (req, res) => {
   try {

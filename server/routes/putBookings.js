@@ -107,7 +107,7 @@ router.get("/cron/mark-complete", async (req, res) => {
     const booking = await bookings.find({ isComplete: false });
 
     for (let books of booking) {
-      const bookingDateTime = new Date(`${books.date}T${books.endTime}`);
+      const bookingDateTime = parseTime(books.date, books.endTime);
       if (bookingDateTime < now) {
         books.isComplete = true;
         await books.save();
@@ -120,6 +120,21 @@ router.get("/cron/mark-complete", async (req, res) => {
     res.status(500).json({ message: "Error processing cron task." });
   }
 });
+
+// Helper function
+function parseTime(dateStr, timeStr) {
+  if (/^\d{2}:\d{2}$/.test(timeStr)) {
+    return new Date(`${dateStr}T${timeStr}:00`);
+  }
+  const [time, modifier] = timeStr.split(" ");
+  let [hours, minutes] = time.split(":").map(Number);
+  if (modifier === "PM" && hours !== 12) hours += 12;
+  if (modifier === "AM" && hours === 12) hours = 0;
+  hours = hours.toString().padStart(2, "0");
+  minutes = minutes.toString().padStart(2, "0");
+  return new Date(`${dateStr}T${hours}:${minutes}:00`);
+}
+
 router.get("/cron/mark-medical-complete", async (req, res) => {
   try {
     const now = new Date();
