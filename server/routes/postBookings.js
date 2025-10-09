@@ -124,7 +124,7 @@ router.post("/new-booking", async (req, res) => {
     try {
       const emailData = {
         from: process.env.EMAIL_USER, // Must be a verified Mailgun sender
-        to: ["curtrickwalton@gmail.com"], // Recipient email
+        to: ["hello@massageonthegomemphis.com", "sam@massageonthegomemphis.com"], // Recipient email
         subject: "New Booking Confirmation",
         html: `<h2>New Booking Details</h2>
             <p><strong>Price:</strong> $${newBooking.totalPrice} ${payType}</p>
