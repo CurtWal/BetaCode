@@ -38,12 +38,22 @@ router.put("/bookings/:id", async (req, res) => {
       booking.zipCode = updateData.zipCode;
     }
 
-    // Update other fields safely
-    Object.keys(updateData).forEach((key) => {
-      if (key !== "zipCode") {
-        booking[key] = updateData[key];
-      }
-    });
+// ENFORCE LEGACY-ONLY EDITING: Only update services if booking already has services
+    if (
+      Array.isArray(updateData.services) &&
+      updateData.services.length > 0 &&
+      Array.isArray(booking.services) &&
+      booking.services.length > 0
+    ) {
+      booking.services = updateData.services;
+    }
+
+// Update other fields safely, but skip services and zipCode
+Object.keys(updateData).forEach((key) => {
+  if (key !== "zipCode" && key !== "services") {
+    booking[key] = updateData[key];
+  }
+});
 
     await booking.save();
 
