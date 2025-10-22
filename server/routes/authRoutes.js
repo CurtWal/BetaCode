@@ -189,7 +189,7 @@ router.post("/therapistregister", async (req, res) => {
         to: ["hello@massageonthegomemphis.com", "sam@massageonthegomemphis.com"], // Recipient email
         subject: "New Wellness Worker Registered",
         html: `
-            <h2>New Therapist Details</h2>
+            <h2>New Wellness Worker Details</h2>
             <p><strong>Name:</strong> ${newUser.username}</p>
             <p><strong>Email:</strong> ${newUser.email}</p>
             <p><strong>License ID:</strong> ${newUser.licenseId}</p>

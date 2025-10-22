@@ -30,11 +30,39 @@ app.use(bodyParser.json());
 
 app.use(cors());
 
+const MONGO_URI = process.env.MERNDBDATA;
+const POOL_SIZE = Number(process.env.MONGO_MAX_POOL_SIZE) || 20;
 
-mongoose
-  .connect(process.env.MERNDBDATA)
-  .then(() => console.log("Connected to Mongoose"))
-  .catch((err) => console.log("Error connecting to MongoDB:", err));
+async function connectOnce() {
+  if (mongoose.connection.readyState === 1) return; // already connected
+  await mongoose.connect(MONGO_URI, {
+    maxPoolSize: POOL_SIZE,
+    serverSelectionTimeoutMS: 5000,
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  });
+  console.log("Connected to Mongoose (pool size: " + POOL_SIZE + ")");
+}
+
+// ensure single connection at startup
+connectOnce().catch((err) => console.error("Error connecting to MongoDB:", err));
+
+// Graceful shutdown
+process.on("SIGINT", async () => {
+  console.log("SIGINT received: closing mongoose connection");
+  try {
+    await mongoose.connection.close(false);
+    console.log("Mongoose connection closed");
+    process.exit(0);
+  } catch (e) {
+    console.error("Error during mongoose disconnect", e);
+    process.exit(1);
+  }
+});
+// mongoose
+//   .connect(process.env.MERNDBDATA)
+//   .then(() => console.log("Connected to Mongoose"))
+//   .catch((err) => console.log("Error connecting to MongoDB:", err));
 app.get("/", (req, res) => {
   res.send("Hello World!");
 });
