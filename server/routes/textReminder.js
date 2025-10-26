@@ -47,6 +47,20 @@ const sendSMS = async ({ to, message }) => {
   }
 };
 
+function convertTo12Hour(timeStr) {
+  if (!timeStr) return "";
+  const s = timeStr.trim();
+  // if already contains AM/PM, return as-is
+  if (/(AM|PM)$/i.test(s)) return s;
+  const m = s.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (!m) return s;
+  let hh = parseInt(m[1], 10);
+  const mm = m[2];
+  const ampm = hh >= 12 ? "PM" : "AM";
+  hh = hh % 12;
+  if (hh === 0) hh = 12;
+  return `${hh}:${mm} ${ampm}`;
+}
 router.get("/reminder", async (req, res) => {
   try {
     const now = new Date();
@@ -137,7 +151,9 @@ router.get("/reminder", async (req, res) => {
     for (const { therapist, bookings } of therapistBookingMap.values()) {
       const messageLines = bookings.map(
         (b) =>
-          `${b.companyName} on ${b.date} at ${b.startTime} and ends at ${b.endTime}`
+          `${b.companyName} on ${b.date} at ${convertTo12Hour(
+            b.startTime
+          )} and ends at ${convertTo12Hour(b.endTime)}`
       );
       const message = `Reminder! There are ${
         bookings.length
