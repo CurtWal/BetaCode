@@ -39,49 +39,81 @@ router.post("/export-bookings", verifyToken, async (req, res) => {
         // Fetch confirmed bookings
         const bookings = await Booking.find({ confirmed: true }).lean();
     
+        // Build a quick map of existing rows by booking id for fast lookup
+        const existingMap = new Map();
+        for (let i = 0; i < existingRows.length; i++) {
+          const row = existingRows[i];
+          if (row && row[0]) existingMap.set(row[0].toString(), { row, index: i });
+        }
+
         const newRows = [];
-        const updates = [];
-    
+        const valueRangesToUpdate = [];
+
         for (const b of bookings) {
+          // Compute totals: prefer new-schema values (services / totalPrice) and fall back to legacy fields
+          let totalPrice =
+            typeof b.totalPrice !== "undefined" ? b.totalPrice : b.price || 0;
+          let totalWorkers =
+            typeof b.therapist === "number" ? b.therapist : 0;
+          let totalHours =
+            typeof b.eventHours === "number" ? b.eventHours : 0;
+          let totalIncrement =
+            typeof b.eventIncrement === "number" ? b.eventIncrement : 0;
+
+          if (Array.isArray(b.services) && b.services.length > 0) {
+            totalPrice =
+              b.services.reduce((acc, svc) => acc + (Number(svc.price) || 0), 0) ||
+              totalPrice;
+            totalWorkers =
+              b.services.reduce((acc, svc) => acc + (Number(svc.workers) || 0), 0) ||
+              totalWorkers;
+            totalHours =
+              b.services.reduce((acc, svc) => acc + (Number(svc.hours) || 0), 0) ||
+              totalHours;
+            totalIncrement =
+              b.services.reduce(
+                (acc, svc) => acc + (Number(svc.increment) || 0),
+                0
+              ) || totalIncrement;
+          }
+
           const row = [
             b._id.toString(),
-            `$${b.price}`,
+            `$${totalPrice}`,
             b.companyName,
             b.name,
             b.email,
             b.address,
             b.zipCode,
-            b.therapist,
-            b.eventHours,
-            b.eventIncrement,
+            totalWorkers,
+            totalHours,
+            totalIncrement,
             b.date,
             convertTo12Hour(b.startTime),
             convertTo12Hour(b.endTime),
-            b.isComplete ? "TRUE" : "FALSE", // Column n
+            b.isComplete ? "TRUE" : "FALSE",
           ];
-    
-          const matchIndex = existingRows.findIndex(r => r[0] === b._id.toString());
-    
-          if (matchIndex === -1) {
+
+          const existing = existingMap.get(b._id.toString());
+          if (!existing) {
             // Booking not in sheet, add to newRows
             newRows.push(row);
           } else {
-            // Booking already in sheet, check isComplete
-            const rowNumber = matchIndex + 1;
-            updates.push(
-              sheets.spreadsheets.values.update({
-                spreadsheetId,
+            // Only update if the row content changed
+            const existingRow = existing.row;
+            // Normalize undefineds to empty strings for fair comparison
+            const normalize = (arr) => arr.map((c) => (typeof c === "undefined" ? "" : String(c)));
+            if (JSON.stringify(normalize(existingRow)) !== JSON.stringify(normalize(row))) {
+              const rowNumber = existing.index + 1;
+              valueRangesToUpdate.push({
                 range: `Sheet1!A${rowNumber}:N${rowNumber}`,
-                valueInputOption: "RAW",
-                resource: {
-                  values: [row],
-                },
-              })
-            );
+                values: [row],
+              });
+            }
           }
         }
     
-        // Add new bookings to the sheet
+        // Add new bookings to the sheet (single append)
         if (newRows.length > 0) {
           await sheets.spreadsheets.values.append({
             spreadsheetId,
@@ -93,15 +125,54 @@ router.post("/export-bookings", verifyToken, async (req, res) => {
           });
         }
     
-        // Update isComplete values
-        if (updates.length > 0) {
-          await Promise.all(updates);
+        // Batch-update only rows that actually changed
+        async function sleep(ms) {
+          return new Promise((r) => setTimeout(r, ms));
         }
     
+        async function sendBatchUpdate(ranges) {
+          const resource = {
+            data: ranges.map((r) => ({ range: r.range, values: r.values })),
+            valueInputOption: "RAW",
+          };
+          return sheets.spreadsheets.values.batchUpdate({
+            spreadsheetId,
+            resource,
+          });
+        }
+    
+        // chunk size tuned to avoid per-minute-per-user quota (adjust if needed)
+        const CHUNK_SIZE = 25;
+        const chunks = [];
+        for (let i = 0; i < valueRangesToUpdate.length; i += CHUNK_SIZE) {
+          chunks.push(valueRangesToUpdate.slice(i, i + CHUNK_SIZE));
+        }
+    
+        for (const chunk of chunks) {
+          let attempt = 0;
+          const maxAttempts = 5;
+          let backoffMs = 1000;
+          while (attempt < maxAttempts) {
+            try {
+              await sendBatchUpdate(chunk);
+              break; // success, move to next chunk
+            } catch (err) {
+              attempt++;
+              const status = err && err.response && err.response.status;
+              if (status === 429 || (status >= 500 && status < 600)) {
+                console.warn(`Batch update attempt ${attempt} failed (${status}). retrying in ${backoffMs}ms`);
+                await sleep(backoffMs);
+                backoffMs *= 2;
+                continue;
+              }
+              throw err;
+            }
+          }
+        }
         res.status(200).json({
           message: "Export complete",
           added: newRows.length,
-          updated: updates.length,
+          updated: valueRangesToUpdate.length,
         });
       } catch (err) {
         console.error("Error exporting to Google Sheets:", err);
