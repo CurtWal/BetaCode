@@ -71,6 +71,39 @@ router.post("/assign-therapist", async (req, res) => {
     if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
     }
+    // Check for overlapping or too-close bookings based on if therapist already has assignments within 1 hour
+    const therapistAssignments = await TherapistAssignment.find({
+      therapistId,
+    }).populate("bookingId");
+
+    const BUFFER_MS = 60 * 60 * 1000; // 1 hour buffer in milliseconds
+
+    const parseDateTime = (dateStr, timeStr) => {
+      // Combine date and time into a proper Date object
+      return new Date(`${dateStr} ${timeStr}`);
+    };
+
+    const newStart = parseDateTime(booking.date, booking.startTime);
+    const newEnd = parseDateTime(booking.date, booking.endTime);
+
+    for (const assign of therapistAssignments) {
+      const b = assign.bookingId;
+      if (!b || b.date !== booking.date) continue;
+
+      const existingStart = parseDateTime(b.date, b.startTime);
+      const existingEnd = parseDateTime(b.date, b.endTime);
+
+      const bufferedStart = new Date(existingStart.getTime() - BUFFER_MS);
+      const bufferedEnd = new Date(existingEnd.getTime() + BUFFER_MS);
+
+      // Check for overlap or within 1 hour
+      if (newStart < bufferedEnd && newEnd > bufferedStart) {
+        return res.status(400).json({
+          message:
+            "You cannot accept this booking because it overlaps or is within 1 hour of another booking you have accepted.",
+        });
+      }
+    }
 
     // --- Legacy schema support ---
     if (!Array.isArray(booking.services) || booking.services.length === 0) {
@@ -245,7 +278,6 @@ router.post("/assign-therapist", async (req, res) => {
   }
 });
 
-
 router.post("/send-email-on-spot-fill", async (req, res) => {
   try {
     const { bookingId } = req.body;
@@ -290,7 +322,10 @@ router.post("/send-email-on-spot-fill", async (req, res) => {
     try {
       const emailData = {
         from: process.env.EMAIL_USER, // Must be a verified Mailgun sender
-        to: ["hello@massageonthegomemphis.com", "sam@massageonthegomemphis.com"], // Recipient email
+        to: [
+          "hello@massageonthegomemphis.com",
+          "sam@massageonthegomemphis.com",
+        ], // Recipient email
         subject: "All Wellness Spots Have Been Filled!",
         html: `<h2>All Wellness Spots Have Been Filled!</h2>
             <p>Good news! All wellness spots for the booking have been successfully filled.</p>
@@ -523,7 +558,10 @@ router.post("/leave-booking", async (req, res) => {
       try {
         const emailData = {
           from: process.env.EMAIL_USER, // Must be a verified Mailgun sender
-          to: ["hello@massageonthegomemphis.com", "sam@massageonthegomemphis.com"], // Recipient email
+          to: [
+            "hello@massageonthegomemphis.com",
+            "sam@massageonthegomemphis.com",
+          ], // Recipient email
           subject: `${getRoleLabel(role)} Has Left a Booking`,
           html: `<h4>Name: ${therapist.username}</h4>
           <h4>Email: ${therapist.email}</h4>

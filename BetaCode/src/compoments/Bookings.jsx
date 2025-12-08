@@ -83,6 +83,13 @@ function Bookings() {
 
   // Handler to join a booking for a specific role
   const joinRole = async (bookingId, role) => {
+
+    // Used for fake bookings testing
+//     if (bookingId === "fake-ok" || bookingId === "fake-conflict" || "fake-test") {
+//   alert("➡️ This is a fake test booking. No backend requests will be made.");
+//   return;
+// }
+
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -127,6 +134,39 @@ function Bookings() {
     }
   };
 
+// Bookings the user is already assigned to
+const acceptedBookings = bookings.filter((b) =>
+  Array.isArray(b.rolesInfo) &&
+  b.rolesInfo.some((role) =>
+    Array.isArray(role.assigned) &&
+    role.assigned.some((t) => t._id === currentUserId)
+  )
+);
+//  Helper to parse date and time strings into Date objects
+function parseDateTime(dateStr, timeStr) {
+  // Example: "12/25/2025 8:00 AM"
+  return new Date(`${dateStr} ${timeStr}`);
+}
+//  Check for time conflicts with existing bookings
+function hasTimeConflict(newBooking, existingBookings) {
+  const newStart = parseDateTime(newBooking.date, newBooking.startTime);
+  const newEnd = parseDateTime(newBooking.date, newBooking.endTime);
+
+
+  return existingBookings.some((b) => {
+    const start = parseDateTime(b.date, b.startTime);
+    const end = parseDateTime(b.date, b.endTime);
+
+    // 1-hour buffer before & after
+    const oneHour = 60 * 60 * 1000;
+
+    const bufferedStart = new Date(start.getTime() - oneHour);
+    const bufferedEnd = new Date(end.getTime() + oneHour);
+
+    return newStart < bufferedEnd && newEnd > bufferedStart;
+  });
+}
+
   // Helper to get full role label from value
   const getRoleLabel = (roleValue) => {
     const found = options.find((opt) => opt.value === roleValue);
@@ -146,11 +186,11 @@ function Bookings() {
       alert(err.response?.data?.message || "Failed to leave role");
     }
   };
-
+// Helper to get selected options for react-select
   const getSelectedOptions = (selectedValues) => {
     return options.filter((opt) => selectedValues.includes(opt.value));
   };
-
+// Fetch booking prices from server
   const getBookingPrices = async () => {
     try {
       const response = await axios.get(
@@ -162,11 +202,11 @@ function Bookings() {
       console.error("Error fetching booking prices:", error);
     }
   };
-
+// Recalculate price when relevant inputs change
   useEffect(() => {
     getBookingPrices();
   }, []);
-
+// Recalculate price when relevant inputs change
   useEffect(() => {
     if (formType == "regular" && eventHours) {
       const hours = parseFloat(eventHours); // Convert to a number
@@ -188,7 +228,7 @@ function Bookings() {
       setPrice(basePrice + halfHourPrice);
     }
   }, [therapist, eventHours, regularPrice, specialPrice]);
-
+// Helper to sort bookings based on selected option
   const sortBookings = (bookingsList, option) => {
     const sorted = [...bookingsList];
     switch (option) {
@@ -742,6 +782,64 @@ function Bookings() {
     getBookings(); // Initial fetch
   }, [handleSubmit]);
 
+  // Fake bookings for testing join/leave and conflict detection
+// useEffect(() => {
+//   if (!bookings || bookings.length === 0) return;
+
+//   // Only add once
+//   if (bookings.some((b) => b._id === "fake-ok" || b._id === "fake-conflict")) {
+//     return;
+//   }
+
+//   const fakeAcceptable = {
+//     _id: "fake-ok",
+//     date: "12/25/2025",
+//     startTime: "8:00 AM",
+//     endTime: "9:00 AM",
+//     rolesInfo: [
+//       {
+//         role: "therapist",
+//         needed: 2,
+//         assigned: [],
+//         spotsLeft: 2,
+//       },
+//     ],
+//     isFake: true,
+//   };
+// const fake = {
+//         _id: "fake-test",
+//         date: "12/25/2025",
+//         startTime: "7:00 AM",
+//         endTime: "4:30 PM",
+//         rolesInfo: [
+//           {
+//             role: "therapist",
+//             needed: 2,
+//             assigned: [{_id: currentUserId}],
+//             spotsLeft: 2,
+//           },
+//         ],
+//         isFake: true,
+//       };
+//   const fakeConflict = {
+//     _id: "fake-conflict",
+//     date: "12/25/2025",
+//     startTime: "8:30 AM",
+//     endTime: "9:30 AM",
+//     rolesInfo: [
+//       {
+//         role: "therapist",
+//         needed: 2,
+//         assigned: [],
+//         spotsLeft: 2,
+//       },
+//     ],
+//     isFake: true, // Mark as fake so you could even hide edit buttons
+//   };
+
+//   // Insert them into your UI without affecting DB
+//   setBookings((prev) => [...prev, fakeAcceptable, fakeConflict, fake]);
+// }, [handleSubmit]);
   return (
     <div class="bookContentSize">
       <div>
@@ -755,7 +853,37 @@ function Bookings() {
 
         <div className="bookingContainer">
           <h1 style={{ textAlign: "center" }}>Bookings</h1>
-
+{/* {hasRole("admin") && (
+  <button
+    style={{ marginBottom: 10 }}
+    onClick={() => {
+      const fakes = {
+        _id: "fake-tests",
+        date: "12/25/2025",
+        startTime: "5:30 PM",
+        endTime: "6:30 PM",
+        rolesInfo: [
+          {
+            role: "therapist",
+            needed: 2,
+            assigned: [],
+            spotsLeft: 2,
+          },
+          {
+            role: "therapist",
+            needed: 2,
+            assigned: [],
+            spotsLeft: 2,
+          },
+        ],
+      };
+      setBookings((prev) => [...prev, fakes]);
+      alert("Fake test booking added!");
+    }}
+  >
+    Add Fake Test Booking
+  </button>
+)} */}
           <div className="bookings-controls">
             {hasRole("admin") && (
               <label>
@@ -1441,23 +1569,62 @@ function Bookings() {
                                                 </li>
                                               )}
                                             </ul>
-                                            {userHasRole &&
-                                              !userAssigned &&
-                                              roleInfo &&
-                                              roleInfo.spotsLeft > 0 && (
-                                                <Button
-                                                  size="sm"
-                                                  onClick={() =>
-                                                    joinRole(
-                                                      booking._id,
-                                                      roleInfo.role
-                                                    )
-                                                  }
-                                                  style={{ marginRight: 8 }}
-                                                >
-                                                  Join as {roleInfo.role}
-                                                </Button>
-                                              )}
+                                            {(() => {
+                                              const conflict = hasTimeConflict(
+                                                booking,
+                                                acceptedBookings
+                                              );
+
+                                              return (
+                                                <>
+                                                  {userHasRole &&
+                                                    !userAssigned &&
+                                                    roleInfo &&
+                                                    roleInfo.spotsLeft > 0 && (
+                                                      <>
+                                                        <Button
+                                                          size="sm"
+                                                          onClick={() =>
+                                                            joinRole(
+                                                              booking._id,
+                                                              roleInfo.role
+                                                            )
+                                                          }
+                                                          disabled={conflict}
+                                                          style={{
+                                                            marginRight: 8,
+                                                            opacity: conflict
+                                                              ? 0.5
+                                                              : 1,
+                                                            cursor: conflict
+                                                              ? "not-allowed"
+                                                              : "pointer",
+                                                          }}
+                                                        >
+                                                          Join as{" "}
+                                                          {roleInfo.role}
+                                                        </Button>
+
+                                                        {conflict && (
+                                                          <p
+                                                            style={{
+                                                              color: "red",
+                                                              fontSize: 12,
+                                                              marginTop: 4,
+                                                            }}
+                                                          >
+                                                            You cannot join this
+                                                            job — it overlaps or
+                                                            is within 1 hour of
+                                                            another job.
+                                                          </p>
+                                                        )}
+                                                      </>
+                                                    )}
+                                            
+                                                </>
+                                              );
+                                            })()}
                                             {userHasRole && userAssigned && (
                                               <Button
                                                 size="sm"
