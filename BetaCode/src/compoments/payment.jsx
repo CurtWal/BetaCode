@@ -109,6 +109,9 @@ const Payment = ({
           amount: price, // Amount in cents
           currency: "USD",
           formType: formType,
+          name: name,
+          email: email,
+          price: price
         }
       );
 
@@ -124,16 +127,16 @@ const Payment = ({
           address,
           zipCode,
           services,
-          price: finalAmount / 100, // Convert back to dollars
+          totalPrice: finalAmount / 100, // Convert back to dollars
           payType,
           startTime,
           endTime,
           extra,
           date,
           formRoles,
-          phoneNumber
+          phoneNumber,
+          formType,
         };
-
         await axios.post(
           `${import.meta.env.VITE_VERCEL}new-booking`,
           newBooking

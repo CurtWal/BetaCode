@@ -4,6 +4,8 @@ const { randomUUID } = require("crypto");
 const User = require("../model/user");
 const PromoPrice = require("../model/PromoPrice");
 const router = express.Router();
+const formData = require("form-data");
+const Mailgun = require("mailgun.js");
 
 // Make sure you have the SQUARE_ACCESS_TOKEN in your .env file
 const accessToken = process.env.Token;
@@ -19,8 +21,8 @@ const client = new Client({
 });
 
 router.post("/create-payment", async (req, res) => {
-//   console.log("Received payment request:", req.body);
-  const { sourceId, amount, currency, userId, formType } = req.body;
+  //   console.log("Received payment request:", req.body);
+  const { sourceId, amount, currency, userId, formType, name, email, price } = req.body;
 
   let finalAmount = amount * 100;
   let discountApplied = false;
@@ -72,7 +74,7 @@ router.post("/create-payment", async (req, res) => {
         user.points += 1; // Add point only if no discount was used
       }
       await user.save();
-    //   console.log(`User ${user.username} now has ${user.points} points.`);
+      //   console.log(`User ${user.username} now has ${user.points} points.`);
     }
 
     // console.log("Payment successful:", response.result);
@@ -81,6 +83,35 @@ router.post("/create-payment", async (req, res) => {
       discountApplied,
       finalAmount,
     });
+
+    const mg = new Mailgun(formData);
+    const mailgun = mg.client({
+      username: "api",
+      key: process.env.MAILGUN_KEY, // Add this to your .env file // Default Mailgun API URL
+    });
+    try {
+      const emailData = {
+        from: process.env.EMAIL_USER, // Must be a verified Mailgun sender
+        to: ["sam@massageonthegomemphis.com"], // Recipient email
+        subject: "Booking Payment Confirmation",
+        html: `<h2>Booking Payment Has been made</h2>
+                <p><strong>Payment Made:</strong> $${price} Has been paid by Card</p>
+                <p><strong>Paid by:</strong> ${name}</p>
+                <p><strong>Email:</strong> ${email}</p>
+              `,
+        "h:X-Sent-Using": "Mailgun",
+        "h:X-Source": "MassageOnTheGo",
+      };
+
+      const response = await mailgun.messages.create(
+        "motgpayment.com", // Your Mailgun domain (e.g., "mg.yourdomain.com")
+        emailData
+      );
+
+      //console.log("Mailgun Response:", response);
+    } catch (error) {
+      console.error("Error sending email via Mailgun:", error);
+    }
   } catch (error) {
     console.error("Payment failed:", error);
     res.status(500).json({ error: "Payment failed", details: error.message });
