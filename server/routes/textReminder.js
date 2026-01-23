@@ -61,28 +61,20 @@ function convertTo12Hour(timeStr) {
   if (hh === 0) hh = 12;
   return `${hh}:${mm} ${ampm}`;
 }
+
 router.get("/reminder", async (req, res) => {
   try {
     const now = new Date();
-    //const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    const threeMinutesAgo = new Date(now.getTime() - 3 * 60 * 1000);
-    //console.log(threeMinutesAgo);
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    //const threeMinutesAgo = new Date(now.getTime() - 3 * 60 * 1000);
     const maxDistance = 92;
 
     const bookings = await Booking.find({
       confirmed: true,
       date: { $exists: true },
     });
-    //console.log(bookings);
-    // const therapists = await User.find({
-    //    $or: [
-    //   { role: { $in: bookings.formRoles } },
-    //   { role: { $in: bookings.formRoles.map((r) => r.toLowerCase()) } },
-    // ],
-    //   phoneNumber: { $ne: "" },
-    //   location: { $exists: true },
-    // });
-    const therapistBookingMap = new Map(); // therapistId => [booking, ...]
+
+    const therapistBookingMap = new Map();
     const remindersToLog = [];
 
     for (const booking of bookings) {
@@ -90,6 +82,19 @@ router.get("/reminder", async (req, res) => {
       if (booking.isComplete) continue;
 
       const serviceRoles = booking.services.map((s) => s.role);
+
+      const totalWorkersNeeded = booking.services.reduce(
+        (sum, s) => sum + (s.workers || 0),
+        0
+      );
+
+      const assigned = await TherapistAssignment.find({
+        bookingId: booking._id,
+      });
+
+      if (assigned.length >= totalWorkersNeeded) continue;
+
+      const assignedIds = assigned.map((a) => a.therapistId.toString());
 
       const therapists = await User.find({
         $or: [
@@ -99,12 +104,6 @@ router.get("/reminder", async (req, res) => {
         phoneNumber: { $ne: "" },
         location: { $exists: true },
       });
-      const assigned = await TherapistAssignment.find({
-        bookingId: booking._id,
-      });
-      if (assigned.length >= booking.therapist) continue;
-
-      const assignedIds = assigned.map((a) => a.therapistId.toString());
 
       for (const therapist of therapists) {
         if (!therapist.location?.lat || !therapist.location?.lng) continue;
@@ -122,7 +121,7 @@ router.get("/reminder", async (req, res) => {
         const alreadyReminded = await TherapistReminder.findOne({
           bookingId: booking._id,
           therapistId: therapist._id,
-          sentAt: { $gte: threeMinutesAgo, $lte: now },
+          sentAt: { $gte: twentyFourHoursAgo, $lte: now },
         });
 
         if (alreadyReminded) continue;
@@ -141,47 +140,50 @@ router.get("/reminder", async (req, res) => {
         remindersToLog.push({
           bookingId: booking._id,
           therapistId: therapist._id,
-          dateSent: new Date(),
+          sentAt: new Date(),
         });
       }
     }
 
-    // Create SMS messages
     const smsQueue = [];
+
     for (const { therapist, bookings } of therapistBookingMap.values()) {
-      const messageLines = bookings.map(
+      const lines = bookings.map(
         (b) =>
           `${b.companyName} on ${b.date} at ${convertTo12Hour(
             b.startTime
-          )} and ends at ${convertTo12Hour(b.endTime)}`
+          )} – ${convertTo12Hour(b.endTime)}`
       );
-      const message = `Reminder! There are ${
-        bookings.length
-      } open bookings nearby:\n\n${messageLines.join(
-        "\n"
-      )}\n\nLog in to accept!`;
 
-      smsQueue.push({ to: therapist.phoneNumber, message });
+      smsQueue.push({
+        to: therapist.phoneNumber.startsWith("+")
+          ? therapist.phoneNumber
+          : `+1${therapist.phoneNumber}`,
+        message: `📢 Reminder! You have ${
+          bookings.length
+        } open booking(s):\n\n${lines.join(
+          "\n"
+        )}\n\nLog in to accept.`,
+      });
     }
 
-    // Send in batches
     const batches = chunkArray(smsQueue, BATCH_SIZE);
+
     for (let i = 0; i < batches.length; i++) {
       await Promise.all(batches[i].map((msg) => sendSMS(msg)));
       if (i < batches.length - 1) {
-        await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY_MS));
+        await new Promise((r) => setTimeout(r, BATCH_DELAY_MS));
       }
     }
 
-    // Save reminders
     await TherapistReminder.insertMany(remindersToLog);
 
-    return res.status(200).json({
-      message: `Sent ${smsQueue.length} SMS reminders to therapists.`,
+    res.status(200).json({
+      message: `Sent ${smsQueue.length} SMS reminders.`,
     });
-  } catch (error) {
-    console.error("Reminder error:", error);
-    return res.status(500).json({ message: "Server error" });
+  } catch (err) {
+    console.error("🔥 Reminder error:", err);
+    res.status(500).json({ message: "Server error" });
   }
 });
 

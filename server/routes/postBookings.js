@@ -12,6 +12,7 @@ const authToken = process.env.TWILIO_AUTH_TOKEN;
 const PhoneNumber = process.env.TWILIO_NUMBER;
 const client = twilio(accountSid, authToken);
 sgMail.setApiKey(process.env.SENDGRID_KEY);
+const TherapistReminder = require("../model/TherapistReminder");
 
 const formData = require("form-data");
 const Mailgun = require("mailgun.js");
@@ -34,16 +35,16 @@ const convertTo12Hour = (time) => {
   const formattedHour = hour % 12 || 12; // Convert 0 to 12 for 12AM
   return `${formattedHour}:${minute.toString().padStart(2, "0")} ${period}`;
 };
-  // Helper to format hours as 'X hours Y minutes'
-  const formatServiceHours = (hours) => {
-    const num = parseFloat(hours);
-    const wholeHours = Math.floor(num);
-    const minutes = num % 1 !== 0 ? 30 : 0;
-    return `${wholeHours} hour${wholeHours !== 1 ? "s" : ""}${
-      minutes ? ` ${minutes} mins` : ""
-    }`;
-  };
-  
+// Helper to format hours as 'X hours Y minutes'
+const formatServiceHours = (hours) => {
+  const num = parseFloat(hours);
+  const wholeHours = Math.floor(num);
+  const minutes = num % 1 !== 0 ? 30 : 0;
+  return `${wholeHours} hour${wholeHours !== 1 ? "s" : ""}${
+    minutes ? ` ${minutes} mins` : ""
+  }`;
+};
+
 // const sendEmailsInBatches = async (recipients, subject, htmlContent, batchSize = 10, delayMs = 5000) => {
 //   for (let i = 0; i < recipients.length; i += batchSize) {
 //     const batch = recipients.slice(i, i + batchSize);
@@ -89,7 +90,7 @@ router.post("/new-booking", async (req, res) => {
     } = req.body;
 
     const geoRes = await axios.get(
-      `https://api.geocod.io/v1.7/geocode?q=${zipCode}&api_key=${process.env.GEO_CODIO_API}`
+      `https://api.geocod.io/v1.7/geocode?q=${zipCode}&api_key=${process.env.GEO_CODIO_API}`,
     );
     const location = geoRes?.data?.results?.[0]?.location || null;
 
@@ -124,7 +125,10 @@ router.post("/new-booking", async (req, res) => {
     try {
       const emailData = {
         from: process.env.EMAIL_USER, // Must be a verified Mailgun sender
-        to: ["hello@massageonthegomemphis.com", "sam@massageonthegomemphis.com"], // Recipient email
+        to: [
+          "hello@massageonthegomemphis.com",
+          "sam@massageonthegomemphis.com",
+        ], // Recipient email
         subject: "New Booking Confirmation",
         html: `<h2>New Booking Details</h2>
             <p><strong>Price:</strong> $${newBooking.totalPrice} ${payType}</p>
@@ -144,16 +148,16 @@ router.post("/new-booking", async (req, res) => {
           Hours: ${formatServiceHours(service.hours)}<br/>
           Increment: ${service.increment} minutes
         </li>
-      `
+      `,
                 )
                 .join("")}
             </ul>
             <p><strong>Available Date:</strong> ${newBooking.date}</p>
             <p><strong>Start Time:</strong> ${convertTo12Hour(
-              newBooking.startTime
+              newBooking.startTime,
             )}</p>
             <p><strong>End Time:</strong> ${convertTo12Hour(
-              newBooking.endTime
+              newBooking.endTime,
             )}</p>
             <p><strong>Extra Info:</strong> ${newBooking.extra}</p>
             <br />
@@ -165,7 +169,7 @@ router.post("/new-booking", async (req, res) => {
 
       const response = await mailgun.messages.create(
         "motgpayment.com", // Your Mailgun domain (e.g., "mg.yourdomain.com")
-        emailData
+        emailData,
       );
 
       //console.log("Mailgun Response:", response);
@@ -237,7 +241,7 @@ router.get("/confirm-booking/:id", async (req, res) => {
           { role: { $in: serviceRoles.map((r) => r.toLowerCase()) } },
         ],
       },
-      "email phoneNumber zipCode location"
+      "email phoneNumber zipCode location",
     );
 
     if (!Array.isArray(therapists) || therapists.length === 0) {
@@ -269,7 +273,7 @@ router.get("/confirm-booking/:id", async (req, res) => {
         booking.location.lng,
         therapist.location.lat,
         therapist.location.lng,
-        92
+        92,
       );
     });
 
@@ -289,7 +293,7 @@ router.get("/confirm-booking/:id", async (req, res) => {
     const sendEmailsInBatches = async (
       emails,
       batchSize = 5,
-      delayMs = 3000
+      delayMs = 3000,
     ) => {
       for (let i = 0; i < emails.length; i += batchSize) {
         const batch = emails.slice(i, i + batchSize);
@@ -305,13 +309,13 @@ router.get("/confirm-booking/:id", async (req, res) => {
                 <p><strong>Client:</strong> ${booking.name}</p>
                 <p><strong>Date:</strong> ${booking.date}</p>
                 <p><strong>Start:</strong> ${convertTo12Hour(
-                  booking.startTime
+                  booking.startTime,
                 )}</p>
                 <p><strong>End:</strong> ${convertTo12Hour(booking.endTime)}</p>
                 <p><strong>Address:</strong> ${booking.address}</p>
                 <p>Log in to accept this booking.</p>`,
-            })
-          )
+            }),
+          ),
         );
 
         console.log("Mailgun Batch Response:", response);
@@ -335,22 +339,43 @@ router.get("/confirm-booking/:id", async (req, res) => {
 
     const smsResults = [];
 
-    for (const number of phoneNumbers) {
-      const message = await client.messages.create({
-        body: `📢 Booking available from ${booking.companyName}. Log in to accept.`,
-        from: PhoneNumber, // Make sure this is defined above
-        to: number,
+    const now = new Date();
+    let smsSent = 0;
+
+    for (const worker of eligibleTherapists) {
+      if (!worker.phoneNumber) continue;
+
+      const alreadyNotified = await TherapistReminder.findOne({
+        bookingId: booking._id,
+        therapistId: worker._id, // name is legacy, but OK
       });
 
-      console.log(`SMS sent to ${number}: SID ${message.sid}`);
-      smsResults.push({ number, sid: message.sid });
+      if (alreadyNotified) continue;
+
+      const formattedPhone = worker.phoneNumber.startsWith("+")
+        ? worker.phoneNumber
+        : `+1${worker.phoneNumber}`;
+
+      await client.messages.create({
+        body: `📢 Booking available for ${booking.companyName}. Log in to accept.`,
+        from: PhoneNumber,
+        to: formattedPhone,
+      });
+
+      await TherapistReminder.create({
+        bookingId: booking._id,
+        therapistId: worker._id,
+        sentAt: now,
+      });
+
+      smsSent++;
     }
 
     // ✅ Final unified response
     res.status(200).json({
       message: "Booking confirmed, emails and SMS sent.",
       emailsSent: emailList.length,
-      smsSent: smsResults.length,
+      smsSent: smsSent,
     });
   } catch (err) {
     console.error("🔥 Error in /confirm-booking:", err);
@@ -393,7 +418,7 @@ router.post("/new-medicalbooking", async (req, res) => {
     } = req.body;
 
     const geoRes = await axios.get(
-      `https://api.geocod.io/v1.7/geocode?q=${zipCode}&api_key=${process.env.GEO_CODIO_API}`
+      `https://api.geocod.io/v1.7/geocode?q=${zipCode}&api_key=${process.env.GEO_CODIO_API}`,
     );
     const location = geoRes?.data?.results?.[0]?.location || null;
 
@@ -480,7 +505,7 @@ router.post("/new-medicalbooking", async (req, res) => {
 
       const response = await mailgun.messages.create(
         "motgpayment.com", // Your Mailgun domain (e.g., "mg.yourdomain.com")
-        emailData
+        emailData,
       );
 
       //console.log("Mailgun Response:", response);
@@ -517,7 +542,7 @@ router.get("/confirm-medicalbooking/:id", async (req, res) => {
           { role: { $in: booking.formRoles.map((r) => r.toLowerCase()) } }, // for array-based roles
         ],
       },
-      "email phoneNumber zipCode location"
+      "email phoneNumber zipCode location",
     );
 
     if (!therapists.length) {
@@ -535,7 +560,7 @@ router.get("/confirm-medicalbooking/:id", async (req, res) => {
         booking.location.lng,
         therapist.location.lat,
         therapist.location.lng,
-        92
+        92,
       );
       if (inRange) eligibleTherapists.push(therapist);
     }
@@ -556,7 +581,7 @@ router.get("/confirm-medicalbooking/:id", async (req, res) => {
     const sendEmailsInBatches = async (
       emails,
       batchSize = 5,
-      delayMs = 3000
+      delayMs = 3000,
     ) => {
       for (let i = 0; i < emails.length; i += batchSize) {
         const batch = emails.slice(i, i + batchSize);
@@ -572,8 +597,8 @@ router.get("/confirm-medicalbooking/:id", async (req, res) => {
                 <p><strong>Address:</strong> ${booking.address}</p>
                 <p><strong>ZipCode:</strong> ${booking.zipCode}</p>
                 <p>Log in to accept this booking.</p>`,
-            })
-          )
+            }),
+          ),
         );
 
         console.log("Mailgun Batch Response:", response);
@@ -595,24 +620,43 @@ router.get("/confirm-medicalbooking/:id", async (req, res) => {
 
     console.log("📱 Sending SMS to:", phoneNumbers);
 
-    const smsResults = [];
+    const now = new Date();
+    let smsSent = 0;
 
-    for (const number of phoneNumbers) {
-      const message = await client.messages.create({
-        body: `📢 Medical Booking available from ${booking.fullName}. Log in to accept.`,
-        from: PhoneNumber, // Make sure this is defined above
-        to: number,
+    for (const worker of eligibleTherapists) {
+      if (!worker.phoneNumber) continue;
+
+      const alreadyNotified = await TherapistReminder.findOne({
+        bookingId: booking._id,
+        therapistId: worker._id, // name is legacy, but OK
       });
 
-      console.log(`SMS sent to ${number}: SID ${message.sid}`);
-      smsResults.push({ number, sid: message.sid });
+      if (alreadyNotified) continue;
+
+      const formattedPhone = worker.phoneNumber.startsWith("+")
+        ? worker.phoneNumber
+        : `+1${worker.phoneNumber}`;
+
+      await client.messages.create({
+        body: `📢 Booking available for ${booking.companyName}. Log in to accept.`,
+        from: PhoneNumber,
+        to: formattedPhone,
+      });
+
+      await TherapistReminder.create({
+        bookingId: booking._id,
+        therapistId: worker._id,
+        sentAt: now,
+      });
+
+      smsSent++;
     }
 
     // ✅ Final unified response
     res.status(200).json({
       message: "Booking confirmed, emails and SMS sent.",
       emailsSent: emailList.length,
-      smsSent: smsResults.length,
+      smsSent: smsSent,
     });
   } catch (err) {
     console.error("🔥 Error in /confirm-booking:", err);
