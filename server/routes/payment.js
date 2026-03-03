@@ -20,24 +20,23 @@ const client = new Client({
   environment: Environment.Production,
 });
 
-// Minimum prices by formType to prevent client-side price manipulation.
-// Any payment request below the minimum for its formType is rejected.
-const MINIMUM_PRICES = {
+// Hardcoded minimums for promo/landing-page formTypes.
+// Regular and special minimums are derived from PromoPrice in the database.
+const PROMO_MINIMUMS = {
   "promo-corporate-349": 349,
 };
 
 router.post("/create-payment", async (req, res) => {
   const { sourceId, amount, currency, userId, formType, name, email, price } = req.body;
 
-  // Validate amount against known minimums for promo formTypes
-  const minPrice = MINIMUM_PRICES[formType];
-  if (minPrice !== undefined && amount < minPrice) {
+  // Reject obviously invalid amounts (zero, negative, non-numeric)
+  if (!amount || typeof amount !== "number" || amount <= 0) {
     console.error(
-      `[PRICE GUARD] Rejected payment: formType=${formType}, amount=$${amount}, minimum=$${minPrice}, email=${email}, name=${name}`
+      `[PRICE GUARD] Rejected invalid amount: formType=${formType}, amount=${amount}, email=${email}`
     );
     return res.status(400).json({
       error: "Invalid amount",
-      message: `Amount $${amount} is below the minimum price of $${minPrice} for this booking type.`,
+      message: "Payment amount must be a positive number.",
     });
   }
 
@@ -56,6 +55,27 @@ router.post("/create-payment", async (req, res) => {
     if (!promo) {
       promo = new PromoPrice({ regularBooking: 150, specialBooking: 90 });
       await promo.save();
+    }
+
+    // Determine minimum price based on formType.
+    // Promo types use hardcoded minimums; regular/special use admin-configured rates.
+    let minPrice;
+    if (PROMO_MINIMUMS[formType] !== undefined) {
+      minPrice = PROMO_MINIMUMS[formType];
+    } else if (formType === "special") {
+      minPrice = promo.specialBooking;  // e.g. $90 for 1 hour minimum
+    } else {
+      minPrice = promo.regularBooking;  // e.g. $150 for 1 hour minimum (default for regular + unknown types)
+    }
+
+    if (amount < minPrice) {
+      console.error(
+        `[PRICE GUARD] Rejected payment: formType=${formType}, amount=$${amount}, minimum=$${minPrice}, email=${email}, name=${name}`
+      );
+      return res.status(400).json({
+        error: "Invalid amount",
+        message: `Amount $${amount} is below the minimum price of $${minPrice} for this booking type.`,
+      });
     }
 
     const regularPrice = promo.regularBooking * 100;
