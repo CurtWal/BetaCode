@@ -17,12 +17,28 @@ if (!accessToken) {
 
 const client = new Client({
   accessToken: accessToken,
-  environment: Environment.Production, // Use Environment.Production for live transactions
+  environment: Environment.Production,
 });
 
+// Hardcoded minimums for promo/landing-page formTypes.
+// Regular and special minimums are derived from PromoPrice in the database.
+const PROMO_MINIMUMS = {
+  "promo-corporate-349": 349,
+};
+
 router.post("/create-payment", async (req, res) => {
-  //   console.log("Received payment request:", req.body);
   const { sourceId, amount, currency, userId, formType, name, email, price } = req.body;
+
+  // Reject obviously invalid amounts (zero, negative, non-numeric)
+  if (!amount || typeof amount !== "number" || amount <= 0) {
+    console.error(
+      `[PRICE GUARD] Rejected invalid amount: formType=${formType}, amount=${amount}, email=${email}`
+    );
+    return res.status(400).json({
+      error: "Invalid amount",
+      message: "Payment amount must be a positive number.",
+    });
+  }
 
   let finalAmount = amount * 100;
   let discountApplied = false;
@@ -37,27 +53,48 @@ router.post("/create-payment", async (req, res) => {
     // Fetch pricing details from the database
     let promo = await PromoPrice.findOne();
     if (!promo) {
-      promo = new PromoPrice({ regularBooking: 150, specialBooking: 90 }); // Set defaults if not found
+      promo = new PromoPrice({ regularBooking: 150, specialBooking: 90 });
       await promo.save();
     }
 
-    const regularPrice = promo.regularBooking * 100; // Convert to cents
-    const specialPrice = promo.specialBooking * 100; // Convert to cents
+    // Determine minimum price based on formType.
+    // Promo types use hardcoded minimums; regular/special use admin-configured rates.
+    let minPrice;
+    if (PROMO_MINIMUMS[formType] !== undefined) {
+      minPrice = PROMO_MINIMUMS[formType];
+    } else if (formType === "special") {
+      minPrice = promo.specialBooking;  // e.g. $90 for 1 hour minimum
+    } else {
+      minPrice = promo.regularBooking;  // e.g. $150 for 1 hour minimum (default for regular + unknown types)
+    }
+
+    if (amount < minPrice) {
+      console.error(
+        `[PRICE GUARD] Rejected payment: formType=${formType}, amount=$${amount}, minimum=$${minPrice}, email=${email}, name=${name}`
+      );
+      return res.status(400).json({
+        error: "Invalid amount",
+        message: `Amount $${amount} is below the minimum price of $${minPrice} for this booking type.`,
+      });
+    }
+
+    const regularPrice = promo.regularBooking * 100;
+    const specialPrice = promo.specialBooking * 100;
 
     // Apply 10% discount if user has enough points
     if (user && user.points >= 3) {
-      finalAmount = Math.round(finalAmount * 0.9); // Apply 10% discount
-      user.points -= 3; // Deduct 3 points
+      finalAmount = Math.round(finalAmount * 0.9);
+      user.points -= 3;
       discountApplied = true;
     }
 
     // Apply free hour discount dynamically
     if (user && user.freehour === 1) {
       const discount = formType === "special" ? specialPrice : regularPrice;
-      finalAmount = Math.max(0, finalAmount - discount); // Ensure it doesn't go negative
-      user.freehour = 0; // Reset free hour after use
+      finalAmount = Math.max(0, finalAmount - discount);
+      user.freehour = 0;
     }
-    // console.log(finalAmount, ": ", formType);
+
     // Process payment with Square
     const response = await client.paymentsApi.createPayment({
       sourceId: sourceId,
@@ -71,13 +108,11 @@ router.post("/create-payment", async (req, res) => {
     // If user exists, update points correctly
     if (user) {
       if (!discountApplied) {
-        user.points += 1; // Add point only if no discount was used
+        user.points += 1;
       }
       await user.save();
-      //   console.log(`User ${user.username} now has ${user.points} points.`);
     }
 
-    // console.log("Payment successful:", response.result);
     res.status(200).json({
       success: true,
       discountApplied,
@@ -87,28 +122,27 @@ router.post("/create-payment", async (req, res) => {
     const mg = new Mailgun(formData);
     const mailgun = mg.client({
       username: "api",
-      key: process.env.MAILGUN_KEY, // Add this to your .env file // Default Mailgun API URL
+      key: process.env.MAILGUN_KEY,
     });
     try {
       const emailData = {
-        from: process.env.EMAIL_USER, // Must be a verified Mailgun sender
-        to: ["sam@massageonthegomemphis.com"], // Recipient email
+        from: process.env.EMAIL_USER,
+        to: ["sam@massageonthegomemphis.com"],
         subject: "Booking Payment Confirmation",
         html: `<h2>Booking Payment Has been made</h2>
                 <p><strong>Payment Made:</strong> $${price} Has been paid by Card</p>
                 <p><strong>Paid by:</strong> ${name}</p>
                 <p><strong>Email:</strong> ${email}</p>
+                <p><strong>Form Type:</strong> ${formType}</p>
               `,
         "h:X-Sent-Using": "Mailgun",
         "h:X-Source": "MassageOnTheGo",
       };
 
       const response = await mailgun.messages.create(
-        "motgpayment.com", // Your Mailgun domain (e.g., "mg.yourdomain.com")
+        "motgpayment.com",
         emailData
       );
-
-      //console.log("Mailgun Response:", response);
     } catch (error) {
       console.error("Error sending email via Mailgun:", error);
     }
