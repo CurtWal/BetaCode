@@ -40,7 +40,7 @@ function Services() {
           </div>
           <div className="service-item">
             <img src={med} alt="Technology" style={{ marginLeft: "25%", cursor:"pointer" }} onClick={() => handleButtonClick("2")}/>
-            <a href="http://localhost:5173/medical-form" style={{color:"white"}}>Medical Wellbeing</a>
+            <a href="https://motgpayment.com/medical-form" style={{color:"white"}}>Medical Wellbeing</a>
           </div>
           <div className="service-item">
             <img
@@ -49,7 +49,7 @@ function Services() {
               style={{ marginLeft: "25%", cursor:"pointer" }}
               onClick={() => handleButtonClick("3")}
             />
-            <a href="http://localhost:5173/special-form" style={{color:"white"}}>ST. Jude Service</a>
+            <a href="https://motgpayment.com/special-form" style={{color:"white"}}>ST. Jude Service</a>
             <p></p>
           </div>
         </div>

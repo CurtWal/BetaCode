@@ -23,6 +23,27 @@ const convertTo12Hour = (time) => {
     const formattedHour = hour % 12 || 12; // Convert 0 to 12 for 12AM
     return `${formattedHour}:${minute.toString().padStart(2, "0")} ${period}`;
   };
+
+const options = [
+  { value: "therapist", label: "Massage Therapist" },
+  { value: "personal", label: "Personal Trainer" },
+  { value: "yoga", label: "Yoga Instructor" },
+  { value: "group", label: "Group Fitness Instructor" },
+  { value: "nutritionist", label: "Nutritionist" },
+  { value: "pilates", label: "Pilates Instructor" },
+  { value: "stretch", label: "Stretch Therapist" },
+  { value: "cpr", label: "CPR Instructor" },
+  { value: "meditation", label: "Meditation Coach" },
+  { value: "zumba", label: "Zumba Instructor" },
+  { value: "wellness", label: "Wellness Coach" },
+  { value: "ergonomics", label: "Ergonomics Specialist" },
+  { value: "breathwork", label: "Breathwork Coach" },
+];
+
+const getRoleLabel = (roleValue) => {
+  const found = options.find((opt) => opt.value === roleValue);
+  return found ? found.label : roleValue;
+};
 router.post("/export-bookings", verifyToken, async (req, res) => {
     try {
         const client = await auth.getClient();
@@ -77,14 +98,21 @@ router.post("/export-bookings", verifyToken, async (req, res) => {
               ) || totalIncrement;
           }
 
+          let servicesString = '';
+          if (Array.isArray(b.services) && b.services.length > 0) {
+            servicesString = b.services.map(s => `${getRoleLabel(s.role)} (${s.workers})`).join(', ');
+          }
+
           const row = [
             b._id.toString(),
             `$${totalPrice}`,
             b.companyName,
             b.name,
             b.email,
+            b.phoneNumber,
             b.address,
             b.zipCode,
+            servicesString,
             totalWorkers,
             totalHours,
             totalIncrement,
@@ -106,7 +134,7 @@ router.post("/export-bookings", verifyToken, async (req, res) => {
             if (JSON.stringify(normalize(existingRow)) !== JSON.stringify(normalize(row))) {
               const rowNumber = existing.index + 1;
               valueRangesToUpdate.push({
-                range: `Sheet1!A${rowNumber}:N${rowNumber}`,
+                range: `Sheet1!A${rowNumber}:P${rowNumber}`,
                 values: [row],
               });
             }
