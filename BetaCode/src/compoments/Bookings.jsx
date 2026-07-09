@@ -44,6 +44,9 @@ function Bookings() {
   const [regularPrice, setRegularPrice] = useState(150);
   const [formRoles, setFormRoles] = useState([]);
   const [services, setServices] = useState([]);
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [loadingAdminUsers, setLoadingAdminUsers] = useState(false);
+  const [assigningUserId, setAssigningUserId] = useState(null);
 
   const animatedComponents = makeAnimated();
 
@@ -83,12 +86,11 @@ function Bookings() {
 
   // Handler to join a booking for a specific role
   const joinRole = async (bookingId, role) => {
-
     // Used for fake bookings testing
-//     if (bookingId === "fake-ok" || bookingId === "fake-conflict" || "fake-test") {
-//   alert("➡️ This is a fake test booking. No backend requests will be made.");
-//   return;
-// }
+    //     if (bookingId === "fake-ok" || bookingId === "fake-conflict" || "fake-test") {
+    //   alert("➡️ This is a fake test booking. No backend requests will be made.");
+    //   return;
+    // }
 
     try {
       const token = localStorage.getItem("token");
@@ -103,13 +105,13 @@ function Bookings() {
       await axios.post(
         `${import.meta.env.VITE_VERCEL}assign-therapist`,
         { bookingId, therapistId, role },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       // Check if booking is now full (using new schema: services)
       const bookingResponse = await axios.get(
         `${import.meta.env.VITE_VERCEL}bookings/${bookingId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       const booking = bookingResponse.data;
       // Calculate total needed and assigned for all roles
@@ -123,7 +125,7 @@ function Bookings() {
         await axios.post(
           `${import.meta.env.VITE_VERCEL}send-email-on-spot-fill`,
           { bookingId },
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${token}` } },
         );
         setIsFull(true);
       }
@@ -134,38 +136,39 @@ function Bookings() {
     }
   };
 
-// Bookings the user is already assigned to
-const acceptedBookings = bookings.filter((b) =>
-  Array.isArray(b.rolesInfo) &&
-  b.rolesInfo.some((role) =>
-    Array.isArray(role.assigned) &&
-    role.assigned.some((t) => t._id === currentUserId)
-  )
-);
-//  Helper to parse date and time strings into Date objects
-function parseDateTime(dateStr, timeStr) {
-  // Example: "12/25/2025 8:00 AM"
-  return new Date(`${dateStr} ${timeStr}`);
-}
-//  Check for time conflicts with existing bookings
-function hasTimeConflict(newBooking, existingBookings) {
-  const newStart = parseDateTime(newBooking.date, newBooking.startTime);
-  const newEnd = parseDateTime(newBooking.date, newBooking.endTime);
+  // Bookings the user is already assigned to
+  const acceptedBookings = bookings.filter(
+    (b) =>
+      Array.isArray(b.rolesInfo) &&
+      b.rolesInfo.some(
+        (role) =>
+          Array.isArray(role.assigned) &&
+          role.assigned.some((t) => t._id === currentUserId),
+      ),
+  );
+  //  Helper to parse date and time strings into Date objects
+  function parseDateTime(dateStr, timeStr) {
+    // Example: "12/25/2025 8:00 AM"
+    return new Date(`${dateStr} ${timeStr}`);
+  }
+  //  Check for time conflicts with existing bookings
+  function hasTimeConflict(newBooking, existingBookings) {
+    const newStart = parseDateTime(newBooking.date, newBooking.startTime);
+    const newEnd = parseDateTime(newBooking.date, newBooking.endTime);
 
+    return existingBookings.some((b) => {
+      const start = parseDateTime(b.date, b.startTime);
+      const end = parseDateTime(b.date, b.endTime);
 
-  return existingBookings.some((b) => {
-    const start = parseDateTime(b.date, b.startTime);
-    const end = parseDateTime(b.date, b.endTime);
+      // 1-hour buffer before & after
+      const oneHour = 60 * 60 * 1000;
 
-    // 1-hour buffer before & after
-    const oneHour = 60 * 60 * 1000;
+      const bufferedStart = new Date(start.getTime() - oneHour);
+      const bufferedEnd = new Date(end.getTime() + oneHour);
 
-    const bufferedStart = new Date(start.getTime() - oneHour);
-    const bufferedEnd = new Date(end.getTime() + oneHour);
-
-    return newStart < bufferedEnd && newEnd > bufferedStart;
-  });
-}
+      return newStart < bufferedEnd && newEnd > bufferedStart;
+    });
+  }
 
   // Helper to get full role label from value
   const getRoleLabel = (roleValue) => {
@@ -186,15 +189,15 @@ function hasTimeConflict(newBooking, existingBookings) {
       alert(err.response?.data?.message || "Failed to leave role");
     }
   };
-// Helper to get selected options for react-select
+  // Helper to get selected options for react-select
   const getSelectedOptions = (selectedValues) => {
     return options.filter((opt) => selectedValues.includes(opt.value));
   };
-// Fetch booking prices from server
+  // Fetch booking prices from server
   const getBookingPrices = async () => {
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_VERCEL}admin/booking-prices`
+        `${import.meta.env.VITE_VERCEL}admin/booking-prices`,
       );
       setRegularPrice(response.data.regularBooking);
       setSpecialPrice(response.data.specialBooking);
@@ -202,11 +205,11 @@ function hasTimeConflict(newBooking, existingBookings) {
       console.error("Error fetching booking prices:", error);
     }
   };
-// Recalculate price when relevant inputs change
+  // Recalculate price when relevant inputs change
   useEffect(() => {
     getBookingPrices();
   }, []);
-// Recalculate price when relevant inputs change
+  // Recalculate price when relevant inputs change
   useEffect(() => {
     if (formType == "regular" && eventHours) {
       const hours = parseFloat(eventHours); // Convert to a number
@@ -228,7 +231,7 @@ function hasTimeConflict(newBooking, existingBookings) {
       setPrice(basePrice + halfHourPrice);
     }
   }, [therapist, eventHours, regularPrice, specialPrice]);
-// Helper to sort bookings based on selected option
+  // Helper to sort bookings based on selected option
   const sortBookings = (bookingsList, option) => {
     const sorted = [...bookingsList];
     switch (option) {
@@ -238,11 +241,11 @@ function hasTimeConflict(newBooking, existingBookings) {
         return sorted.sort((a, b) => new Date(a.date) - new Date(b.date));
       case "mostHours":
         return sorted.sort(
-          (a, b) => parseFloat(b.eventHours) - parseFloat(a.eventHours)
+          (a, b) => parseFloat(b.eventHours) - parseFloat(a.eventHours),
         );
       case "leastHours":
         return sorted.sort(
-          (a, b) => parseFloat(a.eventHours) - parseFloat(b.eventHours)
+          (a, b) => parseFloat(a.eventHours) - parseFloat(b.eventHours),
         );
       case "notFilled":
         return sorted.sort((a, b) => {
@@ -266,6 +269,75 @@ function hasTimeConflict(newBooking, existingBookings) {
       return false;
     }
   }
+
+  const fetchAdminUsers = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      setLoadingAdminUsers(true);
+      const response = await axios.get(`${import.meta.env.VITE_VERCEL}users`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const users = Array.isArray(response.data) ? response.data : [];
+      const filtered = users.filter((user) => {
+        if (!user || !user._id) return false;
+        const roles = Array.isArray(user.role) ? user.role : [user.role];
+        return !roles.includes("admin");
+      });
+      setAdminUsers(filtered);
+    } catch (error) {
+      console.error(
+        "Error fetching admin users:",
+        error.response?.data || error,
+      );
+    } finally {
+      setLoadingAdminUsers(false);
+    }
+  };
+
+  const assignTherapistToRole = async (bookingId, therapistId, role) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("No token found, user is not authenticated.");
+        return;
+      }
+      setAssigningUserId(therapistId);
+      await axios.post(
+        `${import.meta.env.VITE_VERCEL}assign-therapist`,
+        { bookingId, therapistId, role },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      await getBookings();
+    } catch (error) {
+      alert(error.response?.data?.message || "Failed to assign therapist");
+    } finally {
+      setAssigningUserId(null);
+    }
+  };
+
+  const assignTherapistToLegacyBooking = async (bookingId, therapistId) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("No token found, user is not authenticated.");
+        return;
+      }
+      setAssigningUserId(therapistId);
+      await axios.post(
+        `${import.meta.env.VITE_VERCEL}assign-therapist`,
+        { bookingId, therapistId },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      await getBookings();
+    } catch (error) {
+      alert(error.response?.data?.message || "Failed to assign therapist");
+    } finally {
+      setAssigningUserId(null);
+    }
+  };
 
   const getBookings = async () => {
     try {
@@ -291,7 +363,7 @@ function hasTimeConflict(newBooking, existingBookings) {
         `${import.meta.env.VITE_VERCEL}bookings`,
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
       const formattedBookings = response.data.map((booking) => ({
         ...booking,
@@ -313,7 +385,7 @@ function hasTimeConflict(newBooking, existingBookings) {
         if (Array.isArray(booking.services) && booking.services.length > 0) {
           // Does this worker have a role that matches a service in this booking?
           const hasMatchingService = booking.services?.some((srv) =>
-            userRoles.includes(srv.role)
+            userRoles.includes(srv.role),
           );
           if (!hasMatchingService) return false;
 
@@ -332,7 +404,7 @@ function hasTimeConflict(newBooking, existingBookings) {
           });
 
           const isAlreadyAssigned = booking.assignedTherapists?.some(
-            (t) => t._id === userId
+            (t) => t._id === userId,
           );
 
           return roleAvailable || isAlreadyAssigned;
@@ -346,7 +418,7 @@ function hasTimeConflict(newBooking, existingBookings) {
         ) {
           // Show if not filled or if user is already assigned
           const isAlreadyAssigned = booking.assignedTherapists.some(
-            (t) => t._id === userId
+            (t) => t._id === userId,
           );
           return (
             booking.assignedTherapists.length < booking.therapist ||
@@ -442,7 +514,7 @@ function hasTimeConflict(newBooking, existingBookings) {
 
       if (conflictingBooking) {
         alert(
-          `You are already assigned to a booking that overlaps in time on ${newDate}. Please leave that booking first.`
+          `You are already assigned to a booking that overlaps in time on ${newDate}. Please leave that booking first.`,
         );
         setJoiningBookingId(null);
         return;
@@ -460,20 +532,20 @@ function hasTimeConflict(newBooking, existingBookings) {
                   { _id: therapistId, username: therapistName },
                 ],
               }
-            : booking
-        )
+            : booking,
+        ),
       );
 
       // Backend assignment
       await axios.post(
         `${import.meta.env.VITE_VERCEL}assign-therapist`,
         { bookingId, therapistId },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       // Check for full booking
       const bookingResponse = await axios.get(
         `${import.meta.env.VITE_VERCEL}bookings/${bookingId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       const booking = bookingResponse.data;
@@ -485,7 +557,7 @@ function hasTimeConflict(newBooking, existingBookings) {
         await axios.post(
           `${import.meta.env.VITE_VERCEL}send-email-on-spot-fill`,
           { bookingId },
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${token}` } },
         );
         setIsFull(true);
         //console.log("All Spots filled sending email");
@@ -517,13 +589,13 @@ function hasTimeConflict(newBooking, existingBookings) {
           headers: {
             Authorization: `Bearer ${token}`, // Ensure "Bearer" is present
           },
-        }
+        },
       );
 
       setBookings(
         bookings.map((booking) =>
-          booking._id === id ? { ...booking, isComplete: true } : booking
-        )
+          booking._id === id ? { ...booking, isComplete: true } : booking,
+        ),
       );
     } catch (error) {
       console.error("Error updating booking:", error.response?.data || error);
@@ -578,18 +650,18 @@ function hasTimeConflict(newBooking, existingBookings) {
             ? {
                 ...booking,
                 assignedTherapists: booking.assignedTherapists.filter(
-                  (therapist) => therapist._id !== therapistId
+                  (therapist) => therapist._id !== therapistId,
                 ),
               }
-            : booking
-        )
+            : booking,
+        ),
       );
 
       // Send API request to remove therapist
       await axios.post(
         `${import.meta.env.VITE_VERCEL}leave-booking`,
         { bookingId, therapistId },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       getBookings();
@@ -616,19 +688,19 @@ function hasTimeConflict(newBooking, existingBookings) {
             return {
               ...booking,
               assignedTherapists: therapistsArr.filter(
-                (therapist) => therapist._id !== therapistIdToRemove
+                (therapist) => therapist._id !== therapistIdToRemove,
               ),
             };
           }
           return booking;
-        })
+        }),
       );
 
       // Backend call to remove the therapist
       await axios.post(
         `${import.meta.env.VITE_VERCEL}admin-remove-therapist`,
         { bookingId, therapistId: therapistIdToRemove },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       getBookings(); // Refresh bookings
@@ -646,7 +718,7 @@ function hasTimeConflict(newBooking, existingBookings) {
         }delete/bookings/${bookingId}?type=${type}`,
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
       setBookings(bookings.filter((booking) => booking._id !== bookingId));
       setDeleteSelectedBooking(null);
@@ -694,12 +766,12 @@ function hasTimeConflict(newBooking, existingBookings) {
         null,
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
       alert("Bookings exported to Google Sheets!");
       if (
         window.confirm(
-          'If you click "ok" you would be redirected To SpreadSheet. Cancel will load this website '
+          'If you click "ok" you would be redirected To SpreadSheet. Cancel will load this website ',
         )
       ) {
         window.location.href =
@@ -714,7 +786,7 @@ function hasTimeConflict(newBooking, existingBookings) {
     setEditBooking(id);
     try {
       const res = await axios.get(
-        `${import.meta.env.VITE_VERCEL}bookings/${id}`
+        `${import.meta.env.VITE_VERCEL}bookings/${id}`,
       );
       const data = res.data;
       setCompanyName(data.companyName || "");
@@ -780,66 +852,69 @@ function hasTimeConflict(newBooking, existingBookings) {
   };
   useEffect(() => {
     getBookings(); // Initial fetch
-  }, [handleSubmit]);
+    if (hasRole("admin")) {
+      fetchAdminUsers();
+    }
+  }, []);
 
   // Fake bookings for testing join/leave and conflict detection
-// useEffect(() => {
-//   if (!bookings || bookings.length === 0) return;
+  // useEffect(() => {
+  //   if (!bookings || bookings.length === 0) return;
 
-//   // Only add once
-//   if (bookings.some((b) => b._id === "fake-ok" || b._id === "fake-conflict")) {
-//     return;
-//   }
+  //   // Only add once
+  //   if (bookings.some((b) => b._id === "fake-ok" || b._id === "fake-conflict")) {
+  //     return;
+  //   }
 
-//   const fakeAcceptable = {
-//     _id: "fake-ok",
-//     date: "12/25/2025",
-//     startTime: "8:00 AM",
-//     endTime: "9:00 AM",
-//     rolesInfo: [
-//       {
-//         role: "therapist",
-//         needed: 2,
-//         assigned: [],
-//         spotsLeft: 2,
-//       },
-//     ],
-//     isFake: true,
-//   };
-// const fake = {
-//         _id: "fake-test",
-//         date: "12/25/2025",
-//         startTime: "7:00 AM",
-//         endTime: "4:30 PM",
-//         rolesInfo: [
-//           {
-//             role: "therapist",
-//             needed: 2,
-//             assigned: [{_id: currentUserId}],
-//             spotsLeft: 2,
-//           },
-//         ],
-//         isFake: true,
-//       };
-//   const fakeConflict = {
-//     _id: "fake-conflict",
-//     date: "12/25/2025",
-//     startTime: "8:30 AM",
-//     endTime: "9:30 AM",
-//     rolesInfo: [
-//       {
-//         role: "therapist",
-//         needed: 2,
-//         assigned: [],
-//         spotsLeft: 2,
-//       },
-//     ],
-//     isFake: true, // Mark as fake so you could even hide edit buttons
-//   };
+  //   const fakeAcceptable = {
+  //     _id: "fake-ok",
+  //     date: "12/25/2025",
+  //     startTime: "8:00 AM",
+  //     endTime: "9:00 AM",
+  //     rolesInfo: [
+  //       {
+  //         role: "therapist",
+  //         needed: 2,
+  //         assigned: [],
+  //         spotsLeft: 2,
+  //       },
+  //     ],
+  //     isFake: true,
+  //   };
+  // const fake = {
+  //         _id: "fake-test",
+  //         date: "12/25/2025",
+  //         startTime: "7:00 AM",
+  //         endTime: "4:30 PM",
+  //         rolesInfo: [
+  //           {
+  //             role: "therapist",
+  //             needed: 2,
+  //             assigned: [{_id: currentUserId}],
+  //             spotsLeft: 2,
+  //           },
+  //         ],
+  //         isFake: true,
+  //       };
+  //   const fakeConflict = {
+  //     _id: "fake-conflict",
+  //     date: "12/25/2025",
+  //     startTime: "8:30 AM",
+  //     endTime: "9:30 AM",
+  //     rolesInfo: [
+  //       {
+  //         role: "therapist",
+  //         needed: 2,
+  //         assigned: [],
+  //         spotsLeft: 2,
+  //       },
+  //     ],
+  //     isFake: true, // Mark as fake so you could even hide edit buttons
+  //   };
 
-//   // Insert them into your UI without affecting DB
-//   setBookings((prev) => [...prev, fakeAcceptable, fakeConflict, fake]);
-// }, [handleSubmit]);
+  //   // Insert them into your UI without affecting DB
+  //   setBookings((prev) => [...prev, fakeAcceptable, fakeConflict, fake]);
+  // }, [handleSubmit]);
   return (
     <div class="bookContentSize">
       <div>
@@ -853,7 +928,7 @@ function hasTimeConflict(newBooking, existingBookings) {
 
         <div className="bookingContainer">
           <h1 style={{ textAlign: "center" }}>Bookings</h1>
-{/* {hasRole("admin") && (
+          {/* {hasRole("admin") && (
   <button
     style={{ marginBottom: 10 }}
     onClick={() => {
@@ -950,24 +1025,24 @@ function hasTimeConflict(newBooking, existingBookings) {
                                 (role) =>
                                   Array.isArray(role.assigned) &&
                                   role.assigned.some(
-                                    (t) => t && t._id === currentUserId
-                                  )
+                                    (t) => t && t._id === currentUserId,
+                                  ),
                               )
                               ? "You Joined"
                               : booking.rolesInfo.some(
-                                  (role) => role.spotsLeft > 0
-                                )
-                              ? "Assign Therapist"
-                              : "Filled"
+                                    (role) => role.spotsLeft > 0,
+                                  )
+                                ? "Assign Therapist"
+                                : "Filled"
                             : typeof booking.therapist === "number" &&
-                              booking.therapist > 0
-                            ? // Legacy schema: use therapist count
-                              (booking.assignedTherapists?.length || 0) <
-                              booking.therapist
-                              ? "Assign Therapist"
-                              : "Filled"
-                            : // Fallback for legacy bookings with missing therapist field
-                              "Assign Therapist"}
+                                booking.therapist > 0
+                              ? // Legacy schema: use therapist count
+                                (booking.assignedTherapists?.length || 0) <
+                                booking.therapist
+                                ? "Assign Therapist"
+                                : "Filled"
+                              : // Fallback for legacy bookings with missing therapist field
+                                "Assign Therapist"}
                         </Button>
 
                         {/* {!booking.isComplete && (
@@ -1158,14 +1233,14 @@ function hasTimeConflict(newBooking, existingBookings) {
                                           options={options}
                                           onChange={(selectedOptions) => {
                                             const roles = selectedOptions.map(
-                                              (o) => o.value
+                                              (o) => o.value,
                                             );
 
                                             // build services array directly
                                             const updatedServices = roles.map(
                                               (role) => {
                                                 const existing = services.find(
-                                                  (s) => s.role === role
+                                                  (s) => s.role === role,
                                                 );
                                                 return (
                                                   existing || {
@@ -1176,13 +1251,13 @@ function hasTimeConflict(newBooking, existingBookings) {
                                                     price: 0,
                                                   }
                                                 );
-                                              }
+                                              },
                                             );
 
                                             setServices(updatedServices);
                                           }}
                                           value={getSelectedOptions(
-                                            services.map((s) => s.role)
+                                            services.map((s) => s.role),
                                           )}
                                         />
                                       </Form.Group>
@@ -1210,7 +1285,7 @@ function hasTimeConflict(newBooking, existingBookings) {
                                                     updateService(
                                                       index,
                                                       "workers",
-                                                      e.target.value
+                                                      e.target.value,
                                                     )
                                                   }
                                                 />
@@ -1224,7 +1299,7 @@ function hasTimeConflict(newBooking, existingBookings) {
                                                       updateService(
                                                         index,
                                                         "hours",
-                                                        e.target.value
+                                                        e.target.value,
                                                       )
                                                     }
                                                   >
@@ -1307,7 +1382,7 @@ function hasTimeConflict(newBooking, existingBookings) {
                                                     updateService(
                                                       index,
                                                       "increment",
-                                                      e.target.value
+                                                      e.target.value,
                                                     )
                                                   }
                                                 >
@@ -1454,7 +1529,7 @@ function hasTimeConflict(newBooking, existingBookings) {
                                   <ul style={{ textAlign: "center" }}>
                                     Assigned Therapists:{" "}
                                     {Array.isArray(
-                                      booking.assignedTherapists
+                                      booking.assignedTherapists,
                                     ) &&
                                     booking.assignedTherapists.length > 0 ? (
                                       booking.assignedTherapists.map(
@@ -1468,7 +1543,7 @@ function hasTimeConflict(newBooking, existingBookings) {
                                                 onClick={() =>
                                                   removeTherapistFromBooking(
                                                     booking._id,
-                                                    therapist._id
+                                                    therapist._id,
                                                   )
                                                 }
                                               >
@@ -1476,12 +1551,97 @@ function hasTimeConflict(newBooking, existingBookings) {
                                               </button>
                                             )}
                                           </li>
-                                        )
+                                        ),
                                       )
                                     ) : (
                                       <span>No therapists assigned yet</span>
                                     )}
                                   </ul>
+                                  {hasRole("admin") &&
+                                    (!booking.assignedTherapists ||
+                                      booking.assignedTherapists.length <
+                                        booking.therapist) && (
+                                      <div
+                                        style={{
+                                          marginTop: 10,
+                                          padding: 10,
+                                          border: "1px solid #eee",
+                                          borderRadius: 8,
+                                          background: "#fafafa",
+                                        }}
+                                      >
+                                        <strong>Assign a worker</strong>
+                                        {loadingAdminUsers ? (
+                                          <p>Loading workers...</p>
+                                        ) : (
+                                          <ul
+                                            style={{
+                                              marginTop: 10,
+                                              paddingLeft: 0,
+                                              listStyle: "none",
+                                            }}
+                                          >
+                                            {adminUsers
+                                              .filter(
+                                                (user) =>
+                                                  !booking.assignedTherapists?.some(
+                                                    (t) => t._id === user._id,
+                                                  ),
+                                              )
+                                              .map((user) => (
+                                                <li
+                                                  key={user._id}
+                                                  style={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent:
+                                                      "space-between",
+                                                    marginBottom: 7,
+                                                    padding: "8px 10px",
+                                                    backgroundColor: "#f9f9f9",
+                                                    borderRadius: "4px",
+                                                    border: "1px solid #e0e0e0",
+                                                  }}
+                                                >
+                                                  <span
+                                                    style={{
+                                                      fontWeight: "500",
+                                                    }}
+                                                  >
+                                                    {user.username ||
+                                                      user.email ||
+                                                      user._id}
+                                                  </span>
+                                                  <Button
+                                                    size="sm"
+                                                    variant="outline-primary"
+                                                    style={{
+                                                      padding: "4px 12px",
+                                                      fontSize: "12px",
+                                                      whiteSpace: "nowrap",
+                                                    }}
+                                                    onClick={() =>
+                                                      assignTherapistToLegacyBooking(
+                                                        booking._id,
+                                                        user._id,
+                                                      )
+                                                    }
+                                                    disabled={
+                                                      assigningUserId ===
+                                                      user._id
+                                                    }
+                                                  >
+                                                    {assigningUserId ===
+                                                    user._id
+                                                      ? "Assigning..."
+                                                      : "Assign"}
+                                                  </Button>
+                                                </li>
+                                              ))}
+                                          </ul>
+                                        )}
+                                      </div>
+                                    )}
                                 </>
                               )}
                               {/* Show role-based assignment UI if rolesInfo is present (new schema) */}
@@ -1500,15 +1660,15 @@ function hasTimeConflict(newBooking, existingBookings) {
                                     <ul>
                                       {booking.rolesInfo.map((roleInfo) => {
                                         const assignedList = Array.isArray(
-                                          roleInfo && roleInfo.assigned
+                                          roleInfo && roleInfo.assigned,
                                         )
                                           ? roleInfo.assigned
                                           : [];
                                         const userHasRole = hasRole(
-                                          roleInfo && roleInfo.role
+                                          roleInfo && roleInfo.role,
                                         );
                                         const userAssigned = assignedList.some(
-                                          (t) => t && t._id === currentUserId
+                                          (t) => t && t._id === currentUserId,
                                         );
                                         return (
                                           <li
@@ -1517,7 +1677,7 @@ function hasTimeConflict(newBooking, existingBookings) {
                                           >
                                             <strong>
                                               {getRoleLabel(
-                                                roleInfo && roleInfo.role
+                                                roleInfo && roleInfo.role,
                                               )}
                                             </strong>
                                             : Needed{" "}
@@ -1533,13 +1693,28 @@ function hasTimeConflict(newBooking, existingBookings) {
                                                     style={{
                                                       display: "flex",
                                                       alignItems: "center",
+                                                      justifyContent:
+                                                        "space-between",
+                                                      padding: "8px 10px",
+                                                      marginBottom: "6px",
+                                                      backgroundColor:
+                                                        "#f0f8ff",
+                                                      borderRadius: "4px",
+                                                      border:
+                                                        "1px solid #d0e8ff",
                                                     }}
                                                   >
-                                                    {(t &&
-                                                      (t.username ||
-                                                        t.email ||
-                                                        t._id)) ||
-                                                      ""}
+                                                    <span
+                                                      style={{
+                                                        fontWeight: "500",
+                                                      }}
+                                                    >
+                                                      {(t &&
+                                                        (t.username ||
+                                                          t.email ||
+                                                          t._id)) ||
+                                                        ""}
+                                                    </span>
                                                     {hasRole("admin") &&
                                                       t &&
                                                       t._id && (
@@ -1547,14 +1722,15 @@ function hasTimeConflict(newBooking, existingBookings) {
                                                           size="sm"
                                                           variant="outline-danger"
                                                           style={{
-                                                            marginLeft: 8,
-                                                            padding: "2px 8px",
-                                                            fontSize: 12,
+                                                            padding: "4px 10px",
+                                                            fontSize: "12px",
+                                                            whiteSpace:
+                                                              "nowrap",
                                                           }}
                                                           onClick={() =>
                                                             removeTherapistFromBooking(
                                                               booking._id,
-                                                              t._id
+                                                              t._id,
                                                             )
                                                           }
                                                         >
@@ -1572,7 +1748,7 @@ function hasTimeConflict(newBooking, existingBookings) {
                                             {(() => {
                                               const conflict = hasTimeConflict(
                                                 booking,
-                                                acceptedBookings
+                                                acceptedBookings,
                                               );
 
                                               return (
@@ -1587,7 +1763,7 @@ function hasTimeConflict(newBooking, existingBookings) {
                                                           onClick={() =>
                                                             joinRole(
                                                               booking._id,
-                                                              roleInfo.role
+                                                              roleInfo.role,
                                                             )
                                                           }
                                                           disabled={conflict}
@@ -1621,7 +1797,6 @@ function hasTimeConflict(newBooking, existingBookings) {
                                                         )}
                                                       </>
                                                     )}
-                                            
                                                 </>
                                               );
                                             })()}
@@ -1632,7 +1807,7 @@ function hasTimeConflict(newBooking, existingBookings) {
                                                 onClick={() =>
                                                   leaveRole(
                                                     booking._id,
-                                                    roleInfo.role
+                                                    roleInfo.role,
                                                   )
                                                 }
                                               >
@@ -1649,6 +1824,141 @@ function hasTimeConflict(newBooking, existingBookings) {
                                                 (You do not have this role)
                                               </span>
                                             )}
+                                            {hasRole("admin") &&
+                                              roleInfo.spotsLeft > 0 && (
+                                                <div
+                                                  style={{
+                                                    marginTop: 10,
+                                                    padding: 10,
+                                                    border: "1px solid #eee",
+                                                    borderRadius: 8,
+                                                    background: "#fafafa",
+                                                  }}
+                                                >
+                                                  <strong
+                                                    style={{
+                                                      display: "block",
+                                                      marginBottom: "8px",
+                                                    }}
+                                                  >
+                                                    Assign another worker for{" "}
+                                                    {getRoleLabel(
+                                                      roleInfo.role,
+                                                    )}
+                                                  </strong>
+                                                  {loadingAdminUsers ? (
+                                                    <p
+                                                      style={{
+                                                        marginTop: "8px",
+                                                      }}
+                                                    >
+                                                      Loading workers...
+                                                    </p>
+                                                  ) : (
+                                                    <ul
+                                                      style={{
+                                                        marginTop: 10,
+                                                        paddingLeft: 0,
+                                                        listStyle: "none",
+                                                      }}
+                                                    >
+                                                      {adminUsers
+                                                        .filter(
+                                                          (user) =>
+                                                            !assignedList.some(
+                                                              (t) =>
+                                                                t &&
+                                                                t._id ===
+                                                                  user._id,
+                                                            ) &&
+                                                            (Array.isArray(
+                                                              user.role,
+                                                            )
+                                                              ? user.role.includes(
+                                                                  roleInfo.role,
+                                                                )
+                                                              : user.role ===
+                                                                roleInfo.role),
+                                                        )
+                                                        .sort((a, b) => {
+                                                          const nameA = (
+                                                            a.username ||
+                                                            a.email ||
+                                                            ""
+                                                          ).toLowerCase();
+                                                          const nameB = (
+                                                            b.username ||
+                                                            b.email ||
+                                                            ""
+                                                          ).toLowerCase();
+                                                          return nameA.localeCompare(
+                                                            nameB,
+                                                          );
+                                                        })
+                                                        .map((user) => (
+                                                          <li
+                                                            key={user._id}
+                                                            style={{
+                                                              display: "flex",
+                                                              alignItems:
+                                                                "center",
+                                                              justifyContent:
+                                                                "space-between",
+                                                              marginBottom: 7,
+                                                              padding:
+                                                                "8px 10px",
+                                                              backgroundColor:
+                                                                "#f9f9f9",
+                                                              borderRadius:
+                                                                "4px",
+                                                              border:
+                                                                "1px solid #e0e0e0",
+                                                            }}
+                                                          >
+                                                            <span
+                                                              style={{
+                                                                fontWeight:
+                                                                  "500",
+                                                              }}
+                                                            >
+                                                              {user.username ||
+                                                                user.email ||
+                                                                user._id}
+                                                            </span>
+                                                            <Button
+                                                              size="sm"
+                                                              variant="outline-primary"
+                                                              style={{
+                                                                padding:
+                                                                  "4px 12px",
+                                                                fontSize:
+                                                                  "12px",
+                                                                whiteSpace:
+                                                                  "nowrap",
+                                                              }}
+                                                              onClick={() =>
+                                                                assignTherapistToRole(
+                                                                  booking._id,
+                                                                  user._id,
+                                                                  roleInfo.role,
+                                                                )
+                                                              }
+                                                              disabled={
+                                                                assigningUserId ===
+                                                                user._id
+                                                              }
+                                                            >
+                                                              {assigningUserId ===
+                                                              user._id
+                                                                ? "Assigning..."
+                                                                : "Assign"}
+                                                            </Button>
+                                                          </li>
+                                                        ))}
+                                                    </ul>
+                                                  )}
+                                                </div>
+                                              )}
                                           </li>
                                         );
                                       })}
@@ -1679,7 +1989,7 @@ function hasTimeConflict(newBooking, existingBookings) {
                                   disabled={
                                     currentUserId &&
                                     booking.assignedTherapists?.some(
-                                      (t) => t._id === currentUserId
+                                      (t) => t._id === currentUserId,
                                     )
                                   }
                                 >
@@ -1690,7 +2000,7 @@ function hasTimeConflict(newBooking, existingBookings) {
                               booking.rolesInfo.length === 0) &&
                               currentUserId &&
                               booking.assignedTherapists?.some(
-                                (t) => t._id === currentUserId
+                                (t) => t._id === currentUserId,
                               ) && (
                                 <Button
                                   variant="danger"
@@ -1738,7 +2048,7 @@ function hasTimeConflict(newBooking, existingBookings) {
                       )}
                     </div>
                   </li>
-                ) : null
+                ) : null,
               )}
             </ul>
           </div>

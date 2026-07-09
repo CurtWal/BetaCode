@@ -39,6 +39,9 @@ function MedicalBookings() {
   const [specialPrice, setSpecialPrice] = useState(90);
   const [regularPrice, setRegularPrice] = useState(150);
   const [formRoles, setFormRoles] = useState([]);
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [loadingAdminUsers, setLoadingAdminUsers] = useState(false);
+  const [assigningUserId, setAssigningUserId] = useState(null);
   const [eventHours, setEventHours] = useState("");
   const [fullName, setFullName] = useState("");
   const [dob, setDob] = useState("");
@@ -158,6 +161,50 @@ function MedicalBookings() {
       return false;
     }
   }
+
+  const fetchAdminUsers = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      setLoadingAdminUsers(true);
+      const response = await axios.get(`${import.meta.env.VITE_VERCEL}users`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const users = Array.isArray(response.data) ? response.data : [];
+      const filtered = users.filter((user) => {
+        if (!user || !user._id) return false;
+        const roles = Array.isArray(user.role) ? user.role : [user.role];
+        return !roles.includes("admin");
+      });
+      setAdminUsers(filtered);
+    } catch (error) {
+      console.error("Error fetching admin users:", error.response?.data || error);
+    } finally {
+      setLoadingAdminUsers(false);
+    }
+  };
+
+  const assignMedicalWorker = async (bookingId, therapistId) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("No token found, user is not authenticated.");
+        return;
+      }
+      setAssigningUserId(therapistId);
+      await axios.post(
+        `${import.meta.env.VITE_VERCEL}assign-medical-therapist`,
+        { bookingId, therapistId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      await getBookings();
+    } catch (error) {
+      alert(error.response?.data?.message || "Failed to assign therapist");
+    } finally {
+      setAssigningUserId(null);
+    }
+  };
 
   const getBookings = async () => {
     try {
@@ -581,6 +628,9 @@ function MedicalBookings() {
   };
   useEffect(() => {
     getBookings(); // Initial fetch
+    if (hasRole("admin")) {
+      fetchAdminUsers();
+    }
   }, [handleSubmit]);
   const getSelectedOptions = (selectedValues) => {
     return options.filter((opt) => selectedValues.includes(opt.value));
@@ -1231,6 +1281,77 @@ function MedicalBookings() {
                                   <span>No therapists assigned yet</span>
                                 )}
                               </ul>
+                              {hasRole("admin") &&
+                                (!booking.assignedTherapists ||
+                                  booking.assignedTherapists.length <
+                                    booking.therapist) && (
+                                  <div
+                                    style={{
+                                      marginTop: 10,
+                                      padding: 10,
+                                      border: "1px solid #eee",
+                                      borderRadius: 8,
+                                      background: "#fafafa",
+                                    }}
+                                  >
+                                    <strong>Assign a medical therapist</strong>
+                                    {loadingAdminUsers ? (
+                                      <p>Loading workers...</p>
+                                    ) : (
+                                      <ul
+                                        style={{
+                                          marginTop: 8,
+                                          paddingLeft: 18,
+                                        }}
+                                      >
+                                        {adminUsers
+                                          .filter(
+                                            (user) =>
+                                              !booking.assignedTherapists?.some(
+                                                (t) => t._id === user._id
+                                              ) &&
+                                              (Array.isArray(user.role)
+                                                ? user.role.includes("medical")
+                                                : user.role === "medical")
+                                          )
+                                          .map((user) => (
+                                            <li
+                                              key={user._id}
+                                              style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent:
+                                                  "space-between",
+                                                marginBottom: 6,
+                                              }}
+                                            >
+                                              <span>
+                                                {user.username || user.email ||
+                                                  user._id}
+                                              </span>
+                                              <Button
+                                                size="sm"
+                                                variant="outline-primary"
+                                                onClick={() =>
+                                                  assignMedicalWorker(
+                                                    booking._id,
+                                                    user._id
+                                                  )
+                                                }
+                                                disabled={
+                                                  assigningUserId === user._id
+                                                }
+                                              >
+                                                {assigningUserId === user._id
+                                                  ? "Assigning..."
+                                                  : "Assign"}
+                                              </Button>
+                                            </li>
+                                          ))}
+                                      </ul>
+                                    )}
+                                  </div>
+                                )}
                             </div>
                           </Modal.Body>
                           <Modal.Footer>

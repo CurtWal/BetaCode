@@ -3,9 +3,17 @@ const bookings = require("../model/bookings");
 const Medicalbookings = require("../model/medicalBookings");
 const AssignMedical = require("../model/AssignMedical");
 const Users = require("../model/user");
+const AssignTherapist = require("../model/AssignTherapist");
 const router = express.Router();
 const formData = require("form-data");
 const Mailgun = require("mailgun.js");
+const twilio = require("twilio");
+
+const twilioClient = twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
+const TWILIO_NUMBER = process.env.TWILIO_NUMBER;
 const axios = require("axios");
 
 router.put("/bookings/:id", async (req, res) => {
@@ -56,6 +64,66 @@ Object.keys(updateData).forEach((key) => {
 });
 
     await booking.save();
+
+    const sendNotifications = async () => {
+      const assignedRecords = await AssignTherapist.find({ bookingId: booking._id });
+      const therapistIds = assignedRecords.map((record) => record.therapistId).filter(Boolean);
+      if (!therapistIds.length) return;
+
+      const therapists = await Users.find({ _id: { $in: therapistIds } });
+      const recipientEmails = therapists.map((therapist) => therapist.email).filter(Boolean);
+      const recipientPhones = therapists.map((therapist) => therapist.phoneNumber).filter(Boolean);
+      if (!recipientEmails.length && !recipientPhones.length) return;
+
+      const bookingName = booking.companyName || booking.name || "booking";
+      const bookingDate = booking.date || "N/A";
+      const bookingTime = `${booking.startTime || "N/A"} - ${booking.endTime || "N/A"}`;
+      const bookingId = booking._id.toString();
+      const emailHtml = `
+        <p>Hello,</p>
+        <p>The booking has been updated.</p>
+        <p><strong>Client / Company:</strong> ${bookingName}</p>
+        <p><strong>Date:</strong> ${bookingDate}</p>
+        <p><strong>Time:</strong> ${bookingTime}</p>
+        <p>Please review the updated booking details in your dashboard.</p>
+      `;
+      const smsBody = `Booking updated: ${bookingName} on ${bookingDate} at ${bookingTime}.`;
+
+      if (recipientEmails.length) {
+        const mg = new Mailgun(formData);
+        const mailgun = mg.client({ username: "api", key: process.env.MAILGUN_KEY });
+        try {
+          await mailgun.messages.create(process.env.MAILGUN_DOMAIN || "motgpayment.com", {
+            from: process.env.EMAIL_USER,
+            to: recipientEmails,
+            subject: `Updated booking assigned to you: ${bookingName}`,
+            html: emailHtml,
+            "h:X-Sent-Using": "Mailgun",
+            "h:X-Source": "MassageOnTheGo",
+          });
+        } catch (notificationError) {
+          console.error("Error sending update email to therapists:", notificationError);
+        }
+      }
+
+      if (recipientPhones.length && TWILIO_NUMBER) {
+        await Promise.allSettled(
+          recipientPhones.map((phoneNumber) =>
+            twilioClient.messages.create({ body: smsBody, from: TWILIO_NUMBER, to: phoneNumber })
+          )
+        ).then((results) => {
+          results.forEach((result, index) => {
+            if (result.status === "rejected") {
+              console.error(`Failed SMS to ${recipientPhones[index]}:`, result.reason);
+            }
+          });
+        });
+      }
+    };
+
+    await sendNotifications().catch((notificationError) => {
+      console.error("Booking was updated, but notification delivery failed:", notificationError);
+    });
 
     res.json({ message: "Booking updated successfully", booking });
   } catch (error) {
