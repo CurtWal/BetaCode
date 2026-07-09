@@ -34,10 +34,19 @@ const MONGO_URI = process.env.MERNDBDATA;
 const POOL_SIZE = Number(process.env.MONGO_MAX_POOL_SIZE) || 20;
 
 async function connectOnce() {
+  if (!MONGO_URI) {
+    throw new Error("MONGO_URI is not defined. Check your .env and MERNDBDATA variable.");
+  }
+
   if (mongoose.connection.readyState === 1) return; // already connected
+
   await mongoose.connect(MONGO_URI, {
     maxPoolSize: POOL_SIZE,
-    serverSelectionTimeoutMS: 5000,
+    serverSelectionTimeoutMS: 15000,
+    connectTimeoutMS: 10000,
+    socketTimeoutMS: 45000,
+    family: 4,
+    tls: true,
     useNewUrlParser: true,
     useUnifiedTopology: true,
   });

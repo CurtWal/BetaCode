@@ -11,6 +11,7 @@ const sgMail = require("@sendgrid/mail");
 const { google } = require("googleapis");
 const formData = require("form-data");
 const Mailgun = require("mailgun.js");
+const { verifyToken, checkRole } = require("../middleware/authMiddleware");
 
 const checkLocationDistance = (lat1, lon1, lat2, lon2, maxMiles) => {
   const toRad = (deg) => (deg * Math.PI) / 180;
@@ -62,46 +63,51 @@ const getRoleLabel = (roleValue) => {
   return found ? found.label : roleValue;
 };
 // Assign therapist to a booking
-router.post("/assign-therapist", async (req, res) => {
+router.post("/assign-therapist", verifyToken, async (req, res) => {
   try {
     const { bookingId, therapistId, role } = req.body;
+    const isAdmin = req.user.role.includes("admin"); // Check if user is admin
 
     // Check if the booking exists
     const booking = await Booking.findById(bookingId);
     if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
     }
-    // Check for overlapping or too-close bookings based on if therapist already has assignments within 1 hour
-    const therapistAssignments = await TherapistAssignment.find({
-      therapistId,
-    }).populate("bookingId");
+    
+    // Skip time conflict check for admins
+    if (!isAdmin) {
+      // Check for overlapping or too-close bookings based on if therapist already has assignments within 1 hour
+      const therapistAssignments = await TherapistAssignment.find({
+        therapistId,
+      }).populate("bookingId");
 
-    const BUFFER_MS = 60 * 60 * 1000; // 1 hour buffer in milliseconds
+      const BUFFER_MS = 60 * 60 * 1000; // 1 hour buffer in milliseconds
 
-    const parseDateTime = (dateStr, timeStr) => {
-      // Combine date and time into a proper Date object
-      return new Date(`${dateStr} ${timeStr}`);
-    };
+      const parseDateTime = (dateStr, timeStr) => {
+        // Combine date and time into a proper Date object
+        return new Date(`${dateStr} ${timeStr}`);
+      };
 
-    const newStart = parseDateTime(booking.date, booking.startTime);
-    const newEnd = parseDateTime(booking.date, booking.endTime);
+      const newStart = parseDateTime(booking.date, booking.startTime);
+      const newEnd = parseDateTime(booking.date, booking.endTime);
 
-    for (const assign of therapistAssignments) {
-      const b = assign.bookingId;
-      if (!b || b.date !== booking.date) continue;
+      for (const assign of therapistAssignments) {
+        const b = assign.bookingId;
+        if (!b || b.date !== booking.date) continue;
 
-      const existingStart = parseDateTime(b.date, b.startTime);
-      const existingEnd = parseDateTime(b.date, b.endTime);
+        const existingStart = parseDateTime(b.date, b.startTime);
+        const existingEnd = parseDateTime(b.date, b.endTime);
 
-      const bufferedStart = new Date(existingStart.getTime() - BUFFER_MS);
-      const bufferedEnd = new Date(existingEnd.getTime() + BUFFER_MS);
+        const bufferedStart = new Date(existingStart.getTime() - BUFFER_MS);
+        const bufferedEnd = new Date(existingEnd.getTime() + BUFFER_MS);
 
-      // Check for overlap or within 1 hour
-      if (newStart < bufferedEnd && newEnd > bufferedStart) {
-        return res.status(400).json({
-          message:
-            "You cannot accept this booking because it overlaps or is within 1 hour of another booking you have accepted.",
-        });
+        // Check for overlap or within 1 hour
+        if (newStart < bufferedEnd && newEnd > bufferedStart) {
+          return res.status(400).json({
+            message:
+              "You cannot accept this booking because it overlaps or is within 1 hour of another booking you have accepted.",
+          });
+        }
       }
     }
 
@@ -409,7 +415,7 @@ router.post("/send-email-on-spot-fill", async (req, res) => {
   }
 });
 
-router.post("/leave-booking", async (req, res) => {
+router.post("/leave-booking", verifyToken, async (req, res) => {
   try {
     const { bookingId, therapistId, role } = req.body;
 
@@ -617,15 +623,9 @@ router.post("/leave-booking", async (req, res) => {
   }
 });
 
-router.post("/admin-remove-therapist", async (req, res) => {
+router.post("/admin-remove-therapist", verifyToken, checkRole(["admin"]), async (req, res) => {
   try {
     const { bookingId, therapistId } = req.body;
-
-    // Optional: Add admin check here if needed
-    // const adminUser = await User.findById(req.userId);
-    // if (!adminUser || adminUser.role !== "admin") {
-    //   return res.status(403).json({ message: "Unauthorized" });
-    // }
 
     const assignment = await TherapistAssignment.findOneAndDelete({
       bookingId,
@@ -675,7 +675,7 @@ router.post("/admin-remove-therapist", async (req, res) => {
 });
 
 // Medical Bookings
-router.post("/assign-medical-therapist", async (req, res) => {
+router.post("/assign-medical-therapist", verifyToken, async (req, res) => {
   try {
     const { bookingId, therapistId } = req.body;
 
@@ -848,7 +848,7 @@ router.post("/send-medical-email-on-spot-fill", async (req, res) => {
   }
 });
 
-router.post("/leave-medical-booking", async (req, res) => {
+router.post("/leave-medical-booking", verifyToken, async (req, res) => {
   try {
     const { bookingId, therapistId } = req.body;
 
@@ -1024,15 +1024,9 @@ router.post("/leave-medical-booking", async (req, res) => {
   }
 });
 
-router.post("/admin-remove-medical-therapist", async (req, res) => {
+router.post("/admin-remove-medical-therapist", verifyToken, checkRole(["admin"]), async (req, res) => {
   try {
     const { bookingId, therapistId } = req.body;
-
-    // Optional: Add admin check here if needed
-    // const adminUser = await User.findById(req.userId);
-    // if (!adminUser || adminUser.role !== "admin") {
-    //   return res.status(403).json({ message: "Unauthorized" });
-    // }
 
     const assignment = await MedicalAssignment.findOneAndDelete({
       bookingId,
