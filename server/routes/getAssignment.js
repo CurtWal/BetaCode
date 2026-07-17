@@ -73,6 +73,39 @@ router.post("/assign-therapist", verifyToken, async (req, res) => {
     if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
     }
+
+    const therapistUser = await User.findById(therapistId);
+
+    if (!isAdmin) {
+      if (
+        !booking.location ||
+        booking.location.lat == null ||
+        booking.location.lng == null
+      ) {
+        return res.status(400).json({ message: "Booking location missing" });
+      }
+      if (
+        !therapistUser?.location ||
+        therapistUser.location.lat == null ||
+        therapistUser.location.lng == null
+      ) {
+        return res
+          .status(400)
+          .json({ message: "Your location is not set. Contact an admin." });
+      }
+      const inRange = checkLocationDistance(
+        booking.location.lat,
+        booking.location.lng,
+        therapistUser.location.lat,
+        therapistUser.location.lng,
+        92,
+      );
+      if (!inRange) {
+        return res
+          .status(403)
+          .json({ message: "This booking is outside your service area" });
+      }
+    }
     
     // Skip time conflict check for admins
     if (!isAdmin) {
@@ -145,7 +178,7 @@ router.post("/assign-therapist", verifyToken, async (req, res) => {
         const oauth2Client = new google.auth.OAuth2(
           process.env.GOOGLE_CLIENT_ID,
           process.env.GOOGLE_CLIENT_SECRET,
-          process.env.GOOGLE_REDIRECT_URI
+          process.env.GOOGLE_REDIRECT_URI,
         );
         oauth2Client.setCredentials({
           refresh_token: user.googleTokens.refresh_token,
@@ -157,13 +190,13 @@ router.post("/assign-therapist", verifyToken, async (req, res) => {
           description: booking.extra || "Massage booking",
           start: {
             dateTime: new Date(
-              `${booking.date}T${booking.startTime}:00`
+              `${booking.date}T${booking.startTime}:00`,
             ).toISOString(),
             timeZone: "America/Chicago",
           },
           end: {
             dateTime: new Date(
-              `${booking.date}T${booking.endTime}:00`
+              `${booking.date}T${booking.endTime}:00`,
             ).toISOString(),
             timeZone: "America/Chicago",
           },
@@ -178,7 +211,7 @@ router.post("/assign-therapist", verifyToken, async (req, res) => {
         } catch (err) {
           console.error(
             "❌ Failed to create Google Calendar event:",
-            err.message
+            err.message,
           );
         }
       }
@@ -236,7 +269,7 @@ router.post("/assign-therapist", verifyToken, async (req, res) => {
       const oauth2Client = new google.auth.OAuth2(
         process.env.GOOGLE_CLIENT_ID,
         process.env.GOOGLE_CLIENT_SECRET,
-        process.env.GOOGLE_REDIRECT_URI
+        process.env.GOOGLE_REDIRECT_URI,
       );
       oauth2Client.setCredentials({
         refresh_token: user.googleTokens.refresh_token,
@@ -248,13 +281,13 @@ router.post("/assign-therapist", verifyToken, async (req, res) => {
         description: booking.extra || "Massage booking",
         start: {
           dateTime: new Date(
-            `${booking.date}T${booking.startTime}:00`
+            `${booking.date}T${booking.startTime}:00`,
           ).toISOString(),
           timeZone: "America/Chicago",
         },
         end: {
           dateTime: new Date(
-            `${booking.date}T${booking.endTime}:00`
+            `${booking.date}T${booking.endTime}:00`,
           ).toISOString(),
           timeZone: "America/Chicago",
         },
@@ -269,7 +302,7 @@ router.post("/assign-therapist", verifyToken, async (req, res) => {
       } catch (err) {
         console.error(
           "❌ Failed to create Google Calendar event:",
-          err.message
+          err.message,
         );
       }
     }
@@ -350,15 +383,15 @@ router.post("/send-email-on-spot-fill", async (req, res) => {
           Hours: ${formatServiceHours(service.hours)}<br/>
           Increment: ${service.increment} minutes
         </li>
-      `
+      `,
                 )
                 .join("")}
             <p><strong>Available Date:</strong> ${booking.date}</p>
             <p><strong>Start Time:</strong> ${convertTo12Hour(
-              booking.startTime
+              booking.startTime,
             )}</p>
             <p><strong>End Time:</strong> ${convertTo12Hour(
-              booking.endTime
+              booking.endTime,
             )}</p>
             <p><strong>Extra Info:</strong> ${booking.extra}</p>
             <p><strong>Price:</strong> $${booking.price}</p>
@@ -370,7 +403,7 @@ router.post("/send-email-on-spot-fill", async (req, res) => {
 
       const response = await mailgun.messages.create(
         "motgpayment.com", // Your Mailgun domain (e.g., "mg.yourdomain.com")
-        emailData
+        emailData,
       );
 
       console.log("Mailgun Response:", response);
@@ -437,7 +470,7 @@ router.post("/leave-booking", verifyToken, async (req, res) => {
       const oauth2Client = new google.auth.OAuth2(
         process.env.GOOGLE_CLIENT_ID,
         process.env.GOOGLE_CLIENT_SECRET,
-        process.env.GOOGLE_REDIRECT_URI // e.g. http://localhost:5000/google/callback
+        process.env.GOOGLE_REDIRECT_URI, // e.g. http://localhost:5000/google/callback
       );
       oauth2Client.setCredentials({
         refresh_token: user.googleTokens.refresh_token,
@@ -448,7 +481,7 @@ router.post("/leave-booking", verifyToken, async (req, res) => {
         eventId: assignment.googleEventId,
       });
       console.log(
-        `🗑️ Deleted event ${assignment.googleEventId} for therapist ${therapistId}`
+        `🗑️ Deleted event ${assignment.googleEventId} for therapist ${therapistId}`,
       );
     }
 
@@ -461,14 +494,14 @@ router.post("/leave-booking", verifyToken, async (req, res) => {
     // Find all therapists within distance who are not assigned yet for this role
     const therapists = await User.find(
       { role: "therapist" },
-      "email _id zipCode"
+      "email _id zipCode",
     );
     const assignedTherapists = await TherapistAssignment.find({
       bookingId,
       role,
     });
     const assignedTherapistIds = assignedTherapists.map((t) =>
-      t.therapistId.toString()
+      t.therapistId.toString(),
     );
 
     const assignedCount = await TherapistAssignment.countDocuments({
@@ -487,7 +520,7 @@ router.post("/leave-booking", verifyToken, async (req, res) => {
           booking.location.lng,
           therapist.location.lat,
           therapist.location.lng,
-          92
+          92,
         )
       ) {
         remainingTherapists.push(therapist.email);
@@ -505,7 +538,7 @@ router.post("/leave-booking", verifyToken, async (req, res) => {
         const sendEmailsInBatches = async (
           emails,
           batchSize = 5,
-          delayMs = 3000
+          delayMs = 3000,
         ) => {
           for (let i = 0; i < emails.length; i += batchSize) {
             const batch = emails.slice(i, i + batchSize);
@@ -524,19 +557,19 @@ router.post("/leave-booking", verifyToken, async (req, res) => {
                 <p><strong>ZipCode:</strong> ${booking.zipCode}</p>
                 <p><strong>Available Date:</strong> ${booking.date}</p>
                 <p><strong>Start Time:</strong> ${convertTo12Hour(
-                  booking.startTime
+                  booking.startTime,
                 )}</p>
                 <p><strong>End Time:</strong> ${convertTo12Hour(
-                  booking.endTime
+                  booking.endTime,
                 )}</p>
                 <p><strong>Extra Info:</strong> ${booking.extra}</p>
             <p><strong>Remaining Spots for ${getRoleLabel(
-              role
+              role,
             )}:</strong> ${remainingSpots}</p>`,
                     "h:X-Sent-Using": "Mailgun",
                     "h:X-Source": "MassageOnTheGo",
-                  })
-                )
+                  }),
+                ),
               );
               console.log("Mailgun Response:", response);
             } catch (error) {
@@ -587,8 +620,8 @@ router.post("/leave-booking", verifyToken, async (req, res) => {
                         `<li><strong>${getRoleLabel(srv.role)}</strong>: ${
                           srv.workers
                         } workers, ${formatServiceHours(
-                          srv.hours
-                        )}, increments ${srv.increment} min</li>`
+                          srv.hours,
+                        )}, increments ${srv.increment} min</li>`,
                     )
                     .join("")
                 : "<li>No services listed</li>"
@@ -596,7 +629,7 @@ router.post("/leave-booking", verifyToken, async (req, res) => {
           </ul>
           <p><strong>Available Date:</strong> ${booking.date}</p>
           <p><strong>Start Time:</strong> ${convertTo12Hour(
-            booking.startTime
+            booking.startTime,
           )}</p>
           <p><strong>End Time:</strong> ${convertTo12Hour(booking.endTime)}</p>
           <p><strong>Extra Info:</strong> ${booking.extra}</p>
@@ -606,7 +639,7 @@ router.post("/leave-booking", verifyToken, async (req, res) => {
         };
         const response = await mailgun.messages.create(
           "motgpayment.com",
-          emailData
+          emailData,
         );
         console.log("Mailgun Response:", response);
       } catch (error) {
@@ -623,56 +656,63 @@ router.post("/leave-booking", verifyToken, async (req, res) => {
   }
 });
 
-router.post("/admin-remove-therapist", verifyToken, checkRole(["admin"]), async (req, res) => {
-  try {
-    const { bookingId, therapistId } = req.body;
+router.post(
+  "/admin-remove-therapist",
+  verifyToken,
+  checkRole(["admin"]),
+  async (req, res) => {
+    try {
+      const { bookingId, therapistId } = req.body;
 
-    const assignment = await TherapistAssignment.findOneAndDelete({
-      bookingId,
-      therapistId,
-    });
-
-    if (!assignment) {
-      return res
-        .status(404)
-        .json({ message: "Therapist not assigned to this booking." });
-    }
-    const remainingAssignments = await TherapistAssignment.find({ bookingId });
-    const remainingCount = remainingAssignments.length;
-
-    const user = await User.findById(therapistId);
-    console.log(" EventId: ", assignment?.googleEventId);
-    console.log("Token: ", user?.googleTokens?.refresh_token);
-
-    if (assignment?.googleEventId && user?.googleTokens?.refresh_token) {
-      const oauth2Client = new google.auth.OAuth2(
-        process.env.GOOGLE_CLIENT_ID,
-        process.env.GOOGLE_CLIENT_SECRET,
-        process.env.GOOGLE_REDIRECT_URI // e.g. http://localhost:5000/google/callback
-      );
-      oauth2Client.setCredentials({
-        refresh_token: user.googleTokens.refresh_token,
+      const assignment = await TherapistAssignment.findOneAndDelete({
+        bookingId,
+        therapistId,
       });
 
-      const calendar = google.calendar({ version: "v3", auth: oauth2Client });
-      await calendar.events.delete({
-        calendarId: "primary",
-        eventId: assignment.googleEventId,
+      if (!assignment) {
+        return res
+          .status(404)
+          .json({ message: "Therapist not assigned to this booking." });
+      }
+      const remainingAssignments = await TherapistAssignment.find({
+        bookingId,
       });
+      const remainingCount = remainingAssignments.length;
 
-      console.log(
-        `🗑️ Deleted event ${assignment.googleEventId} for therapist ${therapistId}`
-      );
+      const user = await User.findById(therapistId);
+      console.log(" EventId: ", assignment?.googleEventId);
+      console.log("Token: ", user?.googleTokens?.refresh_token);
+
+      if (assignment?.googleEventId && user?.googleTokens?.refresh_token) {
+        const oauth2Client = new google.auth.OAuth2(
+          process.env.GOOGLE_CLIENT_ID,
+          process.env.GOOGLE_CLIENT_SECRET,
+          process.env.GOOGLE_REDIRECT_URI, // e.g. http://localhost:5000/google/callback
+        );
+        oauth2Client.setCredentials({
+          refresh_token: user.googleTokens.refresh_token,
+        });
+
+        const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+        await calendar.events.delete({
+          calendarId: "primary",
+          eventId: assignment.googleEventId,
+        });
+
+        console.log(
+          `🗑️ Deleted event ${assignment.googleEventId} for therapist ${therapistId}`,
+        );
+      }
+      res.json({
+        message: "Therapist successfully removed from the booking.",
+        remainingSpots: remainingCount,
+      });
+    } catch (error) {
+      console.error("Error removing therapist:", error);
+      res.status(500).json({ message: "Error removing therapist", error });
     }
-    res.json({
-      message: "Therapist successfully removed from the booking.",
-      remainingSpots: remainingCount,
-    });
-  } catch (error) {
-    console.error("Error removing therapist:", error);
-    res.status(500).json({ message: "Error removing therapist", error });
-  }
-});
+  },
+);
 
 // Medical Bookings
 router.post("/assign-medical-therapist", verifyToken, async (req, res) => {
@@ -718,7 +758,7 @@ router.post("/assign-medical-therapist", verifyToken, async (req, res) => {
       const oauth2Client = new google.auth.OAuth2(
         process.env.GOOGLE_CLIENT_ID,
         process.env.GOOGLE_CLIENT_SECRET,
-        process.env.GOOGLE_REDIRECT_URI // e.g. http://localhost:5000/google/callback
+        process.env.GOOGLE_REDIRECT_URI, // e.g. http://localhost:5000/google/callback
       );
 
       oauth2Client.setCredentials({
@@ -733,13 +773,13 @@ router.post("/assign-medical-therapist", verifyToken, async (req, res) => {
         description: booking.extra || "Massage booking",
         start: {
           dateTime: new Date(
-            `${booking.date}T${booking.startTime}:00`
+            `${booking.date}T${booking.startTime}:00`,
           ).toISOString(),
           timeZone: "America/Chicago", // adjust timezone
         },
         end: {
           dateTime: new Date(
-            `${booking.date}T${booking.endTime}:00`
+            `${booking.date}T${booking.endTime}:00`,
           ).toISOString(),
           timeZone: "America/Chicago",
         },
@@ -758,7 +798,7 @@ router.post("/assign-medical-therapist", verifyToken, async (req, res) => {
       } catch (err) {
         console.error(
           "❌ Failed to create Google Calendar event:",
-          err.message
+          err.message,
         );
       }
     }
@@ -833,7 +873,7 @@ router.post("/send-medical-email-on-spot-fill", async (req, res) => {
 
       const response = await mailgun.messages.create(
         "motgpayment.com", // Your Mailgun domain (e.g., "mg.yourdomain.com")
-        emailData
+        emailData,
       );
 
       console.log("Mailgun Response:", response);
@@ -868,7 +908,7 @@ router.post("/leave-medical-booking", verifyToken, async (req, res) => {
       const oauth2Client = new google.auth.OAuth2(
         process.env.GOOGLE_CLIENT_ID,
         process.env.GOOGLE_CLIENT_SECRET,
-        process.env.GOOGLE_REDIRECT_URI // e.g. http://localhost:5000/google/callback
+        process.env.GOOGLE_REDIRECT_URI, // e.g. http://localhost:5000/google/callback
       );
       oauth2Client.setCredentials({
         refresh_token: user.googleTokens.refresh_token,
@@ -881,7 +921,7 @@ router.post("/leave-medical-booking", verifyToken, async (req, res) => {
       });
 
       console.log(
-        `🗑️ Deleted event ${assignment.googleEventId} for therapist ${therapistId}`
+        `🗑️ Deleted event ${assignment.googleEventId} for therapist ${therapistId}`,
       );
     }
     // Fetch the booking details
@@ -893,11 +933,11 @@ router.post("/leave-medical-booking", verifyToken, async (req, res) => {
     // Find all therapists within distance who are not assigned yet
     const therapists = await User.find(
       { role: "therapist" },
-      "email _id zipCode"
+      "email _id zipCode",
     );
     const assignedTherapists = await MedicalAssignment.find({ bookingId });
     const assignedTherapistIds = assignedTherapists.map((t) =>
-      t.therapistId.toString()
+      t.therapistId.toString(),
     );
 
     const assignedCount = await MedicalAssignment.countDocuments({
@@ -919,7 +959,7 @@ router.post("/leave-medical-booking", verifyToken, async (req, res) => {
           booking.location.lng,
           therapist.location.lat,
           therapist.location.lng,
-          92
+          92,
         )
       ) {
         remainingTherapists.push(therapist.email);
@@ -937,7 +977,7 @@ router.post("/leave-medical-booking", verifyToken, async (req, res) => {
         const sendEmailsInBatches = async (
           emails,
           batchSize = 5,
-          delayMs = 3000
+          delayMs = 3000,
         ) => {
           for (let i = 0; i < emails.length; i += batchSize) {
             const batch = emails.slice(i, i + batchSize);
@@ -957,8 +997,8 @@ router.post("/leave-medical-booking", verifyToken, async (req, res) => {
             <p><strong>Remaining Spots:</strong> ${remainingSpots}</p>`,
                     "h:X-Sent-Using": "Mailgun",
                     "h:X-Source": "MassageOnTheGo",
-                  })
-                )
+                  }),
+                ),
               );
               console.log("Mailgun Response:", response);
             } catch (error) {
@@ -1006,7 +1046,7 @@ router.post("/leave-medical-booking", verifyToken, async (req, res) => {
 
         const response = await mailgun.messages.create(
           "motgpayment.com", // Your Mailgun domain (e.g., "mg.yourdomain.com")
-          emailData
+          emailData,
         );
 
         console.log("Mailgun Response:", response);
@@ -1024,51 +1064,56 @@ router.post("/leave-medical-booking", verifyToken, async (req, res) => {
   }
 });
 
-router.post("/admin-remove-medical-therapist", verifyToken, checkRole(["admin"]), async (req, res) => {
-  try {
-    const { bookingId, therapistId } = req.body;
+router.post(
+  "/admin-remove-medical-therapist",
+  verifyToken,
+  checkRole(["admin"]),
+  async (req, res) => {
+    try {
+      const { bookingId, therapistId } = req.body;
 
-    const assignment = await MedicalAssignment.findOneAndDelete({
-      bookingId,
-      therapistId,
-    });
-
-    if (!assignment) {
-      return res
-        .status(404)
-        .json({ message: "Therapist not assigned to this booking." });
-    }
-    const remainingAssignments = await MedicalAssignment.find({ bookingId });
-    const remainingCount = remainingAssignments.length;
-
-    const user = await User.findById(therapistId);
-    if (assignment?.googleEventId && user?.googleTokens?.refresh_token) {
-      const oauth2Client = new google.auth.OAuth2(
-        process.env.GOOGLE_CLIENT_ID,
-        process.env.GOOGLE_CLIENT_SECRET,
-        process.env.GOOGLE_REDIRECT_URI // e.g. http://localhost:5000/google/callback
-      );
-      oauth2Client.setCredentials({
-        refresh_token: user.googleTokens.refresh_token,
+      const assignment = await MedicalAssignment.findOneAndDelete({
+        bookingId,
+        therapistId,
       });
 
-      const calendar = google.calendar({ version: "v3", auth: oauth2Client });
-      await calendar.events.delete({
-        calendarId: "primary",
-        eventId: assignment.googleEventId,
-      });
+      if (!assignment) {
+        return res
+          .status(404)
+          .json({ message: "Therapist not assigned to this booking." });
+      }
+      const remainingAssignments = await MedicalAssignment.find({ bookingId });
+      const remainingCount = remainingAssignments.length;
 
-      console.log(
-        `🗑️ Deleted event ${assignment.googleEventId} for therapist ${therapistId}`
-      );
+      const user = await User.findById(therapistId);
+      if (assignment?.googleEventId && user?.googleTokens?.refresh_token) {
+        const oauth2Client = new google.auth.OAuth2(
+          process.env.GOOGLE_CLIENT_ID,
+          process.env.GOOGLE_CLIENT_SECRET,
+          process.env.GOOGLE_REDIRECT_URI, // e.g. http://localhost:5000/google/callback
+        );
+        oauth2Client.setCredentials({
+          refresh_token: user.googleTokens.refresh_token,
+        });
+
+        const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+        await calendar.events.delete({
+          calendarId: "primary",
+          eventId: assignment.googleEventId,
+        });
+
+        console.log(
+          `🗑️ Deleted event ${assignment.googleEventId} for therapist ${therapistId}`,
+        );
+      }
+      res.json({
+        message: "Therapist successfully removed from the booking.",
+        remainingSpots: remainingCount,
+      });
+    } catch (error) {
+      console.error("Error removing therapist:", error);
+      res.status(500).json({ message: "Error removing therapist", error });
     }
-    res.json({
-      message: "Therapist successfully removed from the booking.",
-      remainingSpots: remainingCount,
-    });
-  } catch (error) {
-    console.error("Error removing therapist:", error);
-    res.status(500).json({ message: "Error removing therapist", error });
-  }
-});
+  },
+);
 module.exports = router;

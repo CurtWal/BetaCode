@@ -295,10 +295,11 @@ router.get("/confirm-booking/:id", async (req, res) => {
       batchSize = 5,
       delayMs = 3000,
     ) => {
+      const failures = [];
       for (let i = 0; i < emails.length; i += batchSize) {
         const batch = emails.slice(i, i + batchSize);
 
-        const response = await Promise.all(
+        const results = await Promise.allSettled(
           batch.map((email) =>
             mailgun.messages.create("motgpayment.com", {
               from: process.env.EMAIL_USER,
@@ -318,16 +319,27 @@ router.get("/confirm-booking/:id", async (req, res) => {
           ),
         );
 
-        console.log("Mailgun Batch Response:", response);
+        //console.log("Mailgun Batch Response:", results );
+
+        results.forEach((result, idx) => {
+          if (result.status === "rejected") {
+            console.error(`❌ Failed to email ${batch[idx]}:`, result.reason);
+            failures.push(batch[idx]);
+          } else {
+            console.log(`✅ Sent to ${batch[idx]}`);
+          }
+        });
 
         if (i + batchSize < emails.length) {
           await new Promise((resolve) => setTimeout(resolve, delayMs));
         }
       }
+      return failures;
     };
 
-    await sendEmailsInBatches(emailList);
+    const failedEmails = await sendEmailsInBatches(emailList);
     console.log("✅ Finished sending emails");
+    console.log("❌ Failed emails:", failedEmails);
 
     // --- SMS Part --- //
     const phoneNumbers = eligibleTherapists

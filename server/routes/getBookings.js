@@ -9,13 +9,13 @@ const User = require("../model/user");
 const axios = require("axios");
 
 const checkLocationDistance = (lat1, lon1, lat2, lon2, maxMiles) => {
-  const toRad = (deg) => deg * Math.PI / 180;
+  const toRad = (deg) => (deg * Math.PI) / 180;
   const R = 3958.8; // Earth radius in miles
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
-  const a = Math.sin(dLat / 2) ** 2 +
-            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-            Math.sin(dLon / 2) ** 2;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c <= maxMiles;
 };
@@ -24,12 +24,27 @@ const checkLocationDistance = (lat1, lon1, lat2, lon2, maxMiles) => {
 router.get(
   "/bookings",
   verifyToken,
-  checkRole(["admin", "therapist", "personal", "yoga", "group", "nutritionist", "pilates", "stretch", "cpr", "meditation", "zumba", "wellness", "ergonomics", "breathwork","medical"]),
+  checkRole([
+    "admin",
+    "therapist",
+    "personal",
+    "yoga",
+    "group",
+    "nutritionist",
+    "pilates",
+    "stretch",
+    "cpr",
+    "meditation",
+    "zumba",
+    "wellness",
+    "ergonomics",
+    "breathwork",
+    "medical",
+  ]),
   async (req, res) => {
     try {
       const userId = req.user.id; // Assuming user ID is in the token
       const userRole = req.user.role; // Assuming user role is in the token
-
 
       // Fetch all bookings
       const allBookings = await booking.find({ confirmed: true }).lean();
@@ -38,12 +53,16 @@ router.get(
         .populate("therapistId", "username email role")
         .lean();
 
+      const therapist = userRole.includes("admin")
+        ? null
+        : await User.findById(userId).lean();
       // Attach assigned therapists to their respective bookings, grouped by role
       const updatedBookings = await Promise.all(
         allBookings.map(async (booking) => {
           // Get all assignments for this booking
           const assignments = therapistAssignments.filter(
-            (assignment) => assignment.bookingId.toString() === booking._id.toString()
+            (assignment) =>
+              assignment.bookingId.toString() === booking._id.toString(),
           );
 
           // Group assigned therapists by role
@@ -62,34 +81,50 @@ router.get(
           // For legacy bookings (no services or rolesInfo), always include assignedTherapists: [] if none found
           let assignedTherapists = undefined;
           if (!booking.services || booking.services.length === 0) {
-            assignedTherapists = assignments.map(a => a.therapistId).filter(Boolean);
+            assignedTherapists = assignments
+              .map((a) => a.therapistId)
+              .filter(Boolean);
             if (!assignedTherapists || assignedTherapists.length === 0) {
               assignedTherapists = [];
             }
           }
 
           // Check if the booking is within 1 hour of therapist's zip code (if therapist context)
-          let isWithinDistance = true;
-          if (!userRole.includes("admin")) {
-            const therapist = await User.findById(userId).lean();
-            if (therapist && booking.location && therapist.location) {
+          let isWithinDistance = false; // fail-closed default
+          if (userRole.includes("admin")) {
+            isWithinDistance = true;
+          } else {
+            if (!therapist?.location?.lat || !therapist?.location?.lng) {
+              console.warn(
+                `⚠️ Therapist ${userId} has no location set — hiding all bookings`,
+              );
+            } else if (!booking.location?.lat || !booking.location?.lng) {
+              console.warn(
+                `⚠️ Booking ${booking._id} has no location set — hiding from therapists`,
+              );
+            } else {
               isWithinDistance = checkLocationDistance(
                 booking.location.lat,
                 booking.location.lng,
                 therapist.location.lat,
                 therapist.location.lng,
-                92
+                92,
               );
             }
           }
 
           // Attach assignedTherapists only for legacy bookings
           if (assignedTherapists !== undefined) {
-            return { ...booking, assignedTherapists, rolesInfo, isWithinDistance };
+            return {
+              ...booking,
+              assignedTherapists,
+              rolesInfo,
+              isWithinDistance,
+            };
           } else {
             return { ...booking, rolesInfo, isWithinDistance };
           }
-        })
+        }),
       );
 
       // For non-admins, filter out bookings that are not within 1 hour distance
@@ -110,7 +145,7 @@ router.get(
 
       // // Fetch all bookings
       // const myBookings = await booking.find({confirmed: true}).lean(); // Convert to plain objects
-      
+
       // // Fetch therapist assignments and populate therapist details
       // const therapistAssignments = await TherapistAssignment.find()
       //   .populate("therapistId", "username email role") // Only fetch therapist details
@@ -160,7 +195,7 @@ router.get(
       console.error("Error fetching bookings:", error);
       res.status(500).json({ error: "Server error" });
     }
-  }
+  },
 );
 
 // Helper function to populate therapist details in bookings
@@ -173,9 +208,10 @@ const populateAssignedTherapists = async (bookings) => {
     const assignedTherapists = therapistAssignments
       .filter(
         (assignment) =>
-          assignment.bookingId.toString() === booking._id.toString()
+          assignment.bookingId.toString() === booking._id.toString(),
       )
-      .map((assignment) => assignment.therapistId).filter(Boolean);;
+      .map((assignment) => assignment.therapistId)
+      .filter(Boolean);
     return { ...booking, assignedTherapists };
   });
 };
@@ -197,9 +233,9 @@ router.get("/bookings/:id", async (req, res) => {
       .lean();
 
     // Extract therapist details
-    const assignedTherapists = therapistAssignments.map(
-      (assign) => assign.therapistId
-    ).filter(Boolean);;
+    const assignedTherapists = therapistAssignments
+      .map((assign) => assign.therapistId)
+      .filter(Boolean);
 
     res.json({ ...bookings, assignedTherapists });
   } catch (error) {
@@ -208,12 +244,27 @@ router.get("/bookings/:id", async (req, res) => {
   }
 });
 
-
 // Medical Booking
 router.get(
   "/medical-bookings",
   verifyToken,
-  checkRole(["admin", "therapist", "personal", "yoga", "group", "nutritionist", "pilates", "stretch", "cpr", "meditation", "zumba", "wellness", "ergonomics", "breathwork","medical"]),
+  checkRole([
+    "admin",
+    "therapist",
+    "personal",
+    "yoga",
+    "group",
+    "nutritionist",
+    "pilates",
+    "stretch",
+    "cpr",
+    "meditation",
+    "zumba",
+    "wellness",
+    "ergonomics",
+    "breathwork",
+    "medical",
+  ]),
   async (req, res) => {
     try {
       const userId = req.user.id; // Assuming user ID is in the token
@@ -221,7 +272,9 @@ router.get(
 
       // If the user is an admin, fetch all bookings
       if (userRole.includes("admin")) {
-        const allBookings = await medicalBooking.find({ confirmed: true }).lean(); // Get all bookings
+        const allBookings = await medicalBooking
+          .find({ confirmed: true })
+          .lean(); // Get all bookings
         const updatedBookings = await populateAssignedTherapists(allBookings);
         return res.json(updatedBookings); // Return all bookings for admin
       }
@@ -235,8 +288,8 @@ router.get(
       const therapistZip = therapist.zipCode; // Get therapist's zip code
 
       // Fetch all bookings
-      const myBookings = await medicalBooking.find({confirmed: true}).lean(); // Convert to plain objects
-      
+      const myBookings = await medicalBooking.find({ confirmed: true }).lean(); // Convert to plain objects
+
       // Fetch therapist assignments and populate therapist details
       const therapistAssignments = await MedicalAssignment.find()
         .populate("therapistId", "username email role") // Only fetch therapist details
@@ -248,9 +301,10 @@ router.get(
           const assignedTherapists = therapistAssignments
             .filter(
               (assignment) =>
-                assignment.bookingId.toString() === booking._id.toString()
+                assignment.bookingId.toString() === booking._id.toString(),
             )
-            .map((assignment) => assignment.therapistId).filter(Boolean);; // Extract therapist details
+            .map((assignment) => assignment.therapistId)
+            .filter(Boolean); // Extract therapist details
 
           // Check if the booking is within 1 hour of therapist's zip code
           const isWithinDistance = checkLocationDistance(
@@ -258,15 +312,15 @@ router.get(
             booking.location.lng,
             therapist.location.lat,
             therapist.location.lng,
-            92
+            92,
           ); // 60 miles = 1 hour
           return { ...booking, assignedTherapists, isWithinDistance };
-        })
+        }),
       );
 
       // Filter out bookings that are not within 1 hour distance from the therapist
       const filteredBookings = updatedBookings.filter(
-        (booking) => booking.isWithinDistance
+        (booking) => booking.isWithinDistance,
       );
 
       // console.log(
@@ -275,12 +329,11 @@ router.get(
       // ); // Debugging log
 
       res.json(filteredBookings); // Return filtered bookings for therapist
-      
     } catch (error) {
       console.error("Error fetching bookings:", error);
       res.status(500).json({ error: "Server error" });
     }
-  }
+  },
 );
 
 router.get("/medical-bookings/:id", async (req, res) => {
@@ -301,7 +354,7 @@ router.get("/medical-bookings/:id", async (req, res) => {
 
     // Extract therapist details
     const assignedTherapists = therapistAssignments.map(
-      (assign) => assign.therapistId
+      (assign) => assign.therapistId,
     );
 
     res.json({ ...bookings, assignedTherapists });

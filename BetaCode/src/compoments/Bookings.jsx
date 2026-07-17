@@ -177,18 +177,23 @@ function Bookings() {
   };
 
   // Handler to leave a booking for a specific role
-  const leaveRole = async (bookingId, role) => {
-    try {
-      await axios.post(`${import.meta.env.VITE_VERCEL}leave-booking`, {
-        bookingId,
-        therapistId: currentUserId,
-        role,
-      });
-      getBookings();
-    } catch (err) {
-      alert(err.response?.data?.message || "Failed to leave role");
+const leaveRole = async (bookingId, role) => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("No token found, user is not authenticated.");
+      return;
     }
-  };
+    await axios.post(
+      `${import.meta.env.VITE_VERCEL}leave-booking`,
+      { bookingId, therapistId: currentUserId, role },
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    getBookings();
+  } catch (err) {
+    alert(err.response?.data?.message || "Failed to leave role");
+  }
+};
   // Helper to get selected options for react-select
   const getSelectedOptions = (selectedValues) => {
     return options.filter((opt) => selectedValues.includes(opt.value));
