@@ -16,6 +16,7 @@ const TherapistReminder = require("../model/TherapistReminder");
 
 const formData = require("form-data");
 const Mailgun = require("mailgun.js");
+const { createBookingHandler } = require("./bookingCreate");
 
 const checkLocationDistance = (lat1, lon1, lat2, lon2, maxMiles) => {
   const toRad = (deg) => (deg * Math.PI) / 180;
@@ -70,67 +71,23 @@ const formatServiceHours = (hours) => {
 //     }
 //   }
 // };
-router.post("/new-booking", async (req, res) => {
-  try {
-    const {
-      companyName,
-      name,
-      email,
-      address,
-      zipCode,
-      services, // <-- array from frontend
-      totalPrice,
-      payType,
-      startTime,
-      endTime,
-      date,
-      extra,
-      formType,
-      phoneNumber,
-    } = req.body;
+const sendNewBookingNotification = async (newBooking, payType) => {
+  const confirmationLink = `https://motgpayment.com/confirm-booking/${newBooking._id}`;
 
-    const geoRes = await axios.get(
-      `https://api.geocod.io/v1.7/geocode?q=${zipCode}&api_key=${process.env.GEO_CODIO_API}`,
-    );
-    const location = geoRes?.data?.results?.[0]?.location || null;
-
-    // Save booking in the database
-    const newBooking = await bookings.create({
-      companyName,
-      name,
-      email,
-      address,
-      zipCode,
-      services,
-      totalPrice,
-      payType,
-      startTime,
-      endTime,
-      extra,
-      date,
-      confirmed: false,
-      location,
-      formType,
-      phoneNumber,
-    });
-    //console.log(formRoles);
-    const confirmationLink = `https://motgpayment.com/confirm-booking/${newBooking._id}`;
-
-    // Set up email transporter
-    const mg = new Mailgun(formData);
-    const mailgun = mg.client({
-      username: "api",
-      key: process.env.MAILGUN_KEY, // Add this to your .env file // Default Mailgun API URL
-    });
-    try {
-      const emailData = {
-        from: process.env.EMAIL_USER, // Must be a verified Mailgun sender
-        to: [
-          "hello@massageonthegomemphis.com",
-          "sam@massageonthegomemphis.com",
-        ], // Recipient email
-        subject: "New Booking Confirmation",
-        html: `<h2>New Booking Details</h2>
+  // Set up email transporter
+  const mg = new Mailgun(formData);
+  const mailgun = mg.client({
+    username: "api",
+    key: process.env.MAILGUN_KEY, // Add this to your .env file // Default Mailgun API URL
+  });
+  const emailData = {
+    from: process.env.EMAIL_USER, // Must be a verified Mailgun sender
+    to: [
+      "hello@massageonthegomemphis.com",
+      "sam@massageonthegomemphis.com",
+    ], // Recipient email
+    subject: "New Booking Confirmation",
+    html: `<h2>New Booking Details</h2>
             <p><strong>Price:</strong> $${newBooking.totalPrice} ${payType}</p>
             <p><strong>Company Name:</strong> ${newBooking.companyName}</p>
             <p><strong>Name:</strong> ${newBooking.name}</p>
@@ -163,19 +120,14 @@ router.post("/new-booking", async (req, res) => {
             <br />
             <a href="${confirmationLink}" style="display: inline-block; padding: 10px 20px; font-size: 16px; color: white; background: #007bff; text-decoration: none; border-radius: 5px;">Mark Booking as Ready / Update</a>
           `,
-        "h:X-Sent-Using": "Mailgun",
-        "h:X-Source": "MassageOnTheGo",
-      };
+    "h:X-Sent-Using": "Mailgun",
+    "h:X-Source": "MassageOnTheGo",
+  };
 
-      const response = await mailgun.messages.create(
-        "motgpayment.com", // Your Mailgun domain (e.g., "mg.yourdomain.com")
-        emailData,
-      );
-
-      //console.log("Mailgun Response:", response);
-    } catch (error) {
-      console.error("Error sending email via Mailgun:", error);
-    }
+  await mailgun.messages.create(
+    "motgpayment.com", // Your Mailgun domain (e.g., "mg.yourdomain.com")
+    emailData,
+  );
     // const mailOptions = {
     //   from: process.env.EMAIL_USER,
     //   to: ["curtrickwalton@gmail.com"], // Change to actual email recipients
@@ -210,12 +162,21 @@ router.post("/new-booking", async (req, res) => {
     //     console.error(error);
     //   });
 
-    res.status(200).json({ message: "Booking confirmed and email sent!" });
-  } catch (err) {
-    console.error("Error processing booking:", err);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
+};
+
+router.post(
+  "/new-booking",
+  createBookingHandler({
+    bookingModel: bookings,
+    geocodeZipCode: async (zipCode) => {
+      const geoRes = await axios.get(
+        `https://api.geocod.io/v1.7/geocode?q=${zipCode}&api_key=${process.env.GEO_CODIO_API}`,
+      );
+      return geoRes?.data?.results?.[0]?.location || null;
+    },
+    sendBookingNotification: sendNewBookingNotification,
+  }),
+);
 
 router.get("/confirm-booking/:id", async (req, res) => {
   try {

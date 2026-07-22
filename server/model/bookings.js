@@ -29,7 +29,19 @@ const bookingSchema = new mongoose.Schema({
   emailsSent: { type: Boolean, default: false },
   formType: { type: String, required: true },
   phoneNumber: { type: String, require: true },
+  idempotencyKey: { type: String, trim: true },
+  idempotencyRequestDigest: { type: String },
+  idempotencyStatus: {
+    type: String,
+    enum: ["processing", "completed"],
+  },
+  idempotencyCompletedAt: { type: Date },
 });
+
+bookingSchema.index(
+  { idempotencyKey: 1 },
+  { unique: true, sparse: true, name: "booking_idempotency_key_unique" },
+);
 
 const bookingModel = mongoose.model("Booking", bookingSchema);
 

@@ -20,6 +20,7 @@ const adminRoute = require("./routes/admin");
 const bookingsExport = require("./routes/export-bookings")
 const deleteBookings = require("./routes/deleteBooking");
 const textReminder = require("./routes/textReminder");
+const bookingRead = require("./routes/bookingRead");
 const Booking = require("./model/bookings")
 const SoapNotes = require("./routes/soapNotesRoutes")
 const PORT = process.env.PORT || 3003;
@@ -177,5 +178,6 @@ app.use("/delete", deleteBookings);
 app.use("/api", bookingsExport);
 app.use(textReminder);
 app.use(SoapNotes);
+app.use("/api", bookingRead);
 // app.use('/api', paymentRoute);
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
