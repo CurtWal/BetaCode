@@ -25,6 +25,7 @@ const SoapNotes = require("./routes/soapNotesRoutes")
 const PORT = process.env.PORT || 3003;
 const app = express();
 const Users = require("./model/user")
+
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
@@ -33,6 +34,15 @@ app.use(cors());
 const MONGO_URI = process.env.MERNDBDATA;
 const POOL_SIZE = Number(process.env.MONGO_MAX_POOL_SIZE) || 20;
 
+// Disable Mongoose's default query buffering. Without this, any query fired
+// before the connection is ready gets silently queued and waits up to
+// bufferTimeoutMS (10000ms default) before failing with a confusing
+// "buffering timed out" error. Turning it off makes connection issues fail
+// fast and clearly instead of hanging for 10 seconds first.
+mongoose.set("bufferCommands", false);
+
+let connectionPromise = null;
+
 async function connectOnce() {
   if (!MONGO_URI) {
     throw new Error("MONGO_URI is not defined. Check your .env and MERNDBDATA variable.");
@@ -40,20 +50,38 @@ async function connectOnce() {
 
   if (mongoose.connection.readyState === 1) return; // already connected
 
-  await mongoose.connect(MONGO_URI, {
-    maxPoolSize: POOL_SIZE,
-    serverSelectionTimeoutMS: 15000,
-    connectTimeoutMS: 10000,
-    socketTimeoutMS: 45000,
-    family: 4,
-    tls: true,
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  });
-  console.log("Connected to Mongoose (pool size: " + POOL_SIZE + ")");
+  // Reuse the same in-flight connection attempt if one is already happening,
+  // instead of kicking off a second parallel connect() on concurrent cold
+  // requests.
+  if (connectionPromise) return connectionPromise;
+
+  connectionPromise = mongoose
+    .connect(MONGO_URI, {
+      maxPoolSize: POOL_SIZE,
+      serverSelectionTimeoutMS: 15000,
+      connectTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+      family: 4,
+      tls: true,
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    })
+    .then(() => {
+      console.log("Connected to Mongoose (pool size: " + POOL_SIZE + ")");
+    })
+    .catch((err) => {
+      // Reset so the next request can retry the connection instead of being
+      // stuck on a permanently-rejected promise.
+      connectionPromise = null;
+      throw err;
+    });
+
+  return connectionPromise;
 }
 
-// ensure single connection at startup
+// Kick off a connection attempt at module load time too (helps warm starts /
+// traditional always-on hosting), but we no longer rely on this finishing
+// before traffic arrives -- the middleware below guarantees that instead.
 connectOnce().catch((err) => console.error("Error connecting to MongoDB:", err));
 
 // Graceful shutdown
@@ -68,100 +96,27 @@ process.on("SIGINT", async () => {
     process.exit(1);
   }
 });
-// mongoose
-//   .connect(process.env.MERNDBDATA)
-//   .then(() => console.log("Connected to Mongoose"))
-//   .catch((err) => console.log("Error connecting to MongoDB:", err));
+
 app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
-// const updateBookings = async () => {
-//   try {
-//     await mongoose.connect(process.env.MERNDBDATA);
-
-//     const result = await Booking.updateMany(
-//       { formType: { $exists: false } },
-//       { $set: { formType: "regular" } }
-//     );
-
-//     console.log(`Updated ${result.modifiedCount} bookings.`);
-//     mongoose.disconnect();
-//   } catch (err) {
-//     console.error("Error updating bookings:", err);
-//   }
-// };
-
-// updateBookings();
-// const API_KEY = process.env.GEO_CODIO_API2;
-
-// const geocodeZip = async (zip) => {
-//   const url = `https://api.geocod.io/v1.7/geocode?q=${zip}&api_key=${API_KEY}`;
-//   const res = await axios.get(url);
-//   return res.data.results[0].location;
-// };
-
-// const updateBookingLocations = async () => {
-//   await mongoose.connect(process.env.MERNDBDATA); // Replace with your DB URI
-
-//   try {
-//     const bookings = await Booking.find({
-//       zipCode: { $ne: "" },
-//       location: { $exists: false },
-//     });
-
-//     console.log(`Found ${bookings.length} bookings to update.`);
-
-//     const zipCache = {}; // Avoid duplicate API calls
-
-//     for (const booking of bookings) {
-//       const zip = booking.zipCode;
-
-//       if (!zipCache[zip]) {
-//         try {
-//           const loc = await geocodeZip(zip);
-//           zipCache[zip] = loc;
-//         } catch (err) {
-//           console.error(`Failed to geocode ZIP ${zip}:`, err.message);
-//           continue;
-//         }
-//       }
-
-//       const { lat, lng } = zipCache[zip];
-//       booking.location = { lat, lng };
-//       await booking.save();
-
-//       console.log(`✅ Updated booking ${booking._id} with ${lat}, ${lng}`);
-//     }
-
-//     console.log("✅ Finished updating bookings.");
-//   } catch (err) {
-//     console.error("Error updating bookings:", err);
-//   } finally {
-//     await mongoose.disconnect();
-//   }
-// };
-
-// updateBookingLocations();
-
-// const updateUsers = async()=>{
-// const users = await Users.find();
-
-// for (const user of users) {
-//   if (typeof user.role === "string") {
-//     // Split comma-separated roles into array
-//     user.role = user.role.split(",").map((r) => r.trim());
-//     await user.save();
-//     console.log(`Migrated user ${user.email} to array role`);
-//   } else if (Array.isArray(user.role) && user.role.some(r => typeof r !== "string")) {
-//     // Handle edge case: role array contains non-strings
-//     user.role = user.role.map(r => String(r).trim());
-//     await user.save();
-//     console.log(`Cleaned up role array for user ${user.email}`);
-//   }
-// }
-// }
-// updateUsers();
+// Ensure the DB connection is actually ready before any route touches the
+// database. On a serverless cold start, this is what prevents queries from
+// firing before mongoose.connect() has resolved (which is what was causing
+// the "buffering timed out after 10000ms" errors across multiple routes).
+// On a warm invocation, connectOnce() returns almost immediately since
+// mongoose.connection.readyState is already 1, so this adds negligible
+// overhead to normal requests.
+app.use(async (req, res, next) => {
+  try {
+    await connectOnce();
+    next();
+  } catch (err) {
+    console.error("DB connection failed:", err);
+    res.status(503).json({ message: "Database unavailable, please retry" });
+  }
+});
 
 app.use(authRoutes);
 app.use(getBookings);
@@ -178,4 +133,5 @@ app.use("/api", bookingsExport);
 app.use(textReminder);
 app.use(SoapNotes);
 // app.use('/api', paymentRoute);
+
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
