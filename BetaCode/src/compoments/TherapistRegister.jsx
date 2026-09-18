@@ -17,6 +17,7 @@ function TherapistRegister() {
   const [address, setAddress] = useState("");
   const navigate = useNavigate();
   const animatedComponents = makeAnimated();
+  const [needsW9, setNeedsW9] = useState(false);
 
   const options = [
     { value: "therapist", label: "Massage Therapist" },
@@ -60,6 +61,7 @@ function TherapistRegister() {
         phoneNumber,
         zipCode,
         address,
+        needsW9,
       }),
     });
 
@@ -76,7 +78,9 @@ function TherapistRegister() {
       <div className="form-section">
         <div>
           <img src={Logo} />
-          <p>Looking to sign up as a Wellness Worker. Fill out the form below</p>
+          <p>
+            Looking to sign up as a Wellness Worker. Fill out the form below
+          </p>
         </div>
         <h2>Wellness Worker Register</h2>
         <input
@@ -104,7 +108,7 @@ function TherapistRegister() {
           id="option1"
           name="options"
           value="medical"
-          style={{height:"15px", margin:"0"}}
+          style={{ height: "15px", margin: "0" }}
           onChange={(e) => {
             const { value, checked } = e.target;
             setRole((prev) => {
@@ -118,7 +122,7 @@ function TherapistRegister() {
             });
           }}
         />
-        <label htmlFor="option1" >
+        <label htmlFor="option1">
           Are you able to be Available for Medical Massages?
         </label>
         <input
@@ -157,6 +161,17 @@ function TherapistRegister() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
+        <input
+          type="checkbox"
+          id="w9request"
+          name="w9request"
+          style={{ height: "15px", margin: "0" }}
+          checked={needsW9}
+          onChange={(e) => setNeedsW9(e.target.checked)}
+        />
+        <label htmlFor="w9request">
+          Need a W-9 independent contractor form?
+        </label>
         <button onClick={handleRegister}>Register</button>
       </div>
     </div>

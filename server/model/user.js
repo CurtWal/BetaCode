@@ -71,6 +71,10 @@ const UserSchema = new mongoose.Schema({
     token_type: { type: String },
     expiry_date: { type: Number },
   },
+  needsW9: {
+  type: Boolean,
+  default: false,
+},
 });
 
 module.exports = mongoose.model("Users", UserSchema);

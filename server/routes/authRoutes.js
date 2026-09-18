@@ -14,7 +14,7 @@ const { google } = require("googleapis");
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
-  process.env.GOOGLE_REDIRECT_URI // e.g. http://localhost:3001/google/callback
+  process.env.GOOGLE_REDIRECT_URI, // e.g. http://localhost:3001/google/callback
 );
 
 // Step 1: Redirect worker to Google
@@ -24,14 +24,14 @@ router.get("/google", (req, res) => {
     access_type: "offline", // ensures refresh_token
     prompt: "consent",
     scope: ["https://www.googleapis.com/auth/calendar"],
-    state:token,
+    state: token,
   });
   res.redirect(url);
 });
 
 // Step 2: Handle callback from Google
 router.get("/google/callback", async (req, res) => {
-  const { code, state} = req.query;
+  const { code, state } = req.query;
 
   try {
     const { tokens } = await oauth2Client.getToken(code);
@@ -39,8 +39,6 @@ router.get("/google/callback", async (req, res) => {
     // attach user ID from session or JWT
     const decoded = jwt.verify(state, process.env.JWT_SECRET);
     const userId = decoded.id;
-
-    
 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ error: "User not found" });
@@ -56,7 +54,10 @@ router.get("/google/callback", async (req, res) => {
 });
 router.get("/google/status", async (req, res) => {
   try {
-    const decoded = jwt.verify(req.headers.authorization.split(" ")[1], process.env.JWT_SECRET);
+    const decoded = jwt.verify(
+      req.headers.authorization.split(" ")[1],
+      process.env.JWT_SECRET,
+    );
     const user = await User.findById(decoded.id);
 
     res.json({ connected: !!user.googleTokens });
@@ -92,7 +93,10 @@ router.post("/register", async (req, res) => {
     try {
       const emailData = {
         from: process.env.EMAIL_USER, // Must be a verified Mailgun sender
-        to: ["hello@massageonthegomemphis.com", "sam@massageonthegomemphis.com"], // Recipient email
+        to: [
+          "hello@massageonthegomemphis.com",
+          "sam@massageonthegomemphis.com",
+        ], // Recipient email
         subject: "New User Registered",
         html: `
           <h2>New User Details</h2>
@@ -104,7 +108,7 @@ router.post("/register", async (req, res) => {
 
       const response = await mailgun.messages.create(
         "motgpayment.com", // Your Mailgun domain (e.g., "mg.yourdomain.com")
-        emailData
+        emailData,
       );
 
       console.log("Mailgun Response:", response);
@@ -149,15 +153,19 @@ router.post("/therapistregister", async (req, res) => {
     phoneNumber,
     zipCode,
     address,
+    needsW9,
   } = req.body;
+
+  let location = null;
   try {
-        const geoRes = await axios.get(
-          `https://api.geocod.io/v1.7/geocode?q=${zipCode}&api_key=${process.env.GEO_CODIO_API}`
-        );
-        location = geoRes?.data?.results?.[0]?.location || null;
-      } catch (error) {
-        console.error("Geocoding failed:", error.message);
-      }
+    const geoRes = await axios.get(
+      `https://api.geocod.io/v1.7/geocode?q=${zipCode}&api_key=${process.env.GEO_CODIO_API}`,
+    );
+    location = geoRes?.data?.results?.[0]?.location || null;
+  } catch (error) {
+    console.error("Geocoding failed:", error.message);
+  }
+
   try {
     //Check if user already exists
     const user = await User.findOne({ email });
@@ -176,6 +184,7 @@ router.post("/therapistregister", async (req, res) => {
       zipCode,
       address,
       location,
+      needsW9: !!needsW9,
     });
     await newUser.save();
     const mg = new Mailgun(formData);
@@ -186,7 +195,10 @@ router.post("/therapistregister", async (req, res) => {
     try {
       const emailData = {
         from: process.env.EMAIL_USER, // Must be a verified Mailgun sender
-        to: ["hello@massageonthegomemphis.com", "sam@massageonthegomemphis.com"], // Recipient email
+        to: [
+          "hello@massageonthegomemphis.com",
+          "sam@massageonthegomemphis.com",
+        ], // Recipient email
         subject: "New Wellness Worker Registered",
         html: `
             <h2>New Wellness Worker Details</h2>
@@ -201,12 +213,38 @@ router.post("/therapistregister", async (req, res) => {
 
       const response = await mailgun.messages.create(
         "motgpayment.com", // Your Mailgun domain (e.g., "mg.yourdomain.com")
-        emailData
+        emailData,
       );
 
       console.log("Mailgun Response:", response);
     } catch (error) {
       console.error("Error sending email via Mailgun:", error);
+    }
+
+    if (newUser.needsW9) {
+      try {
+        const fs = require("fs");
+        const path = require("path");
+        const w9Path = path.join(__dirname, "../assets/w9-blank.pdf");
+
+        await mailgun.messages.create("motgpayment.com", {
+          from: process.env.EMAIL_USER,
+          to: newUser.email,
+          subject: "Your W-9 Form — Massage On The Go",
+          html: `
+            <p>Hi ${newUser.username},</p>
+            <p>As requested, attached is a blank W-9 independent contractor form.</p>
+            <p>Please fill it out and send the completed form back to either hello@massageonthegomemphis.com or sam@massageonthegomemphis.com.</p>
+            <p>Thanks!</p>
+          `,
+          attachment: fs.createReadStream(w9Path),
+          "h:X-Sent-Using": "Mailgun",
+          "h:X-Source": "MassageOnTheGo",
+        });
+        console.log(`✅ W-9 sent to ${newUser.email}`);
+      } catch (error) {
+        console.error("Error sending W-9 email to worker:", error);
+      }
     }
     // const mailOptions = {
     //   from: process.env.EMAIL_USER,
@@ -253,7 +291,7 @@ router.post("/login", async (req, res) => {
     const token = jwt.sign(
       { id: user._id, role: normalizedRoles },
       process.env.JWT_SECRET,
-      { expiresIn: "10hr" }
+      { expiresIn: "10hr" },
     );
 
     console.log("Login successful for:", user.username);
@@ -274,7 +312,7 @@ router.post("/request-password-reset", async (req, res) => {
   const { email } = req.body;
   try {
     const user = await User.findOne({ email });
-    console.log("User: ", user)
+    console.log("User: ", user);
     if (!user) return res.status(404).json({ error: "User not found" });
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
@@ -299,14 +337,17 @@ router.post("/request-password-reset", async (req, res) => {
       `,
     };
 
-      await mailgun.messages.create(
+    await mailgun.messages.create(
       "motgpayment.com", // Your Mailgun domain (e.g., "mg.yourdomain.com")
-      msg
+      msg,
     );
     // console.log("Mailgun Response:", response);
     res.status(200).json({ message: "Password reset link sent" });
   } catch (err) {
-    console.error("Error sending reset email:", err.response?.body || err.message);
+    console.error(
+      "Error sending reset email:",
+      err.response?.body || err.message,
+    );
     res.status(500).json({ error: "Server error" });
   }
 });
