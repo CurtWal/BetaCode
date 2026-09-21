@@ -182,17 +182,27 @@ router.put("/medical-bookings/:id", async (req, res) => {
 router.get("/cron/mark-complete", async (req, res) => {
   try {
     const now = new Date();
-    const booking = await bookings.find({ isComplete: false });
+    const bookingsToCheck = await bookings.find({ isComplete: false });
 
-    for (let books of booking) {
-      const bookingDateTime = parseTime(books.date, books.endTime);
+    const idsToComplete = [];
+    for (const b of bookingsToCheck) {
+      const bookingDateTime = parseTime(b.date, b.endTime);
       if (bookingDateTime < now) {
-        books.isComplete = true;
-        await books.save();
+        idsToComplete.push(b._id);
       }
     }
 
-    res.status(200).json({ message: "Checked and updated overdue bookings." });
+    if (idsToComplete.length > 0) {
+      await bookings.updateMany(
+        { _id: { $in: idsToComplete } },
+        { $set: { isComplete: true } }
+      );
+    }
+
+    res.status(200).json({
+      message: "Checked and updated overdue bookings.",
+      updated: idsToComplete.length,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error processing cron task." });
