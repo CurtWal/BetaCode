@@ -163,7 +163,8 @@ router.get("/reminder", async (req, res) => {
           bookings.length
         } open booking(s):\n\n${lines.join(
           "\n"
-        )}\n\nLog in to accept.`,
+        )}\n\nLog in to accept.
+        \n\n https://motgpayment.com/login`,
       });
     }
 
