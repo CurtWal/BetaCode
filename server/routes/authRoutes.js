@@ -185,6 +185,11 @@ router.post("/therapistregister", async (req, res) => {
       address,
       location,
       needsW9: !!needsW9,
+  //     documents: {
+  //   w9Status: "pending",
+  //   w9AgreementId: null,
+  //   w9CompletedAt: null,
+  // },
     });
     await newUser.save();
     const mg = new Mailgun(formData);
@@ -234,7 +239,7 @@ router.post("/therapistregister", async (req, res) => {
           html: `
             <p>Hi ${newUser.username},</p>
             <p>As requested, attached is a blank W-9 independent contractor form.</p>
-            <p>Please fill it out and send the completed form back to either hello@massageonthegomemphis.com or sam@massageonthegomemphis.com.</p>
+            <p>Please fill it out and send the completed form back to sam@massageonthegomemphis.com.</p>
             <p>Thanks!</p>
           `,
           attachment: fs.createReadStream(w9Path),

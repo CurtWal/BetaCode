@@ -67,6 +67,7 @@ function TherapistRegister() {
 
     const data = await res.json();
     if (res.status === 201) {
+      // navigate("/complete-w9");
       alert("Registration successful! You can now log in.");
       navigate("/login"); // Redirect to login page
     } else {

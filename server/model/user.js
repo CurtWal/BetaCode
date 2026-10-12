@@ -75,6 +75,21 @@ const UserSchema = new mongoose.Schema({
   type: Boolean,
   default: false,
 },
+// documents: {
+//   w9Status: {
+//     type: String,
+//     enum: ["not_started", "pending", "completed", "failed"],
+//     default: "not_started",
+//   },
+//   w9AgreementId: {
+//     type: String,
+//     default: null,
+//   },
+//   w9CompletedAt: {
+//     type: Date,
+//     default: null,
+//   },
+// },
 });
 
 module.exports = mongoose.model("Users", UserSchema);
